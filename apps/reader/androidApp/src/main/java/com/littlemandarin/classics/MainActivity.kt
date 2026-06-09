@@ -53,6 +53,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -105,6 +106,18 @@ import androidx.navigation.navArgument
 import com.littlemandarin.classics.shared.AppInfo
 import com.littlemandarin.classics.shared.AppInfoResourceKeys
 import com.littlemandarin.classics.shared.GetAppInfoUseCase
+import com.littlemandarin.classics.shared.analytics.Analytics
+import com.littlemandarin.classics.shared.analytics.AnalyticsEventName
+import com.littlemandarin.classics.shared.analytics.AnalyticsProperties
+import com.littlemandarin.classics.shared.analytics.AndroidAnalyticsServiceProvider
+import com.littlemandarin.classics.shared.analytics.createPlatformAnalytics
+import com.littlemandarin.classics.shared.feedback.AndroidFeedbackServiceProvider
+import com.littlemandarin.classics.shared.feedback.FeedbackChildAgeBand as SharedFeedbackChildAgeBand
+import com.littlemandarin.classics.shared.feedback.FeedbackIssueType as SharedFeedbackIssueType
+import com.littlemandarin.classics.shared.feedback.FeedbackService
+import com.littlemandarin.classics.shared.feedback.FeedbackSubmission
+import com.littlemandarin.classics.shared.feedback.FeedbackSatisfaction as SharedFeedbackSatisfaction
+import com.littlemandarin.classics.shared.feedback.createPlatformFeedbackService
 import com.littlemandarin.classics.shared.progress.AndroidProgressServiceProvider
 import com.littlemandarin.classics.shared.progress.BuildParentReportUseCase
 import com.littlemandarin.classics.shared.progress.CompletionRecord
@@ -115,23 +128,41 @@ import com.littlemandarin.classics.shared.progress.ProgressService
 import com.littlemandarin.classics.shared.progress.ProgressStats
 import com.littlemandarin.classics.shared.progress.createPlatformProgressService
 import com.littlemandarin.classics.shared.quiz.ScoreQuizUseCase
+import com.littlemandarin.classics.shared.service.AiExplainBackendClient
+import com.littlemandarin.classics.shared.service.AiExplanationRequest
+import com.littlemandarin.classics.shared.service.AiExplanationResponse
+import com.littlemandarin.classics.shared.service.AiServiceConfig
+import com.littlemandarin.classics.shared.service.AiMessageKeys
+import com.littlemandarin.classics.shared.service.AiQuestionTypes
+import com.littlemandarin.classics.shared.service.AiService
 import com.littlemandarin.classics.shared.service.AndroidTtsServiceProvider
 import com.littlemandarin.classics.shared.service.TtsService
+import com.littlemandarin.classics.shared.service.createAiService
 import com.littlemandarin.classics.shared.service.createTtsService
 import com.littlemandarin.classics.shared.story.DefaultStoryRepository
 import com.littlemandarin.classics.shared.story.Question
 import com.littlemandarin.classics.shared.story.Story
 import com.littlemandarin.classics.shared.story.Vocab
 import com.littlemandarin.classics.shared.usecase.GetStoryListUseCase
+import java.io.IOException
+import java.net.HttpURLConnection
+import java.net.URL
+import java.nio.charset.StandardCharsets
 import java.text.NumberFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        AndroidAnalyticsServiceProvider.initialize(applicationContext)
+        AndroidFeedbackServiceProvider.initialize(applicationContext)
         AndroidProgressServiceProvider.initialize(applicationContext)
         AndroidTtsServiceProvider.initialize(applicationContext)
 
@@ -179,7 +210,23 @@ private fun ReaderApp() {
     val settingsStore = remember(baseContext.applicationContext) {
         ReaderSettingsStore(baseContext.applicationContext)
     }
+    val appVersion = remember(baseContext.applicationContext) {
+        baseContext.applicationContext.appVersionName()
+    }
     var settings by remember { mutableStateOf(settingsStore.read()) }
+    val analyticsScope = rememberCoroutineScope()
+    val analytics = remember(baseContext.applicationContext, appVersion, settings.language, analyticsScope) {
+        ReaderAnalytics(
+            delegate = createPlatformAnalytics(
+                appVersion = appVersion,
+                uiLocale = settings.language.tag,
+            ),
+            scope = analyticsScope,
+        )
+    }
+    val feedbackService = remember(baseContext.applicationContext) {
+        createPlatformFeedbackService()
+    }
     var readingProgressVersion by remember { mutableIntStateOf(0) }
     val localizedEnvironment = remember(baseContext, settings.language) {
         baseContext.localizedEnvironment(settings.language)
@@ -193,6 +240,8 @@ private fun ReaderApp() {
             ReaderAppContent(
                 settings = settings,
                 settingsStore = settingsStore,
+                analytics = analytics,
+                feedbackService = feedbackService,
                 readingProgressVersion = readingProgressVersion,
                 onLanguageChange = { language ->
                     settingsStore.setLanguage(language)
@@ -205,6 +254,10 @@ private fun ReaderApp() {
                 onTextSizeChange = { textSize ->
                     settingsStore.setReadingTextSize(textSize)
                     settings = settings.copy(readingTextSize = textSize)
+                },
+                onAiBackendBaseUrlChange = { baseUrl ->
+                    settingsStore.setAiBackendBaseUrl(baseUrl)
+                    settings = settings.copy(aiBackendBaseUrl = baseUrl)
                 },
                 onReadingPositionChange = { storyId, paragraphIndex ->
                     settingsStore.setReadingParagraphIndex(storyId, paragraphIndex)
@@ -219,10 +272,13 @@ private fun ReaderApp() {
 private fun ReaderAppContent(
     settings: ReaderSettings,
     settingsStore: ReaderSettingsStore,
+    analytics: ReaderAnalytics,
+    feedbackService: FeedbackService,
     readingProgressVersion: Int,
     onLanguageChange: (ReaderLanguage) -> Unit,
     onPinyinDefaultChange: (Boolean) -> Unit,
     onTextSizeChange: (ReadingTextSize) -> Unit,
+    onAiBackendBaseUrlChange: (String) -> Unit,
     onReadingPositionChange: (String, Int) -> Unit,
 ) {
     val navController = rememberNavController()
@@ -230,6 +286,14 @@ private fun ReaderAppContent(
     val repository = remember { DefaultStoryRepository() }
     val progressService = remember { createPlatformProgressService() }
     val ttsService = remember { createTtsService() }
+    val aiService = remember(settings.aiBackendBaseUrl) {
+        createAiService(
+            config = AiServiceConfig(
+                baseUrl = settings.aiBackendBaseUrl.takeUnless { it.isMockAiBackend() },
+            ),
+            backendClient = AndroidAiExplainBackendClient(),
+        )
+    }
     val progressRecords by progressService.records.collectAsState(initial = emptyList())
     var storiesState by remember {
         mutableStateOf<StoriesState>(StoriesState.Loading)
@@ -264,6 +328,13 @@ private fun ReaderAppContent(
         }
     }
 
+    LaunchedEffect(Unit) {
+        analytics.track(
+            eventName = AnalyticsEventName.AppOpen,
+            properties = mapOf("open_type" to "cold_start"),
+        )
+    }
+
     LaunchedEffect(progressService, progressRecords) {
         progressStats = GetProgressStatsUseCase(progressService).invoke()
         parentReport = BuildParentReportUseCase(progressService).invoke(
@@ -285,6 +356,15 @@ private fun ReaderAppContent(
                 ReaderBottomNavigation(
                     currentRoute = currentRoute,
                     onDestinationClick = { destination ->
+                        if (destination.route == ReaderRoutes.Parent) {
+                            analytics.track(
+                                eventName = AnalyticsEventName.ParentReportOpen,
+                                properties = mapOf(
+                                    "entry_point" to "bottom_navigation",
+                                    "report_period" to "week",
+                                ),
+                            )
+                        }
                         navController.navigateTopLevel(destination.route)
                     },
                 )
@@ -309,10 +389,24 @@ private fun ReaderAppContent(
                         settingsStore = settingsStore,
                         readingProgressVersion = readingProgressVersion,
                         snackbarHostState = snackbarHostState,
-                        onRead = { storyId -> navController.navigate(ReaderRoutes.reading(storyId)) },
-                        onVocabulary = { storyId -> navController.navigate(ReaderRoutes.vocabulary(storyId)) },
+                        onRead = { storyId ->
+                            analytics.trackStoryOpen(stories, storyId, openSource = "today")
+                            navController.navigate(ReaderRoutes.reading(storyId))
+                        },
+                        onVocabulary = { storyId ->
+                            navController.navigate(ReaderRoutes.vocabulary(storyId))
+                        },
                         onQuiz = { storyId -> navController.navigate(ReaderRoutes.quiz(storyId)) },
-                        onParent = { navController.navigateTopLevel(ReaderRoutes.Parent) },
+                        onParent = {
+                            analytics.track(
+                                eventName = AnalyticsEventName.ParentReportOpen,
+                                properties = mapOf(
+                                    "entry_point" to "today_header",
+                                    "report_period" to "week",
+                                ),
+                            )
+                            navController.navigateTopLevel(ReaderRoutes.Parent)
+                        },
                         onSettings = { navController.navigateTopLevel(ReaderRoutes.Settings) },
                     )
                 }
@@ -324,7 +418,10 @@ private fun ReaderAppContent(
                         progressRecords = progressRecords,
                         settingsStore = settingsStore,
                         readingProgressVersion = readingProgressVersion,
-                        onRead = { storyId -> navController.navigate(ReaderRoutes.reading(storyId)) },
+                        onRead = { storyId ->
+                            analytics.trackStoryOpen(stories, storyId, openSource = "library")
+                            navController.navigate(ReaderRoutes.reading(storyId))
+                        },
                         onSettings = { navController.navigateTopLevel(ReaderRoutes.Settings) },
                     )
                 }
@@ -338,7 +435,10 @@ private fun ReaderAppContent(
                         progressRecords = progressRecords,
                         settingsStore = settingsStore,
                         readingProgressVersion = readingProgressVersion,
-                        onStoryClick = { storyId -> navController.navigate(ReaderRoutes.reading(storyId)) },
+                        onStoryClick = { storyId ->
+                            analytics.trackStoryOpen(stories, storyId, openSource = "parent_report")
+                            navController.navigate(ReaderRoutes.reading(storyId))
+                        },
                         onSettings = { navController.navigateTopLevel(ReaderRoutes.Settings) },
                     )
                 }
@@ -347,10 +447,21 @@ private fun ReaderAppContent(
                 SettingsScreen(
                     appInfo = appInfo,
                     settings = settings,
+                    feedbackService = feedbackService,
                     onLanguageChange = onLanguageChange,
                     onPinyinDefaultChange = onPinyinDefaultChange,
                     onTextSizeChange = onTextSizeChange,
-                    onParentReport = { navController.navigateTopLevel(ReaderRoutes.Parent) },
+                    onAiBackendBaseUrlChange = onAiBackendBaseUrlChange,
+                    onParentReport = {
+                        analytics.track(
+                            eventName = AnalyticsEventName.ParentReportOpen,
+                            properties = mapOf(
+                                "entry_point" to "settings",
+                                "report_period" to "week",
+                            ),
+                        )
+                        navController.navigateTopLevel(ReaderRoutes.Parent)
+                    },
                 )
             }
             composable(
@@ -360,10 +471,12 @@ private fun ReaderAppContent(
                 StoryRouteContent(
                     storiesState = storiesState,
                     storyId = backStackEntry.arguments?.getString("storyId"),
-                ) { story ->
+                ) { story, _ ->
                     ReadingScreen(
                         story = story,
                         settings = settings,
+                        analytics = analytics,
+                        aiService = aiService,
                         ttsService = ttsService,
                         initialParagraphIndex = settingsStore.readReadingParagraphIndex(story.id)
                             .coerceAtLeast(0),
@@ -382,9 +495,10 @@ private fun ReaderAppContent(
                 StoryRouteContent(
                     storiesState = storiesState,
                     storyId = backStackEntry.arguments?.getString("storyId"),
-                ) { story ->
+                ) { story, _ ->
                     VocabularyScreen(
                         story = story,
+                        analytics = analytics,
                         ttsService = ttsService,
                         onBack = { navController.popBackStack() },
                         onQuiz = { navController.navigate(ReaderRoutes.quiz(story.id)) },
@@ -398,12 +512,19 @@ private fun ReaderAppContent(
                 StoryRouteContent(
                     storiesState = storiesState,
                     storyId = backStackEntry.arguments?.getString("storyId"),
-                ) { story ->
+                ) { story, storyOrder ->
                     QuizScreen(
                         story = story,
+                        storyOrder = storyOrder,
+                        analytics = analytics,
                         progressService = progressService,
                         onBack = { navController.popBackStack() },
                         onReadAgain = {
+                            analytics.trackStoryOpen(
+                                story = story,
+                                storyOrder = storyOrder,
+                                openSource = "quiz_completion",
+                            )
                             navController.navigate(ReaderRoutes.reading(story.id)) {
                                 popUpTo(ReaderRoutes.Today)
                             }
@@ -445,17 +566,18 @@ private fun StoryStateContent(
 private fun StoryRouteContent(
     storiesState: StoriesState,
     storyId: String?,
-    content: @Composable (Story) -> Unit,
+    content: @Composable (Story, Int) -> Unit,
 ) {
     when (storiesState) {
         StoriesState.Error -> CenterStateMessage(text = stringResource(R.string.error_loading_stories))
         StoriesState.Loading -> LoadingScreen()
         is StoriesState.Ready -> {
-            val story = storiesState.stories.firstOrNull { it.id == storyId }
+            val storyIndex = storiesState.stories.indexOfFirst { it.id == storyId }
+            val story = storiesState.stories.getOrNull(storyIndex)
             if (story == null) {
                 CenterStateMessage(text = stringResource(R.string.error_loading_stories))
             } else {
-                content(story)
+                content(story, storyIndex + 1)
             }
         }
     }
@@ -696,6 +818,8 @@ private fun AdaptiveStoryList(
 private fun ReadingScreen(
     story: Story,
     settings: ReaderSettings,
+    analytics: ReaderAnalytics,
+    aiService: AiService,
     ttsService: TtsService,
     initialParagraphIndex: Int,
     onClose: () -> Unit,
@@ -712,6 +836,11 @@ private fun ReadingScreen(
     val scope = rememberCoroutineScope()
     val paragraph = story.paragraphs.getOrNull(paragraphIndex)
     val readingType = readingTypeStyles(settings.readingTextSize)
+    var aiState by remember(story.id, paragraphIndex) {
+        mutableStateOf<AiUiState>(AiUiState.Idle)
+    }
+    val aiStubText = stringResource(R.string.ai_answer_stub)
+    val aiOutOfScopeText = stringResource(R.string.prompt_story_only_reply)
 
     LaunchedEffect(story.id, paragraphIndex) {
         onReadingPositionChange(story.id, paragraphIndex)
@@ -740,6 +869,11 @@ private fun ReadingScreen(
                         ttsService.stop()
                         isSpeaking = false
                     } else {
+                        analytics.trackParagraphAudioPlay(
+                            storyId = story.id,
+                            paragraphIndex = paragraphIndex,
+                            targetType = "paragraph",
+                        )
                         isSpeaking = true
                         ttsService.speak(textToRead)
                     }
@@ -749,7 +883,18 @@ private fun ReadingScreen(
         ReadingControls(
             showPinyin = settings.showPinyinByDefault,
             readingTextSize = settings.readingTextSize,
-            onPinyinChange = onPinyinDefaultChange,
+            onPinyinChange = { enabled ->
+                analytics.track(
+                    eventName = AnalyticsEventName.PinyinToggle,
+                    properties = mapOf(
+                        "story_id" to story.id,
+                        "enabled" to enabled,
+                        "surface" to "reading",
+                        "paragraph_index" to paragraphIndex,
+                    ),
+                )
+                onPinyinDefaultChange(enabled)
+            },
             onTextSizeChange = onTextSizeChange,
         )
         ReadingFullAudioRow(
@@ -760,6 +905,11 @@ private fun ReadingScreen(
                         ttsService.stop()
                         isSpeaking = false
                     } else {
+                        analytics.trackParagraphAudioPlay(
+                            storyId = story.id,
+                            paragraphIndex = paragraphIndex,
+                            targetType = "full_story",
+                        )
                         isSpeaking = true
                         ttsService.speak(story.paragraphs.joinToString(separator = "\n") { it.text })
                     }
@@ -788,6 +938,45 @@ private fun ReadingScreen(
                         pinyin = paragraph.pinyin,
                         showPinyin = settings.showPinyinByDefault,
                         readingType = readingType,
+                    )
+                    Spacer(modifier = Modifier.height(LmcSpacing.Space4))
+                    AskExplanationCard(
+                        state = aiState,
+                        enabled = paragraph.text.isNotBlank(),
+                        onAsk = {
+                            val selectedText = paragraph.text.take(AiSelectedTextMaxChars)
+                            aiState = AiUiState.Loading
+                            scope.launch {
+                                val request = AiExplanationRequest(
+                                    storyId = story.id,
+                                    selectedText = selectedText,
+                                    questionType = AiQuestionTypes.ExplainSentence,
+                                )
+                                runCatching {
+                                    aiService.explain(request)
+                                }.onSuccess { response ->
+                                    val answer = response.toDisplayText(
+                                        stubText = aiStubText,
+                                        outOfScopeText = aiOutOfScopeText,
+                                    ).limitAiAnswer()
+                                    analytics.trackAiExplainRequest(
+                                        storyId = story.id,
+                                        requestType = AiQuestionTypes.ExplainSentence,
+                                        targetType = "paragraph",
+                                        safetyOutcome = response.safetyOutcome(answer, aiOutOfScopeText),
+                                    )
+                                    aiState = AiUiState.Answer(answer)
+                                }.onFailure {
+                                    analytics.trackAiExplainRequest(
+                                        storyId = story.id,
+                                        requestType = AiQuestionTypes.ExplainSentence,
+                                        targetType = "paragraph",
+                                        safetyOutcome = "error",
+                                    )
+                                    aiState = AiUiState.Error
+                                }
+                            }
+                        },
                     )
                 }
             }
@@ -824,6 +1013,7 @@ private fun ReadingScreen(
 @Composable
 private fun VocabularyScreen(
     story: Story,
+    analytics: ReaderAnalytics,
     ttsService: TtsService,
     onBack: () -> Unit,
     onQuiz: () -> Unit,
@@ -833,6 +1023,20 @@ private fun VocabularyScreen(
     var wordIndex by remember(story.id) { mutableIntStateOf(0) }
     val currentWord = words.getOrNull(wordIndex)
     val scope = rememberCoroutineScope()
+
+    LaunchedEffect(story.id, wordIndex, currentWord) {
+        if (currentWord != null) {
+            analytics.track(
+                eventName = AnalyticsEventName.VocabOpen,
+                properties = mapOf(
+                    "story_id" to story.id,
+                    "vocab_id" to story.vocabIdFor(wordIndex),
+                    "open_source" to "vocabulary_screen",
+                    "content_level" to story.level,
+                ),
+            )
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -914,6 +1118,8 @@ private fun VocabularyScreen(
 @Composable
 private fun QuizScreen(
     story: Story,
+    storyOrder: Int,
+    analytics: ReaderAnalytics,
     progressService: ProgressService,
     onBack: () -> Unit,
     onReadAgain: () -> Unit,
@@ -929,6 +1135,16 @@ private fun QuizScreen(
         ScoreQuizUseCase().invoke(story, answers)
     }
 
+    LaunchedEffect(story.id) {
+        analytics.track(
+            eventName = AnalyticsEventName.QuizStart,
+            properties = mapOf(
+                "story_id" to story.id,
+                "question_count" to questions.size,
+            ),
+        )
+    }
+
     LaunchedEffect(showCompletion) {
         if (showCompletion) {
             MarkStoryCompletedUseCase(progressService).invoke(
@@ -938,6 +1154,23 @@ private fun QuizScreen(
                     vocabCount = story.vocab.size,
                     correctCount = score.correctCount,
                     questionCount = score.totalQuestions,
+                ),
+            )
+            analytics.track(
+                eventName = AnalyticsEventName.QuizComplete,
+                properties = mapOf(
+                    "story_id" to story.id,
+                    "question_count" to score.totalQuestions,
+                    "correct_count" to score.correctCount,
+                ),
+            )
+            analytics.track(
+                eventName = AnalyticsEventName.StoryComplete,
+                properties = mapOf(
+                    "story_id" to story.id,
+                    "story_order" to storyOrder,
+                    "content_level" to story.level,
+                    "quiz_completed" to true,
                 ),
             )
         }
@@ -1122,11 +1355,16 @@ private fun ParentReportScreen(
 private fun SettingsScreen(
     appInfo: AppInfo,
     settings: ReaderSettings,
+    feedbackService: FeedbackService,
     onLanguageChange: (ReaderLanguage) -> Unit,
     onPinyinDefaultChange: (Boolean) -> Unit,
     onTextSizeChange: (ReadingTextSize) -> Unit,
+    onAiBackendBaseUrlChange: (String) -> Unit,
     onParentReport: () -> Unit,
 ) {
+    var showFeedbackForm by remember { mutableStateOf(false) }
+    var feedbackSaved by remember { mutableStateOf(false) }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
@@ -1178,6 +1416,43 @@ private fun SettingsScreen(
                 SettingsValueRow(
                     label = stringResource(R.string.settings_privacy),
                     value = stringResource(R.string.settings_privacy_summary),
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                SettingsNavigationRow(
+                    label = stringResource(R.string.settings_feedback),
+                    onClick = {
+                        feedbackSaved = false
+                        showFeedbackForm = true
+                    },
+                )
+            }
+        }
+        if (showFeedbackForm) {
+            item {
+                FeedbackForm(
+                    feedbackService = feedbackService,
+                    onSaved = {
+                        feedbackSaved = true
+                        showFeedbackForm = false
+                    },
+                )
+            }
+        }
+        if (feedbackSaved) {
+            item {
+                Text(
+                    text = stringResource(R.string.settings_feedback_saved),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = LmcColors.Success,
+                    modifier = Modifier.padding(horizontal = LmcSpacing.Space2),
+                )
+            }
+        }
+        item {
+            SettingsSection(title = stringResource(R.string.settings_ai)) {
+                AiBackendBaseUrlRow(
+                    value = settings.aiBackendBaseUrl,
+                    onValueChange = onAiBackendBaseUrlChange,
                 )
             }
         }
@@ -1854,6 +2129,73 @@ private fun PinyinTextBlock(
 }
 
 @Composable
+private fun AskExplanationCard(
+    state: AiUiState,
+    enabled: Boolean,
+    onAsk: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = LmcSpacing.CardElevation,
+    ) {
+        Column(
+            modifier = Modifier.padding(LmcSpacing.CardPadding),
+            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space3),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space3),
+            ) {
+                Text(
+                    text = stringResource(R.string.reading_ask_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f),
+                )
+                OutlinedButton(
+                    enabled = enabled && state !is AiUiState.Loading,
+                    onClick = onAsk,
+                    modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
+                ) {
+                    Text(text = stringResource(R.string.reading_ask_button))
+                }
+            }
+            when (state) {
+                AiUiState.Idle -> Unit
+                AiUiState.Loading -> Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.secondary,
+                    )
+                    Text(
+                        text = stringResource(R.string.reading_ask_loading),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                is AiUiState.Answer -> Text(
+                    text = state.text,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                AiUiState.Error -> Text(
+                    text = stringResource(R.string.reading_ask_error),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun VocabularyCard(
     word: Vocab,
     onAudioClick: () -> Unit,
@@ -2432,6 +2774,153 @@ private fun SettingsNavigationRow(
 }
 
 @Composable
+private fun FeedbackForm(
+    feedbackService: FeedbackService,
+    onSaved: () -> Unit,
+) {
+    var satisfaction by remember { mutableStateOf(FeedbackSatisfaction.Satisfied) }
+    var ageBand by remember { mutableStateOf(FeedbackAgeBand.AgeFiveSix) }
+    var issueType by remember { mutableStateOf(FeedbackIssueType.Content) }
+    var suggestion by remember { mutableStateOf("") }
+    var parentContact by remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
+
+    SettingsSection(title = stringResource(R.string.settings_feedback)) {
+        Column(
+            modifier = Modifier.padding(LmcSpacing.CardPadding),
+            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space4),
+        ) {
+            Text(
+                text = stringResource(R.string.feedback_privacy_note),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            FeedbackChoiceGroup(
+                label = stringResource(R.string.feedback_satisfaction),
+                choices = FeedbackSatisfaction.entries.map { choice ->
+                    FeedbackChoice(choice, choice.labelRes)
+                },
+                selected = satisfaction,
+                onSelected = { satisfaction = it },
+            )
+            FeedbackChoiceGroup(
+                label = stringResource(R.string.feedback_child_age_band),
+                choices = FeedbackAgeBand.entries.map { choice ->
+                    FeedbackChoice(choice, choice.labelRes)
+                },
+                selected = ageBand,
+                onSelected = { ageBand = it },
+            )
+            FeedbackChoiceGroup(
+                label = stringResource(R.string.feedback_issue_type),
+                choices = FeedbackIssueType.entries.map { choice ->
+                    FeedbackChoice(choice, choice.labelRes)
+                },
+                selected = issueType,
+                onSelected = { issueType = it },
+            )
+            OutlinedTextField(
+                value = suggestion,
+                onValueChange = { suggestion = it },
+                label = { Text(text = stringResource(R.string.feedback_suggestion)) },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 3,
+                maxLines = 5,
+            )
+            OutlinedTextField(
+                value = parentContact,
+                onValueChange = { parentContact = it },
+                label = { Text(text = stringResource(R.string.feedback_parent_contact_optional)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+            )
+            Button(
+                enabled = suggestion.isNotBlank(),
+                onClick = {
+                    scope.launch {
+                        feedbackService.submit(
+                            FeedbackSubmission(
+                                satisfaction = satisfaction.toSharedFeedbackSatisfaction(),
+                                childAgeBand = ageBand.toSharedFeedbackChildAgeBand(),
+                                issueType = issueType.toSharedFeedbackIssueType(),
+                                suggestion = suggestion,
+                                parentContact = parentContact,
+                            ),
+                        )
+                        onSaved()
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = LmcSpacing.ButtonPrimaryHeight),
+                shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+            ) {
+                Text(text = stringResource(R.string.feedback_submit))
+            }
+        }
+    }
+}
+
+@Composable
+private fun <T> FeedbackChoiceGroup(
+    label: String,
+    choices: List<FeedbackChoice<T>>,
+    selected: T,
+    onSelected: (T) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2)) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Row(
+            modifier = Modifier.horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+        ) {
+            choices.forEach { choice ->
+                FilterChip(
+                    selected = selected == choice.value,
+                    onClick = { onSelected(choice.value) },
+                    label = { Text(text = stringResource(choice.labelRes)) },
+                    modifier = Modifier.heightIn(min = LmcSpacing.ChipHeight),
+                    colors = lmcFilterChipColors(),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AiBackendBaseUrlRow(
+    value: String,
+    onValueChange: (String) -> Unit,
+) {
+    Column(
+        modifier = Modifier.padding(LmcSpacing.CardPadding),
+        verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space3),
+    ) {
+        Text(
+            text = stringResource(R.string.settings_ai_backend_base_url),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            label = { Text(text = stringResource(R.string.settings_ai_backend_base_url)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        Text(
+            text = stringResource(R.string.settings_ai_backend_summary),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
 private fun TextSizeChips(
     selectedTextSize: ReadingTextSize,
     onTextSizeChange: (ReadingTextSize) -> Unit,
@@ -2784,10 +3273,250 @@ private data class Metric(
     val value: String,
 )
 
+private const val MockAiBackendBaseUrl = "mock"
+private const val AiAnswerMaxChars = 100
+private const val AiSelectedTextMaxChars = 120
+private const val UnknownAppVersion = "unknown"
+
+private class ReaderAnalytics(
+    private val delegate: Analytics,
+    private val scope: CoroutineScope,
+) {
+    fun track(
+        eventName: AnalyticsEventName,
+        properties: Map<String, Any?> = emptyMap(),
+    ) {
+        scope.launch {
+            runCatching {
+                delegate.track(
+                    eventName = eventName,
+                    properties = properties.toAnalyticsProperties(),
+                )
+            }
+        }
+    }
+}
+
+private fun ReaderAnalytics.trackStoryOpen(
+    stories: List<Story>,
+    storyId: String,
+    openSource: String,
+) {
+    val storyIndex = stories.indexOfFirst { it.id == storyId }
+    val story = stories.getOrNull(storyIndex) ?: return
+    trackStoryOpen(
+        story = story,
+        storyOrder = storyIndex + 1,
+        openSource = openSource,
+    )
+}
+
+private fun ReaderAnalytics.trackStoryOpen(
+    story: Story,
+    storyOrder: Int,
+    openSource: String,
+) {
+    track(
+        eventName = AnalyticsEventName.StoryOpen,
+        properties = mapOf(
+            "story_id" to story.id,
+            "story_order" to storyOrder,
+            "content_level" to story.level,
+            "open_source" to openSource,
+        ),
+    )
+}
+
+private fun ReaderAnalytics.trackParagraphAudioPlay(
+    storyId: String,
+    paragraphIndex: Int,
+    targetType: String,
+) {
+    track(
+        eventName = AnalyticsEventName.ParagraphAudioPlay,
+        properties = mapOf(
+            "story_id" to storyId,
+            "paragraph_index" to paragraphIndex,
+            "audio_source" to "tts",
+        ),
+    )
+}
+
+private fun ReaderAnalytics.trackAiExplainRequest(
+    storyId: String,
+    requestType: String,
+    targetType: String,
+    safetyOutcome: String,
+) {
+    track(
+        eventName = AnalyticsEventName.AiExplainRequest,
+        properties = mapOf(
+            "story_id" to storyId,
+            "request_type" to requestType,
+            "safety_outcome" to safetyOutcome,
+            "target_type" to targetType,
+        ),
+    )
+}
+
+private class AndroidAiExplainBackendClient : AiExplainBackendClient {
+    override suspend fun postExplain(
+        baseUrl: String,
+        apiKey: String?,
+        request: AiExplanationRequest,
+    ): AiExplanationResponse = withContext(Dispatchers.IO) {
+        val connection = (URL("${baseUrl.trimEnd('/')}/ai/explain").openConnection() as HttpURLConnection)
+            .apply {
+                requestMethod = "POST"
+                connectTimeout = 5_000
+                readTimeout = 10_000
+                doOutput = true
+                setRequestProperty("Accept", "application/json")
+                setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                if (!apiKey.isNullOrBlank()) {
+                    setRequestProperty("Authorization", "Bearer $apiKey")
+                }
+            }
+
+        try {
+            val body = JSONObject()
+                .put("story_id", request.storyId)
+                .put("selected_text", request.selectedText.take(AiSelectedTextMaxChars))
+                .put("question_type", request.questionType)
+                .put("child_age", request.childAge)
+                .toString()
+                .toByteArray(StandardCharsets.UTF_8)
+
+            connection.outputStream.use { output ->
+                output.write(body)
+            }
+
+            val responseCode = connection.responseCode
+            val responseBody = (if (responseCode in 200..299) {
+                connection.inputStream
+            } else {
+                connection.errorStream
+            })?.bufferedReader(StandardCharsets.UTF_8)?.use { reader ->
+                reader.readText()
+            }.orEmpty()
+
+            if (responseCode !in 200..299) {
+                throw IOException("AI backend returned HTTP $responseCode")
+            }
+
+            val responseJson = JSONObject(responseBody)
+            val answer = responseJson.optString("answer")
+
+            if (answer.isBlank()) {
+                throw IOException("AI backend response missing answer")
+            }
+
+            AiExplanationResponse(answer = answer)
+        } finally {
+            connection.disconnect()
+        }
+    }
+}
+
+private fun String.isMockAiBackend(): Boolean =
+    isBlank() ||
+        equals(MockAiBackendBaseUrl, ignoreCase = true) ||
+        equals("local/mock", ignoreCase = true)
+
+private fun String.limitAiAnswer(): String =
+    if (length <= AiAnswerMaxChars) this else take(AiAnswerMaxChars)
+
+private fun Map<String, Any?>.toAnalyticsProperties() =
+    mapNotNull { (key, value) ->
+        val element = when (value) {
+            is Boolean -> AnalyticsProperties.boolean(value)
+            is Int -> AnalyticsProperties.int(value)
+            is Long -> AnalyticsProperties.long(value)
+            is Double -> AnalyticsProperties.double(value)
+            is Float -> AnalyticsProperties.double(value.toDouble())
+            is String -> AnalyticsProperties.string(value)
+            null -> null
+            else -> AnalyticsProperties.string(value.toString())
+        }
+        element?.let { key to it }
+    }.toMap()
+
+private fun Context.appVersionName(): String =
+    runCatching {
+        packageManager.getPackageInfo(packageName, 0).versionName ?: UnknownAppVersion
+    }.getOrDefault(UnknownAppVersion)
+
+private fun Story.vocabIdFor(index: Int): String = "$id:${index + 1}"
+
+private sealed interface AiUiState {
+    data object Idle : AiUiState
+    data object Loading : AiUiState
+    data class Answer(val text: String) : AiUiState
+    data object Error : AiUiState
+}
+
+private data class FeedbackChoice<T>(
+    val value: T,
+    @StringRes val labelRes: Int,
+)
+
+private enum class FeedbackSatisfaction(
+    val prefValue: String,
+    @StringRes val labelRes: Int,
+) {
+    Satisfied(prefValue = "satisfied", labelRes = R.string.feedback_satisfaction_satisfied),
+    Okay(prefValue = "okay", labelRes = R.string.feedback_satisfaction_okay),
+    NotSatisfied(prefValue = "not_satisfied", labelRes = R.string.feedback_satisfaction_not_satisfied),
+}
+
+private enum class FeedbackAgeBand(
+    val prefValue: String,
+    @StringRes val labelRes: Int,
+) {
+    AgeFiveSix(prefValue = "5_6", labelRes = R.string.feedback_age_5_6),
+    AgeSevenEight(prefValue = "7_8", labelRes = R.string.feedback_age_7_8),
+    Other(prefValue = "other", labelRes = R.string.feedback_age_other),
+}
+
+private enum class FeedbackIssueType(
+    val prefValue: String,
+    @StringRes val labelRes: Int,
+) {
+    Content(prefValue = "content", labelRes = R.string.feedback_issue_content),
+    Audio(prefValue = "audio", labelRes = R.string.feedback_issue_audio),
+    Ai(prefValue = "ai", labelRes = R.string.feedback_issue_ai),
+    Progress(prefValue = "progress", labelRes = R.string.feedback_issue_progress),
+    Other(prefValue = "other", labelRes = R.string.feedback_issue_other),
+}
+
+private fun FeedbackSatisfaction.toSharedFeedbackSatisfaction(): SharedFeedbackSatisfaction =
+    when (this) {
+        FeedbackSatisfaction.Satisfied -> SharedFeedbackSatisfaction.Satisfied
+        FeedbackSatisfaction.Okay -> SharedFeedbackSatisfaction.Neutral
+        FeedbackSatisfaction.NotSatisfied -> SharedFeedbackSatisfaction.Dissatisfied
+    }
+
+private fun FeedbackAgeBand.toSharedFeedbackChildAgeBand(): SharedFeedbackChildAgeBand =
+    when (this) {
+        FeedbackAgeBand.AgeFiveSix -> SharedFeedbackChildAgeBand.Age5To6
+        FeedbackAgeBand.AgeSevenEight -> SharedFeedbackChildAgeBand.Age7To8
+        FeedbackAgeBand.Other -> SharedFeedbackChildAgeBand.PreferNotToSay
+    }
+
+private fun FeedbackIssueType.toSharedFeedbackIssueType(): SharedFeedbackIssueType =
+    when (this) {
+        FeedbackIssueType.Content -> SharedFeedbackIssueType.ContentTooHard
+        FeedbackIssueType.Audio -> SharedFeedbackIssueType.AudioIssue
+        FeedbackIssueType.Ai -> SharedFeedbackIssueType.AiExplainIssue
+        FeedbackIssueType.Progress -> SharedFeedbackIssueType.Other
+        FeedbackIssueType.Other -> SharedFeedbackIssueType.Other
+    }
+
 private data class ReaderSettings(
     val language: ReaderLanguage,
     val showPinyinByDefault: Boolean,
     val readingTextSize: ReadingTextSize,
+    val aiBackendBaseUrl: String,
 )
 
 private enum class ReaderLanguage(
@@ -2826,6 +3555,8 @@ private class ReaderSettingsStore(context: Context) {
         language = ReaderLanguage.fromTag(preferences.getString(KeyLanguage, null)),
         showPinyinByDefault = preferences.getBoolean(KeyShowPinyinDefault, true),
         readingTextSize = ReadingTextSize.fromPrefValue(preferences.getString(KeyReadingTextSize, null)),
+        aiBackendBaseUrl = preferences.getString(KeyAiBackendBaseUrl, MockAiBackendBaseUrl)
+            ?: MockAiBackendBaseUrl,
     )
 
     fun setLanguage(language: ReaderLanguage) {
@@ -2846,6 +3577,12 @@ private class ReaderSettingsStore(context: Context) {
             .apply()
     }
 
+    fun setAiBackendBaseUrl(baseUrl: String) {
+        preferences.edit()
+            .putString(KeyAiBackendBaseUrl, baseUrl)
+            .apply()
+    }
+
     fun readReadingParagraphIndex(storyId: String): Int =
         preferences.getInt(readingProgressKey(storyId), -1)
 
@@ -2862,6 +3599,7 @@ private class ReaderSettingsStore(context: Context) {
         const val KeyLanguage = "language"
         const val KeyShowPinyinDefault = "show_pinyin_default"
         const val KeyReadingTextSize = "reading_text_size"
+        const val KeyAiBackendBaseUrl = "ai_backend_base_url"
         const val KeyReadingProgressPrefix = "reading_progress_"
     }
 }

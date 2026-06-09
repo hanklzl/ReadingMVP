@@ -117,6 +117,11 @@
     <string name="reading_saved_progress">阅读进度已保存。</string>
     <string name="reading_finish_to_words">复习生字</string>
     <string name="reading_tts_unavailable">暂时无法朗读。</string>
+    <string name="reading_ask_title">问一问</string>
+    <string name="reading_ask_button">问一问</string>
+    <string name="reading_ask_loading">正在想一想...</string>
+    <string name="reading_ask_error">暂时无法使用 AI 帮助。</string>
+    <string name="ai_answer_stub">这句话在帮助讲故事。继续读，看看接下来发生什么。</string>
 
     <!-- Vocabulary -->
     <string name="vocab_title">生字</string>
@@ -205,10 +210,35 @@
     <string name="settings_parent_report_summary">查看本地阅读进度。</string>
     <string name="settings_privacy">隐私</string>
     <string name="settings_privacy_summary">无需填写儿童个人信息。</string>
+    <string name="settings_feedback">给我们反馈</string>
+    <string name="settings_feedback_saved">反馈已保存在本设备。</string>
+    <string name="settings_ai">AI</string>
+    <string name="settings_ai_backend_base_url">AI 后端地址</string>
+    <string name="settings_ai_backend_summary">使用 mock 或留空即为本地模式，不需要密钥。</string>
     <string name="settings_about">关于</string>
     <string name="settings_app_version_format">小小中文经典  %1$s</string>
     <string name="settings_app_version">%1$s  v1.0</string>
     <string name="settings_selected_language">已选择的语言</string>
+
+    <!-- Feedback -->
+    <string name="feedback_privacy_note">请不要填写儿童姓名、学校、生日或精确位置。</string>
+    <string name="feedback_satisfaction">满意度</string>
+    <string name="feedback_satisfaction_satisfied">满意</string>
+    <string name="feedback_satisfaction_okay">还可以</string>
+    <string name="feedback_satisfaction_not_satisfied">不满意</string>
+    <string name="feedback_child_age_band">孩子年龄段</string>
+    <string name="feedback_age_5_6">5-6 岁</string>
+    <string name="feedback_age_7_8">7-8 岁</string>
+    <string name="feedback_age_other">其他</string>
+    <string name="feedback_issue_type">问题类型</string>
+    <string name="feedback_issue_content">内容</string>
+    <string name="feedback_issue_audio">朗读</string>
+    <string name="feedback_issue_ai">AI 回答</string>
+    <string name="feedback_issue_progress">进度</string>
+    <string name="feedback_issue_other">其他</string>
+    <string name="feedback_suggestion">建议</string>
+    <string name="feedback_parent_contact_optional">家长联系方式（选填）</string>
+    <string name="feedback_submit">保存反馈</string>
 
     <!-- Privacy -->
     <string name="privacy_title">隐私</string>

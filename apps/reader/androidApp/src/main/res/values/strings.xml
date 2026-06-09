@@ -119,6 +119,11 @@
     <string name="reading_saved_progress">Progress saved.</string>
     <string name="reading_finish_to_words">Review new words</string>
     <string name="reading_tts_unavailable">Audio is not available right now.</string>
+    <string name="reading_ask_title">Ask</string>
+    <string name="reading_ask_button">Ask</string>
+    <string name="reading_ask_loading">Thinking...</string>
+    <string name="reading_ask_error">AI help is not available right now.</string>
+    <string name="ai_answer_stub">This part helps explain the story. Keep reading to see what happens next.</string>
 
     <!-- Vocabulary -->
     <string name="vocab_title">New Words</string>
@@ -210,10 +215,35 @@
     <string name="settings_parent_report_summary">View local reading progress.</string>
     <string name="settings_privacy">Privacy</string>
     <string name="settings_privacy_summary">No child personal details are required.</string>
+    <string name="settings_feedback">Give feedback</string>
+    <string name="settings_feedback_saved">Feedback saved on this device.</string>
+    <string name="settings_ai">AI</string>
+    <string name="settings_ai_backend_base_url">AI backend base URL</string>
+    <string name="settings_ai_backend_summary">Use mock or leave blank for local mode. No API key is needed.</string>
     <string name="settings_about">About</string>
     <string name="settings_app_version_format">Little Mandarin Classics  %1$s</string>
     <string name="settings_app_version">%1$s  v1.0</string>
     <string name="settings_selected_language">Selected language</string>
+
+    <!-- Feedback -->
+    <string name="feedback_privacy_note">Please do not include a child name, school, birthday, or exact location.</string>
+    <string name="feedback_satisfaction">Satisfaction</string>
+    <string name="feedback_satisfaction_satisfied">Satisfied</string>
+    <string name="feedback_satisfaction_okay">Okay</string>
+    <string name="feedback_satisfaction_not_satisfied">Not satisfied</string>
+    <string name="feedback_child_age_band">Child age band</string>
+    <string name="feedback_age_5_6">5-6</string>
+    <string name="feedback_age_7_8">7-8</string>
+    <string name="feedback_age_other">Other</string>
+    <string name="feedback_issue_type">Issue type</string>
+    <string name="feedback_issue_content">Content</string>
+    <string name="feedback_issue_audio">Audio</string>
+    <string name="feedback_issue_ai">AI answer</string>
+    <string name="feedback_issue_progress">Progress</string>
+    <string name="feedback_issue_other">Other</string>
+    <string name="feedback_suggestion">Suggestion</string>
+    <string name="feedback_parent_contact_optional">Parent contact (optional)</string>
+    <string name="feedback_submit">Save feedback</string>
 
     <!-- Privacy -->
     <string name="privacy_title">Privacy</string>
