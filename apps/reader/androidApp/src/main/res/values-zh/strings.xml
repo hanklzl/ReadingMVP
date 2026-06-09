@@ -1,4 +1,254 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">小小中文经典</string>
+
+    <!-- Common -->
+    <string name="common_app_identity">小小中文经典 / Little Mandarin Classics</string>
+    <string name="common_loading">正在加载...</string>
+    <string name="common_error">出了一点问题。</string>
+    <string name="error_loading_stories">故事暂时无法加载。</string>
+    <string name="common_retry">再试一次</string>
+    <string name="common_completed">已完成</string>
+    <string name="common_not_started">未开始</string>
+    <string name="common_in_progress">进行中</string>
+    <string name="common_selected">已选择</string>
+    <string name="common_on">开</string>
+    <string name="common_off">关</string>
+    <string name="common_system">系统</string>
+    <string name="common_version_format">v%1$s</string>
+    <string name="common_level_format">等级 %1$d</string>
+    <string name="common_duration_minutes_format">%1$d-%2$d 分钟</string>
+    <string name="common_progress_percent_format">%1$d%%</string>
+    <string name="common_progress_percent_complete_format">完成 %1$d%%</string>
+
+    <plurals name="common_new_words_count">
+        <item quantity="other">%1$d 个生字</item>
+    </plurals>
+
+    <plurals name="common_questions_count">
+        <item quantity="other">%1$d 道题</item>
+    </plurals>
+
+    <!-- Navigation -->
+    <string name="nav_today">今日</string>
+    <string name="nav_library">故事库</string>
+    <string name="nav_parent">家长</string>
+    <string name="nav_settings">设置</string>
+    <string name="nav_back">返回</string>
+    <string name="nav_close">关闭</string>
+    <string name="nav_reading">阅读</string>
+    <string name="nav_vocabulary">生字</string>
+    <string name="nav_quiz">小测验</string>
+    <string name="nav_parent_report">家长报告</string>
+
+    <!-- Common actions -->
+    <string name="action_start">开始</string>
+    <string name="action_back">返回</string>
+    <string name="action_close">关闭</string>
+    <string name="action_start_reading">开始阅读</string>
+    <string name="action_continue">继续</string>
+    <string name="action_continue_reading">继续阅读</string>
+    <string name="action_previous">上一页</string>
+    <string name="action_next">下一步</string>
+    <string name="action_submit">提交</string>
+    <string name="action_done">完成</string>
+    <string name="action_quiz">小测验</string>
+    <string name="action_read_again">再读一遍</string>
+    <string name="action_open_settings">打开设置</string>
+    <string name="action_open_parent_report">打开家长报告</string>
+    <string name="action_open_privacy">打开隐私说明</string>
+    <string name="action_play_audio">播放朗读</string>
+    <string name="action_stop_audio">停止朗读</string>
+    <string name="action_text_size_decrease">减小字号</string>
+    <string name="action_text_size_default">默认字号</string>
+    <string name="action_text_size_increase">增大字号</string>
+    <string name="action_mark_word_known">我认识了</string>
+    <string name="action_go_to_quiz">去测验</string>
+    <string name="action_view_words">生字</string>
+    <string name="action_view_quiz">小测验</string>
+    <string name="action_got_it">知道了</string>
+
+    <!-- Today -->
+    <string name="today_title">今日</string>
+    <string name="today_story_title">今日故事</string>
+    <string name="today_progress_label">进度</string>
+    <string name="today_words_tile_title">生字</string>
+    <string name="today_quiz_tile_title">小测验</string>
+    <string name="today_words_count">%1$d 个生字</string>
+    <string name="today_quiz_count">%1$d 道题</string>
+    <string name="today_completed_count">已读 %1$d 篇</string>
+    <string name="today_up_next">接下来</string>
+    <string name="today_no_stories">暂时没有今日故事。</string>
+    <string name="today_reading_first">先读今日故事，再试试小测验。</string>
+    <string name="today_reading_required_title">先读故事</string>
+    <string name="today_reading_required_body">读完今日故事后再开始小测验。</string>
+
+    <!-- Story library -->
+    <string name="library_title">故事库</string>
+    <string name="library_empty">没有符合条件的故事。</string>
+    <string name="library_filter_all">全部</string>
+    <string name="library_filter_level_format">等级 %1$d</string>
+    <string name="library_filter_level">等级 %1$d</string>
+    <string name="library_completed">已完成</string>
+    <string name="library_not_started">未开始</string>
+    <string name="library_story_progress">故事进度</string>
+    <string name="story_level">等级 %1$d</string>
+    <string name="story_progress_percent">完成 %1$s</string>
+    <string name="story_cover_content_description">%1$s，%2$s 的封面</string>
+
+    <!-- Reading -->
+    <string name="reading_title">阅读</string>
+    <string name="reading_pinyin">拼音</string>
+    <string name="reading_pinyin_toggle">显示拼音</string>
+    <string name="reading_pinyin_on">拼音开</string>
+    <string name="reading_pinyin_off">拼音关</string>
+    <string name="reading_font_size">字号</string>
+    <string name="reading_text_size">字号</string>
+    <string name="reading_font_size_small">小</string>
+    <string name="reading_font_size_medium">中</string>
+    <string name="reading_font_size_large">大</string>
+    <string name="reading_text_size_small">小</string>
+    <string name="reading_text_size_medium">中</string>
+    <string name="reading_text_size_large">大</string>
+    <string name="reading_audio">朗读</string>
+    <string name="reading_read_all">朗读全文</string>
+    <string name="reading_progress_count">%1$d / %2$d</string>
+    <string name="reading_progress_accessibility">第 %1$d 页，共 %2$d 页</string>
+    <string name="reading_saved_progress">阅读进度已保存。</string>
+    <string name="reading_finish_to_words">复习生字</string>
+    <string name="reading_tts_unavailable">暂时无法朗读。</string>
+
+    <!-- Vocabulary -->
+    <string name="vocab_title">生字</string>
+    <string name="vocab_empty">还没有生字。</string>
+    <string name="vocab_review_title">生字复习</string>
+    <string name="vocab_progress_count">%1$d / %2$d</string>
+    <string name="vocab_progress_accessibility">第 %1$d 个生字，共 %2$d 个</string>
+    <string name="vocab_word_audio">播放生字朗读</string>
+    <string name="vocab_next_word">下一个生字</string>
+    <string name="vocab_complete_title">生字复习完成</string>
+    <string name="vocab_complete_body">可以开始小测验了。</string>
+
+    <!-- Quiz -->
+    <string name="quiz_title">小测验</string>
+    <string name="quiz_question_count">%1$d / %2$d</string>
+    <string name="quiz_progress_count">%1$d / %2$d</string>
+    <string name="quiz_progress_accessibility">第 %1$d 题，共 %2$d 题</string>
+    <string name="quiz_submit">提交</string>
+    <string name="quiz_next">下一题</string>
+    <string name="quiz_correct">答对了</string>
+    <string name="quiz_incorrect">我们回到故事里再看看。</string>
+    <string name="quiz_correct_title">读得真仔细</string>
+    <string name="quiz_incorrect_title">再看看故事</string>
+    <string name="quiz_feedback_explanation_label">故事提示</string>
+    <string name="quiz_select_answer_prompt">请选择一个答案再继续。</string>
+    <string name="quiz_completion_title">完成啦</string>
+    <string name="quiz_complete_title">完成啦</string>
+    <string name="quiz_score_format">%1$d / %2$d</string>
+    <string name="quiz_score">%1$d / %2$d</string>
+    <string name="quiz_retell_title">复述</string>
+    <string name="quiz_retell">复述</string>
+    <string name="quiz_try_next">试试下一题</string>
+    <string name="quiz_empty">还没有小测验。</string>
+
+    <!-- Parent report -->
+    <string name="parent_area_title">家长区</string>
+    <string name="parent_gate_title">家长查看</string>
+    <string name="parent_gate_body">这里是家长查看的区域。</string>
+    <string name="parent_gate_instruction">请在家长或照护者在场时继续。</string>
+    <string name="parent_report_title">家长报告</string>
+    <string name="parent_title">家长报告</string>
+    <string name="parent_this_week">本周</string>
+    <string name="parent_stories_read">已读故事</string>
+    <string name="parent_reading_days">阅读天数</string>
+    <string name="parent_quiz_correct">测验答对</string>
+    <string name="parent_words_reviewed">复习生字</string>
+    <string name="parent_story_progress">故事进度</string>
+    <string name="parent_privacy_title">隐私</string>
+    <string name="parent_privacy_note">无需填写个人信息。</string>
+    <string name="parent_progress_completed">已完成</string>
+    <string name="parent_progress_not_started">未开始</string>
+    <string name="parent_progress_percent_format">%1$d%%</string>
+    <string name="parent_quiz_score_format">%1$d / %2$d</string>
+    <string name="parent_quiz_correct_count">%1$d / %2$d</string>
+
+    <plurals name="parent_stories_read_count">
+        <item quantity="other">%1$d 篇</item>
+    </plurals>
+
+    <plurals name="parent_reading_days_count">
+        <item quantity="other">%1$d 天</item>
+    </plurals>
+
+    <plurals name="parent_words_reviewed_count">
+        <item quantity="other">%1$d 个</item>
+    </plurals>
+
+    <!-- Settings -->
+    <string name="settings_title">设置</string>
+    <string name="settings_language">语言</string>
+    <string name="settings_language_english">English</string>
+    <string name="settings_language_en">English</string>
+    <string name="settings_language_simplified_chinese">简体中文</string>
+    <string name="settings_language_zh_hans">简体中文</string>
+    <string name="settings_language_change_hint">故事正文保持中文。</string>
+    <string name="settings_reading">阅读</string>
+    <string name="settings_pinyin_default">默认显示拼音</string>
+    <string name="settings_pinyin_default_summary">打开故事时先显示拼音。</string>
+    <string name="settings_text_size">字号</string>
+    <string name="settings_audio_voice">朗读声音</string>
+    <string name="settings_audio_system">系统</string>
+    <string name="settings_audio_voice_system">系统</string>
+    <string name="settings_audio_voice_summary">使用设备的文字转语音声音。</string>
+    <string name="settings_parent">家长</string>
+    <string name="settings_parent_report">家长报告</string>
+    <string name="settings_parent_report_summary">查看本地阅读进度。</string>
+    <string name="settings_privacy">隐私</string>
+    <string name="settings_privacy_summary">无需填写儿童个人信息。</string>
+    <string name="settings_about">关于</string>
+    <string name="settings_app_version_format">小小中文经典  %1$s</string>
+    <string name="settings_app_version">%1$s  v1.0</string>
+    <string name="settings_selected_language">已选择的语言</string>
+
+    <!-- Privacy -->
+    <string name="privacy_title">隐私</string>
+    <string name="privacy_summary">小小中文经典只保留必要的儿童阅读数据，并重视隐私保护。</string>
+    <string name="privacy_no_child_details">当前版本不要求填写个人信息。</string>
+    <string name="privacy_parent_account_only">如果以后增加账号，也必须面向家长或照护者。</string>
+    <string name="privacy_ai_scope">AI 解释只围绕当前故事，不做开放聊天。</string>
+    <string name="privacy_analytics_anonymous">如使用数据分析，必须匿名，且不包含儿童个人信息。</string>
+    <string name="privacy_local_progress">阅读进度只可保存在本地，或使用经过隐私审核的存储。</string>
+    <string name="privacy_coppa_gdprk">设计时遵循 COPPA / GDPR-K 的数据最小化原则。</string>
+
+    <!-- Empty states -->
+    <string name="empty_today_story_title">暂时没有今日故事</string>
+    <string name="empty_today_story_body">加入审核通过的故事内容后，这里会显示每日阅读卡片。</string>
+    <string name="empty_library_title">还没有故事</string>
+    <string name="empty_library_body">审核通过的故事会按阅读顺序显示在这里。</string>
+    <string name="empty_library_filtered_title">没有符合条件的故事</string>
+    <string name="empty_library_filtered_body">可以换一个等级筛选。</string>
+    <string name="empty_vocabulary_title">还没有生字</string>
+    <string name="empty_vocabulary_body">故事内容审核通过后，会在这里显示生字。</string>
+    <string name="empty_quiz_title">还没有小测验</string>
+    <string name="empty_quiz_body">故事内容审核通过后，会在这里显示测验题。</string>
+    <string name="empty_parent_report_title">还没有阅读进度</string>
+    <string name="empty_parent_report_body">在这台设备上读完故事后，这里会显示进度。</string>
+
+    <!-- Prompts and guardrails -->
+    <string name="prompt_reading_first">先读今日故事，再试试小测验。</string>
+    <string name="prompt_story_only_reply">这个问题和今天的故事关系不大，我们先回到故事里吧。</string>
+    <string name="prompt_audio_story_only">朗读只播放当前故事内容。</string>
+    <string name="prompt_no_open_chat">可以问和今天故事有关的问题，我们继续一起读。</string>
+
+    <!-- Accessibility -->
+    <string name="a11y_open_parent_area">打开家长区</string>
+    <string name="a11y_open_settings">打开设置</string>
+    <string name="a11y_back">返回上一页</string>
+    <string name="a11y_close_reader">关闭阅读页</string>
+    <string name="a11y_play_audio">播放朗读</string>
+    <string name="a11y_story_cover_format">%1$s 的封面</string>
+    <string name="a11y_progress_percent_format">完成 %1$d%%</string>
+    <string name="a11y_selected_option_format">已选择：%1$s</string>
+    <string name="a11y_correct_answer">正确答案</string>
+    <string name="a11y_incorrect_answer">错误答案</string>
 </resources>

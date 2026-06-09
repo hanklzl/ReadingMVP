@@ -1,4 +1,259 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Little Mandarin Classics</string>
+
+    <!-- Common -->
+    <string name="common_app_identity">Little Mandarin Classics / 小小中文经典</string>
+    <string name="common_loading">Loading...</string>
+    <string name="common_error">Something went wrong.</string>
+    <string name="error_loading_stories">Stories could not be loaded.</string>
+    <string name="common_retry">Try again</string>
+    <string name="common_completed">Completed</string>
+    <string name="common_not_started">Not started</string>
+    <string name="common_in_progress">In progress</string>
+    <string name="common_selected">Selected</string>
+    <string name="common_on">On</string>
+    <string name="common_off">Off</string>
+    <string name="common_system">System</string>
+    <string name="common_version_format">v%1$s</string>
+    <string name="common_level_format">Level %1$d</string>
+    <string name="common_duration_minutes_format">%1$d-%2$d min</string>
+    <string name="common_progress_percent_format">%1$d%%</string>
+    <string name="common_progress_percent_complete_format">%1$d%% complete</string>
+
+    <plurals name="common_new_words_count">
+        <item quantity="one">%1$d new word</item>
+        <item quantity="other">%1$d new words</item>
+    </plurals>
+
+    <plurals name="common_questions_count">
+        <item quantity="one">%1$d question</item>
+        <item quantity="other">%1$d questions</item>
+    </plurals>
+
+    <!-- Navigation -->
+    <string name="nav_today">Today</string>
+    <string name="nav_library">Library</string>
+    <string name="nav_parent">Parent</string>
+    <string name="nav_settings">Settings</string>
+    <string name="nav_back">Back</string>
+    <string name="nav_close">Close</string>
+    <string name="nav_reading">Reading</string>
+    <string name="nav_vocabulary">New Words</string>
+    <string name="nav_quiz">Quiz</string>
+    <string name="nav_parent_report">Parent Report</string>
+
+    <!-- Common actions -->
+    <string name="action_start">Start</string>
+    <string name="action_back">Back</string>
+    <string name="action_close">Close</string>
+    <string name="action_start_reading">Start reading</string>
+    <string name="action_continue">Continue</string>
+    <string name="action_continue_reading">Continue reading</string>
+    <string name="action_previous">Previous</string>
+    <string name="action_next">Next</string>
+    <string name="action_submit">Submit</string>
+    <string name="action_done">Done</string>
+    <string name="action_quiz">Quiz</string>
+    <string name="action_read_again">Read again</string>
+    <string name="action_open_settings">Open settings</string>
+    <string name="action_open_parent_report">Open parent report</string>
+    <string name="action_open_privacy">Open privacy</string>
+    <string name="action_play_audio">Play audio</string>
+    <string name="action_stop_audio">Stop audio</string>
+    <string name="action_text_size_decrease">Decrease text size</string>
+    <string name="action_text_size_default">Default text size</string>
+    <string name="action_text_size_increase">Increase text size</string>
+    <string name="action_mark_word_known">I know it</string>
+    <string name="action_go_to_quiz">Quiz</string>
+    <string name="action_view_words">Words</string>
+    <string name="action_view_quiz">Quiz</string>
+    <string name="action_got_it">Got it</string>
+
+    <!-- Today -->
+    <string name="today_title">Today</string>
+    <string name="today_story_title">Today story</string>
+    <string name="today_progress_label">Progress</string>
+    <string name="today_words_tile_title">Words</string>
+    <string name="today_quiz_tile_title">Quiz</string>
+    <string name="today_words_count">%1$d new words</string>
+    <string name="today_quiz_count">%1$d questions</string>
+    <string name="today_completed_count">Read %1$d stories</string>
+    <string name="today_up_next">Up next</string>
+    <string name="today_no_stories">No story ready yet.</string>
+    <string name="today_reading_first">Read today story first, then try the quiz.</string>
+    <string name="today_reading_required_title">Reading comes first</string>
+    <string name="today_reading_required_body">Finish today story before starting the quiz.</string>
+
+    <!-- Story library -->
+    <string name="library_title">Story Library</string>
+    <string name="library_empty">No stories match this filter.</string>
+    <string name="library_filter_all">All</string>
+    <string name="library_filter_level_format">Level %1$d</string>
+    <string name="library_filter_level">Level %1$d</string>
+    <string name="library_completed">Completed</string>
+    <string name="library_not_started">Not started</string>
+    <string name="library_story_progress">Story progress</string>
+    <string name="story_level">Level %1$d</string>
+    <string name="story_progress_percent">%1$s complete</string>
+    <string name="story_cover_content_description">Cover for %1$s, %2$s</string>
+
+    <!-- Reading -->
+    <string name="reading_title">Reading</string>
+    <string name="reading_pinyin">Pinyin</string>
+    <string name="reading_pinyin_toggle">Show pinyin</string>
+    <string name="reading_pinyin_on">Pinyin on</string>
+    <string name="reading_pinyin_off">Pinyin off</string>
+    <string name="reading_font_size">Text size</string>
+    <string name="reading_text_size">Text size</string>
+    <string name="reading_font_size_small">Small</string>
+    <string name="reading_font_size_medium">Medium</string>
+    <string name="reading_font_size_large">Large</string>
+    <string name="reading_text_size_small">S</string>
+    <string name="reading_text_size_medium">M</string>
+    <string name="reading_text_size_large">L</string>
+    <string name="reading_audio">Audio</string>
+    <string name="reading_read_all">Read all</string>
+    <string name="reading_progress_count">%1$d / %2$d</string>
+    <string name="reading_progress_accessibility">Page %1$d of %2$d</string>
+    <string name="reading_saved_progress">Progress saved.</string>
+    <string name="reading_finish_to_words">Review new words</string>
+    <string name="reading_tts_unavailable">Audio is not available right now.</string>
+
+    <!-- Vocabulary -->
+    <string name="vocab_title">New Words</string>
+    <string name="vocab_empty">No words yet.</string>
+    <string name="vocab_review_title">Word Review</string>
+    <string name="vocab_progress_count">%1$d / %2$d</string>
+    <string name="vocab_progress_accessibility">Word %1$d of %2$d</string>
+    <string name="vocab_word_audio">Play word audio</string>
+    <string name="vocab_next_word">Next word</string>
+    <string name="vocab_complete_title">Words reviewed</string>
+    <string name="vocab_complete_body">You are ready for the quiz.</string>
+
+    <!-- Quiz -->
+    <string name="quiz_title">Quiz</string>
+    <string name="quiz_question_count">%1$d / %2$d</string>
+    <string name="quiz_progress_count">%1$d / %2$d</string>
+    <string name="quiz_progress_accessibility">Question %1$d of %2$d</string>
+    <string name="quiz_submit">Submit</string>
+    <string name="quiz_next">Next</string>
+    <string name="quiz_correct">Correct</string>
+    <string name="quiz_incorrect">Let us look back at the story.</string>
+    <string name="quiz_correct_title">Nice reading</string>
+    <string name="quiz_incorrect_title">Look back at the story</string>
+    <string name="quiz_feedback_explanation_label">Story clue</string>
+    <string name="quiz_select_answer_prompt">Choose an answer to continue.</string>
+    <string name="quiz_completion_title">Story Complete</string>
+    <string name="quiz_complete_title">Story Complete</string>
+    <string name="quiz_score_format">%1$d / %2$d</string>
+    <string name="quiz_score">%1$d / %2$d</string>
+    <string name="quiz_retell_title">Retell</string>
+    <string name="quiz_retell">Retell</string>
+    <string name="quiz_try_next">Try the next question</string>
+    <string name="quiz_empty">No quiz yet.</string>
+
+    <!-- Parent report -->
+    <string name="parent_area_title">Parent Area</string>
+    <string name="parent_gate_title">For grown-ups</string>
+    <string name="parent_gate_body">This area is for grown-ups.</string>
+    <string name="parent_gate_instruction">Continue when a parent or caregiver is present.</string>
+    <string name="parent_report_title">Parent Report</string>
+    <string name="parent_title">Parent Report</string>
+    <string name="parent_this_week">This week</string>
+    <string name="parent_stories_read">Stories read</string>
+    <string name="parent_reading_days">Reading days</string>
+    <string name="parent_quiz_correct">Quiz correct</string>
+    <string name="parent_words_reviewed">Words reviewed</string>
+    <string name="parent_story_progress">Story progress</string>
+    <string name="parent_privacy_title">Privacy</string>
+    <string name="parent_privacy_note">No personal details are required.</string>
+    <string name="parent_progress_completed">completed</string>
+    <string name="parent_progress_not_started">not started</string>
+    <string name="parent_progress_percent_format">%1$d%%</string>
+    <string name="parent_quiz_score_format">%1$d / %2$d</string>
+    <string name="parent_quiz_correct_count">%1$d / %2$d</string>
+
+    <plurals name="parent_stories_read_count">
+        <item quantity="one">%1$d story</item>
+        <item quantity="other">%1$d stories</item>
+    </plurals>
+
+    <plurals name="parent_reading_days_count">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
+
+    <plurals name="parent_words_reviewed_count">
+        <item quantity="one">%1$d word</item>
+        <item quantity="other">%1$d words</item>
+    </plurals>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_english">English</string>
+    <string name="settings_language_en">English</string>
+    <string name="settings_language_simplified_chinese">简体中文</string>
+    <string name="settings_language_zh_hans">简体中文</string>
+    <string name="settings_language_change_hint">Story text stays in Chinese.</string>
+    <string name="settings_reading">Reading</string>
+    <string name="settings_pinyin_default">Show pinyin by default</string>
+    <string name="settings_pinyin_default_summary">Use pinyin when a story opens.</string>
+    <string name="settings_text_size">Text size</string>
+    <string name="settings_audio_voice">Audio voice</string>
+    <string name="settings_audio_system">System</string>
+    <string name="settings_audio_voice_system">System</string>
+    <string name="settings_audio_voice_summary">Uses the device text-to-speech voice.</string>
+    <string name="settings_parent">Parent</string>
+    <string name="settings_parent_report">Parent report</string>
+    <string name="settings_parent_report_summary">View local reading progress.</string>
+    <string name="settings_privacy">Privacy</string>
+    <string name="settings_privacy_summary">No child personal details are required.</string>
+    <string name="settings_about">About</string>
+    <string name="settings_app_version_format">Little Mandarin Classics  %1$s</string>
+    <string name="settings_app_version">%1$s  v1.0</string>
+    <string name="settings_selected_language">Selected language</string>
+
+    <!-- Privacy -->
+    <string name="privacy_title">Privacy</string>
+    <string name="privacy_summary">Little Mandarin Classics keeps child reading data minimal and private.</string>
+    <string name="privacy_no_child_details">This version does not ask for personal details.</string>
+    <string name="privacy_parent_account_only">If an account is added later, it must be for a parent or caregiver.</string>
+    <string name="privacy_ai_scope">AI explanations stay within the current story and do not become open chat.</string>
+    <string name="privacy_analytics_anonymous">Any analytics must be anonymous and must not include child personal information.</string>
+    <string name="privacy_local_progress">Reading progress can be stored locally or with privacy-reviewed storage only.</string>
+    <string name="privacy_coppa_gdprk">Designed with COPPA / GDPR-K data minimization in mind.</string>
+
+    <!-- Empty states -->
+    <string name="empty_today_story_title">No story ready yet</string>
+    <string name="empty_today_story_body">Add approved story content to show the daily reading card.</string>
+    <string name="empty_library_title">No stories yet</string>
+    <string name="empty_library_body">Approved stories will appear here in reading order.</string>
+    <string name="empty_library_filtered_title">No stories match this filter</string>
+    <string name="empty_library_filtered_body">Try another level filter.</string>
+    <string name="empty_vocabulary_title">No words yet</string>
+    <string name="empty_vocabulary_body">New words will appear after approved story content is available.</string>
+    <string name="empty_quiz_title">No quiz yet</string>
+    <string name="empty_quiz_body">Quiz questions will appear after approved story content is available.</string>
+    <string name="empty_parent_report_title">No reading progress yet</string>
+    <string name="empty_parent_report_body">Progress appears after stories are read on this device.</string>
+
+    <!-- Prompts and guardrails -->
+    <string name="prompt_reading_first">Read today story first, then try the quiz.</string>
+    <string name="prompt_story_only_reply">That question is not closely related to the story for today. Let us come back to the story.</string>
+    <string name="prompt_audio_story_only">Audio reads only the current story content.</string>
+    <string name="prompt_no_open_chat">Ask about today story so we can keep reading together.</string>
+
+    <!-- Accessibility -->
+    <string name="a11y_open_parent_area">Open parent area</string>
+    <string name="a11y_open_settings">Open settings</string>
+    <string name="a11y_back">Go back</string>
+    <string name="a11y_close_reader">Close reader</string>
+    <string name="a11y_play_audio">Play audio</string>
+    <string name="a11y_story_cover_format">Cover for %1$s</string>
+    <string name="a11y_progress_percent_format">%1$d%% complete</string>
+    <string name="a11y_selected_option_format">Selected: %1$s</string>
+    <string name="a11y_correct_answer">Correct answer</string>
+    <string name="a11y_incorrect_answer">Incorrect answer</string>
 </resources>
