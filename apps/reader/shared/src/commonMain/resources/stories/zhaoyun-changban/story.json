@@ -1,0 +1,109 @@
+{
+  "id": "zhaoyun-changban",
+  "title_zh": "长坂坡上的守护",
+  "title_en": "Zhao Yun's Rescue at Changban",
+  "level": 2,
+  "age_range": "5-8",
+  "source_note": "Based on public-domain 《三国演义》, rewritten for children.",
+  "source_url": "https://zh.wikisource.org/wiki/三國演義/第041回",
+  "cover_image": "stories/zhaoyun-changban/cover.png",
+  "paragraphs": [
+    {
+      "text": "长坂坡上，许多百姓正在赶路。人多路窄，队伍一时被挤散。刘备听说家人没有跟上，心里很着急。他请大家先照看老人和孩子，不要因为担心就乱成一团。",
+      "pinyin": "cháng bǎn pō shàng， xǔ duō bǎi xìng zhèng zài gǎn lù。 rén duō lù zhǎi， duì wǔ yī shí bèi jǐ sàn。 liú bèi tīng shuō jiā rén méi yǒu gēn shàng， xīn lǐ hěn zháo jí。 tā qǐng dà jiā xiān zhào kàn lǎo rén hé hái zi， bú yào yīn wèi dān xīn jiù luàn chéng yì tuán。"
+    },
+    {
+      "text": "赵云知道后，立刻让自己冷静下来。他没有乱跑，而是沿着来路仔细寻找，一边问人，一边注意孩子可能经过的地方。有人指给他一个方向，他就记在心里，再继续向前。",
+      "pinyin": "zhào yún zhī dào hòu， lì kè ràng zì jǐ lěng jìng xià lái。 tā méi yǒu luàn pǎo， ér shì yán zhe lái lù zǐ xì xún zhǎo， yī biān wèn rén， yī biān zhù yì hái zi kě néng jīng guò de dì fāng。 yǒu rén zhǐ gěi tā yí gè fāng xiàng， tā jiù jì zài xīn lǐ， zài jì xù xiàng qián。"
+    },
+    {
+      "text": "路上声音很多，尘土也多。赵云仍然记得自己的责任：先找到孩子，再把孩子平安送回。他把小主人护在怀里，慢慢穿过人群。遇到拥挤的地方，他就放慢脚步，先让旁人过去。",
+      "pinyin": "lù shàng shēng yīn hěn duō， chén tǔ yě duō。 zhào yún réng rán jì de zì jǐ de zé rèn： xiān zhǎo dào hái zi， zài bǎ hái zi píng ān sòng huí。 tā bǎ xiǎo zhǔ rén hù zài huái lǐ， màn màn chuān guò rén qún。 yù dào yōng jǐ de dì fāng， tā jiù fàng màn jiǎo bù， xiān ràng páng rén guò qù。"
+    },
+    {
+      "text": "终于，赵云回到刘备身边，把孩子交给他。刘备看见孩子平安，十分感动，也感谢赵云一路守护。周围的人也安静下来，知道只要彼此照应，就能走过乱糟糟的时刻。",
+      "pinyin": "zhōng yú， zhào yún huí dào liú bèi shēn biān， bǎ hái zi jiāo gěi tā。 liú bèi kàn jiàn hái zi píng ān， shí fēn gǎn dòng， yě gǎn xiè zhào yún yī lù shǒu hù。 zhōu wéi de rén yě ān jìng xià lái， zhī dào zhǐ yào bǐ cǐ zhào yìng， jiù néng zǒu guò luàn zāo zāo de shí kè。"
+    },
+    {
+      "text": "长坂坡的故事告诉我们，勇敢不只是快和猛。真正的勇敢，是在大家慌乱时保持冷静，记住要守护的人。越是紧急，越要先想清楚下一步，这样才能把重要的人安全带回。",
+      "pinyin": "cháng bǎn pō de gù shì gào sù wǒ men， yǒng gǎn bù zhǐ shì kuài hé měng。 zhēn zhèng de yǒng gǎn， shì zài dà jiā huāng luàn shí bǎo chí lěng jìng， jì zhù yào shǒu hù de rén。 yuè shì jǐn jí， yuè yào xiān xiǎng qīng chǔ xià yī bù， zhè yàng cái néng bǎ zhòng yào de rén ān quán dài huí。"
+    }
+  ],
+  "vocab": [
+    {
+      "word": "长坂坡",
+      "pinyin": "cháng bǎn pō",
+      "meaning": "Changban slope",
+      "example": "长坂坡上有许多百姓。"
+    },
+    {
+      "word": "挤散",
+      "pinyin": "jǐ sàn",
+      "meaning": "to be separated in a crowd",
+      "example": "队伍一时被挤散。"
+    },
+    {
+      "word": "冷静",
+      "pinyin": "lěng jìng",
+      "meaning": "calm",
+      "example": "赵云让自己冷静下来。"
+    },
+    {
+      "word": "寻找",
+      "pinyin": "xún zhǎo",
+      "meaning": "to search",
+      "example": "他沿着来路仔细寻找。"
+    },
+    {
+      "word": "平安",
+      "pinyin": "píng ān",
+      "meaning": "safe",
+      "example": "孩子平安回来了。"
+    },
+    {
+      "word": "守护",
+      "pinyin": "shǒu hù",
+      "meaning": "to protect",
+      "example": "赵云一路守护。"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q1",
+      "type": "single_choice",
+      "prompt": "长坂坡上发生了什么？",
+      "options": [
+        "队伍被挤散",
+        "大家在种梅树",
+        "城门打开了"
+      ],
+      "answer": "队伍被挤散",
+      "explanation": "正文说人多路窄，队伍一时被挤散。"
+    },
+    {
+      "id": "q2",
+      "type": "single_choice",
+      "prompt": "赵云寻找孩子时先让自己怎样？",
+      "options": [
+        "冷静下来",
+        "大哭起来",
+        "睡一会儿"
+      ],
+      "answer": "冷静下来",
+      "explanation": "赵云知道后，立刻让自己冷静下来。"
+    },
+    {
+      "id": "q3",
+      "type": "single_choice",
+      "prompt": "故事中真正的勇敢是什么？",
+      "options": [
+        "慌乱时保持冷静",
+        "只顾自己跑得快",
+        "把声音喊得最大"
+      ],
+      "answer": "慌乱时保持冷静",
+      "explanation": "结尾说真正的勇敢是在慌乱时保持冷静，记住守护的人。"
+    }
+  ],
+  "retell_prompt": "说说赵云怎样在长坂坡上守护孩子。"
+}

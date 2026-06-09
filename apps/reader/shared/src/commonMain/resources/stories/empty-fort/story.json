@@ -1,0 +1,109 @@
+{
+  "id": "empty-fort",
+  "title_zh": "空城计",
+  "title_en": "The Empty Fort Strategy",
+  "level": 3,
+  "age_range": "5-8",
+  "source_note": "Based on public-domain 《三国演义》, rewritten for children.",
+  "source_url": "https://zh.wikisource.org/wiki/三國演義/第095回",
+  "cover_image": "stories/empty-fort/cover.png",
+  "paragraphs": [
+    {
+      "text": "有一回，诸葛亮身边的人很少，却听说司马懿带着队伍来到城外。城里的人紧张起来，不知道该怎样办。有人想关门，有人想躲起来，大家都看着诸葛亮。",
+      "pinyin": "yǒu yī huí， zhū gě liàng shēn biān de rén hěn shǎo， què tīng shuō sī mǎ yì dài zhe duì wǔ lái dào chéng wài。 chéng lǐ de rén jǐn zhāng qǐ lái， bù zhī dào gāi zěn yàng bàn。 yǒu rén xiǎng guān mén， yǒu rén xiǎng duǒ qǐ lái， dà jiā dōu kàn zhe zhū gě liàng。"
+    },
+    {
+      "text": "诸葛亮先让大家安静。他打开城门，安排几个人在门口慢慢扫地，自己穿戴整齐，坐到城楼上弹琴。扫地的人也照着吩咐，一下一下地扫，不让手忙脚乱露出来。",
+      "pinyin": "zhū gě liàng xiān ràng dà jiā ān jìng。 tā dǎ kāi chéng mén， ān pái jǐ gè rén zài mén kǒu màn màn sǎo dì， zì jǐ chuān dài zhěng qí， zuò dào chéng lóu shàng tán qín。 sǎo dì de rén yě zhào zhe fēn fù， yī xià yī xià dì sǎo， bù ràng shǒu máng jiǎo luàn lù chū lái。"
+    },
+    {
+      "text": "琴声从城楼上传出去，清清稳稳。司马懿远远看见城门大开，又听见诸葛亮这样沉着，心里开始仔细判断。他知道诸葛亮平时谨慎，不会随便做奇怪的事。",
+      "pinyin": "qín shēng cóng chéng lóu shàng chuán chū qù， qīng qīng wěn wěn。 sī mǎ yì yuǎn yuǎn kàn jiàn chéng mén dà kāi， yòu tīng jiàn zhū gě liàng zhè yàng chén zhuó， xīn lǐ kāi shǐ zǐ xì pàn duàn。 tā zhī dào zhū gě liàng píng shí jǐn shèn， bú huì suí biàn zuò qí guài de shì。"
+    },
+    {
+      "text": "他想，诸葛亮平日做事周全，现在如此安静，也许城中另有安排。为了谨慎，他决定先带队退去，再观察情况。城里的人仍按诸葛亮的安排站好，没有大声欢呼。",
+      "pinyin": "tā xiǎng， zhū gě liàng píng rì zuò shì zhōu quán， xiàn zài rú cǐ ān jìng， yě xǔ chéng zhōng lìng yǒu ān pái。 wèi le jǐn shèn， tā jué dìng xiān dài duì tuì qù， zài guān chá qíng kuàng。 chéng lǐ de rén réng àn zhū gě liàng de ān pái zhàn hǎo， méi yǒu dà shēng huān hū。"
+    },
+    {
+      "text": "等城外安静下来，大家才松了一口气。诸葛亮告诉他们，越是紧张，越要让心稳住。空城计靠的正是沉着和判断。遇到难题时，先稳住自己，才有机会想出办法。",
+      "pinyin": "děng chéng wài ān jìng xià lái， dà jiā cái sōng le yì kǒu qì。 zhū gě liàng gào sù tā men， yuè shì jǐn zhāng， yuè yào ràng xīn wěn zhù。 kōng chéng jì kào de zhèng shì chén zhuó hé pàn duàn。 yù dào nán tí shí， xiān wěn zhù zì jǐ， cái yǒu jī huì xiǎng chū bàn fǎ。"
+    }
+  ],
+  "vocab": [
+    {
+      "word": "城外",
+      "pinyin": "chéng wài",
+      "meaning": "outside the city",
+      "example": "司马懿来到城外。"
+    },
+    {
+      "word": "安静",
+      "pinyin": "ān jìng",
+      "meaning": "quiet",
+      "example": "诸葛亮先让大家安静。"
+    },
+    {
+      "word": "城楼",
+      "pinyin": "chéng lóu",
+      "meaning": "city tower",
+      "example": "他坐到城楼上弹琴。"
+    },
+    {
+      "word": "琴声",
+      "pinyin": "qín shēng",
+      "meaning": "sound of the qin",
+      "example": "琴声从城楼上传出去。"
+    },
+    {
+      "word": "沉着",
+      "pinyin": "chén zhuó",
+      "meaning": "calm under pressure",
+      "example": "诸葛亮很沉着。"
+    },
+    {
+      "word": "判断",
+      "pinyin": "pàn duàn",
+      "meaning": "judgment",
+      "example": "空城计靠的是沉着和判断。"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q1",
+      "type": "single_choice",
+      "prompt": "诸葛亮听说谁来到城外？",
+      "options": [
+        "司马懿",
+        "孟获",
+        "张飞"
+      ],
+      "answer": "司马懿",
+      "explanation": "第一段说司马懿带着队伍来到城外。"
+    },
+    {
+      "id": "q2",
+      "type": "single_choice",
+      "prompt": "诸葛亮在城楼上做什么？",
+      "options": [
+        "弹琴",
+        "种梅树",
+        "贴榜文"
+      ],
+      "answer": "弹琴",
+      "explanation": "第二段说诸葛亮坐到城楼上弹琴。"
+    },
+    {
+      "id": "q3",
+      "type": "single_choice",
+      "prompt": "空城计主要靠什么？",
+      "options": [
+        "沉着和判断",
+        "吵闹和着急",
+        "忘记安排"
+      ],
+      "answer": "沉着和判断",
+      "explanation": "结尾说空城计靠的正是沉着和判断。"
+    }
+  ],
+  "retell_prompt": "说说诸葛亮怎样用沉着的样子让司马懿退去。"
+}

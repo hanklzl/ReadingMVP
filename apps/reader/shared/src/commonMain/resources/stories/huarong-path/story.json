@@ -1,0 +1,109 @@
+{
+  "id": "huarong-path",
+  "title_zh": "华容道上的仁义",
+  "title_en": "Mercy on Huarong Path",
+  "level": 2,
+  "age_range": "5-8",
+  "source_note": "Based on public-domain 《三国演义》, rewritten for children.",
+  "source_url": "https://zh.wikisource.org/wiki/三國演義/第050回",
+  "cover_image": "stories/huarong-path/cover.png",
+  "paragraphs": [
+    {
+      "text": "赤壁之后，曹操带着疲惫的队伍来到华容道。小路泥泞，大家走得很慢。关羽早已在路口等候，心里也很不平静。他知道这里的选择很重要，不能只凭一时的情绪。",
+      "pinyin": "chì bì zhī hòu， cáo cāo dài zhe pí bèi de duì wǔ lái dào huá róng dào。 xiǎo lù ní nìng， dà jiā zǒu dé hěn màn。 guān yǔ zǎo yǐ zài lù kǒu děng hòu， xīn lǐ yě hěn bù píng jìng。 tā zhī dào zhè lǐ de xuǎn zé hěn zhòng yào， bù néng zhǐ píng yī shí de qíng xù。"
+    },
+    {
+      "text": "关羽记得，过去自己遇到困难时，曹操曾经礼待过他。现在两人站在不同一边，可旧日恩情仍在心中。关羽一向重信用，所以更明白恩情二字的分量。",
+      "pinyin": "guān yǔ jì de， guò qù zì jǐ yù dào kùn nán shí， cáo cāo céng jīng lǐ dài guò tā。 xiàn zài liǎng rén zhàn zài bù tóng yī biān， kě jiù rì ēn qíng réng zài xīn zhōng。 guān yǔ yí xiàng zhòng xìn yòng， suǒ yǐ gèng míng bái ēn qíng èr zì de fèn liàng。"
+    },
+    {
+      "text": "曹操上前说明来意，希望能借路离开。关羽看着疲惫的人们，想到仁义二字，也想到做人要记得恩情。路边风很冷，大家都在等他的决定。",
+      "pinyin": "cáo cāo shàng qián shuō míng lái yì， xī wàng néng jiè lù lí kāi。 guān yǔ kàn zhe pí bèi de rén men， xiǎng dào rén yì èr zì， yě xiǎng dào zuò rén yào jì de ēn qíng。 lù biān fēng hěn lěng， dà jiā dōu zài děng tā de jué dìng。"
+    },
+    {
+      "text": "最后，关羽决定放行。他知道这个选择需要承担责任，但他愿意守住心里的仁义，不让恩情被忘记。放行之后，他也准备回去说明原因，接受该有的责问。",
+      "pinyin": "zuì hòu， guān yǔ jué dìng fàng xíng。 tā zhī dào zhè ge xuǎn zé xū yào chéng dān zé rèn， dàn tā yuàn yì shǒu zhù xīn lǐ de rén yì， bù ràng ēn qíng bèi wàng jì。 fàng xíng zhī hòu， tā yě zhǔn bèi huí qù shuō míng yuán yīn， jiē shòu gāi yǒu de zé wèn。"
+    },
+    {
+      "text": "华容道上的故事告诉我们，真正的英雄不只看输赢，也看内心是否正直。记得别人给过的善意，也是一种勇敢。做选择时想一想良心，比只想赢更难，也更珍贵。",
+      "pinyin": "huá róng dào shàng de gù shì gào sù wǒ men， zhēn zhèng de yīng xióng bù zhǐ kàn shū yíng， yě kàn nèi xīn shì fǒu zhèng zhí。 jì de bié rén gěi guò de shàn yì， yě shì yī zhǒng yǒng gǎn。 zuò xuǎn zé shí xiǎng yī xiǎng liáng xīn， bǐ zhǐ xiǎng yíng gèng nán， yě gèng zhēn guì。"
+    }
+  ],
+  "vocab": [
+    {
+      "word": "华容道",
+      "pinyin": "huá róng dào",
+      "meaning": "Huarong Path",
+      "example": "曹操来到华容道。"
+    },
+    {
+      "word": "疲惫",
+      "pinyin": "pí bèi",
+      "meaning": "tired",
+      "example": "曹操带着疲惫的队伍。"
+    },
+    {
+      "word": "礼待",
+      "pinyin": "lǐ dài",
+      "meaning": "to treat with courtesy",
+      "example": "曹操曾经礼待过关羽。"
+    },
+    {
+      "word": "恩情",
+      "pinyin": "ēn qíng",
+      "meaning": "kindness received",
+      "example": "旧日恩情仍在心中。"
+    },
+    {
+      "word": "仁义",
+      "pinyin": "rén yì",
+      "meaning": "kindness and righteousness",
+      "example": "关羽想到仁义二字。"
+    },
+    {
+      "word": "放行",
+      "pinyin": "fàng xíng",
+      "meaning": "to let pass",
+      "example": "关羽决定放行。"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q1",
+      "type": "single_choice",
+      "prompt": "曹操的队伍来到哪里？",
+      "options": [
+        "华容道",
+        "桃园",
+        "隆中"
+      ],
+      "answer": "华容道",
+      "explanation": "正文第一句说曹操带着队伍来到华容道。"
+    },
+    {
+      "id": "q2",
+      "type": "single_choice",
+      "prompt": "关羽为什么想起曹操？",
+      "options": [
+        "曹操曾礼待过他",
+        "曹操送他梅子",
+        "曹操教他弹琴"
+      ],
+      "answer": "曹操曾礼待过他",
+      "explanation": "正文说曹操过去曾经礼待过关羽。"
+    },
+    {
+      "id": "q3",
+      "type": "single_choice",
+      "prompt": "关羽最后做了什么选择？",
+      "options": [
+        "决定放行",
+        "马上睡觉",
+        "去拜访茅庐"
+      ],
+      "answer": "决定放行",
+      "explanation": "第四段说关羽决定放行。"
+    }
+  ],
+  "retell_prompt": "说说关羽为什么在华容道上选择放行。"
+}

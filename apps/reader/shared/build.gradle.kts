@@ -46,6 +46,15 @@ android {
     defaultConfig {
         minSdk = 24
     }
+
+    sourceSets {
+        getByName("main") {
+            resources.srcDir("src/commonMain/resources")
+        }
+        getByName("test") {
+            resources.srcDir("src/commonMain/resources")
+        }
+    }
 }
 
 val xcodeAvailable = try {

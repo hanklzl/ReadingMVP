@@ -26,11 +26,13 @@ import androidx.navigation.compose.rememberNavController
 import com.littlemandarin.classics.shared.AppInfo
 import com.littlemandarin.classics.shared.AppInfoResourceKeys
 import com.littlemandarin.classics.shared.GetAppInfoUseCase
+import com.littlemandarin.classics.shared.progress.AndroidProgressServiceProvider
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        AndroidProgressServiceProvider.initialize(applicationContext)
 
         setContent {
             LittleMandarinClassicsTheme {

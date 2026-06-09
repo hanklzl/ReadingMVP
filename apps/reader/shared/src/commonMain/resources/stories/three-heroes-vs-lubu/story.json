@@ -1,0 +1,109 @@
+{
+  "id": "three-heroes-vs-lubu",
+  "title_zh": "三英齐心退吕布",
+  "title_en": "Three Heroes Face Lyu Bu Together",
+  "level": 2,
+  "age_range": "5-8",
+  "source_note": "Based on public-domain 《三国演义》, rewritten for children.",
+  "source_url": "https://zh.wikisource.org/wiki/三國演義/第005回",
+  "cover_image": "stories/three-heroes-vs-lubu/cover.png",
+  "paragraphs": [
+    {
+      "text": "虎牢关前，许多人马排成队伍。吕布骑着高马来到关口，声音洪亮，大家都觉得他的气势很强，一时不知怎样应对。风把旗子吹得呼呼响，年轻的人更需要一个稳稳的榜样。",
+      "pinyin": "hǔ láo guān qián， xǔ duō rén mǎ pái chéng duì wǔ。 lǚ bù qí zhe gāo mǎ lái dào guān kǒu， shēng yīn hóng liàng， dà jiā dōu jué de tā de qì shì hěn qiáng， yī shí bù zhī zěn yàng yìng duì。 fēng bǎ qí zi chuī dé hū hū xiǎng， nián qīng de rén gèng xū yào yí gè wěn wěn de bǎng yàng。"
+    },
+    {
+      "text": "张飞先稳住队形，上前大声提醒同伴不要慌。关羽看见机会，立刻从旁边配合。刘备也赶来，帮助两位兄弟照看前后。他们没有急着表现自己，而是先让身边的人放心。",
+      "pinyin": "zhāng fēi xiān wěn zhù duì xíng， shàng qián dà shēng tí xǐng tóng bàn bú yào huāng。 guān yǔ kàn jiàn jī huì， lì kè cóng páng biān pèi hé。 liú bèi yě gǎn lái， bāng zhù liǎng wèi xiōng dì zhào kàn qián hòu。 tā men méi yǒu jí zhe biǎo xiàn zì jǐ， ér shì xiān ràng shēn biān de rén fàng xīn。"
+    },
+    {
+      "text": "三个人没有争谁最厉害，而是看着彼此的位置。张飞负责牵住局面，关羽负责相助，刘备负责补上空处，队伍慢慢安定下来。有人看见他们互相点头，也跟着站稳脚步。",
+      "pinyin": "sān gè rén méi yǒu zhēng shuí zuì lì hài， ér shì kàn zhe bǐ cǐ de wèi zhì。 zhāng fēi fù zé qiān zhù jú miàn， guān yǔ fù zé xiāng zhù， liú bèi fù zé bǔ shàng kōng chù， duì wǔ màn màn ān dìng xià lái。 yǒu rén kàn jiàn tā men hù xiāng diǎn tóu， yě gēn zhe zhàn wěn jiǎo bù。"
+    },
+    {
+      "text": "吕布见三人齐心，难以占到上风，便转身退回关内。关前的人们这才松了一口气，也看见了合作的力量。原来遇到强大的对手时，整齐的心比响亮的话更有用。",
+      "pinyin": "lǚ bù jiàn sān rén qí xīn， nán yǐ zhàn dào shàng fēng， biàn zhuǎn shēn tuì huí guān nèi。 guān qián de rén men zhè cái sōng le yì kǒu qì， yě kàn jiàn le hé zuò de lì liàng。 yuán lái yù dào qiáng dà de duì shǒu shí， zhěng qí de xīn bǐ xiǎng liàng de huà gèng yǒu yòng。"
+    },
+    {
+      "text": "这一回没有人靠吵闹取胜。刘备、关羽、张飞用勇敢、配合和信任告诉大家：真正强大的队伍，心要站在一起。每个人做好自己的位置，朋友之间互相补足，困难就会小一些。",
+      "pinyin": "zhè yī huí méi yǒu rén kào chǎo nào qǔ shèng。 liú bèi、 guān yǔ、 zhāng fēi yòng yǒng gǎn、 pèi hé hé xìn rèn gào sù dà jiā： zhēn zhèng qiáng dà de duì wǔ， xīn yào zhàn zài yì qǐ。 měi gè rén zuò hǎo zì jǐ de wèi zhì， péng yǒu zhī jiān hù xiāng bǔ zú， kùn nán jiù huì xiǎo yī xiē。"
+    }
+  ],
+  "vocab": [
+    {
+      "word": "虎牢关",
+      "pinyin": "hǔ láo guān",
+      "meaning": "Hulao Pass",
+      "example": "虎牢关前有许多人马。"
+    },
+    {
+      "word": "气势",
+      "pinyin": "qì shì",
+      "meaning": "strong presence",
+      "example": "吕布的气势很强。"
+    },
+    {
+      "word": "队形",
+      "pinyin": "duì xíng",
+      "meaning": "formation",
+      "example": "张飞先稳住队形。"
+    },
+    {
+      "word": "配合",
+      "pinyin": "pèi hé",
+      "meaning": "to cooperate",
+      "example": "关羽从旁边配合。"
+    },
+    {
+      "word": "齐心",
+      "pinyin": "qí xīn",
+      "meaning": "with one heart",
+      "example": "吕布见三人齐心。"
+    },
+    {
+      "word": "信任",
+      "pinyin": "xìn rèn",
+      "meaning": "trust",
+      "example": "他们用配合和信任面对困难。"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q1",
+      "type": "single_choice",
+      "prompt": "吕布来到虎牢关前时，大家觉得他怎样？",
+      "options": [
+        "气势很强",
+        "非常害羞",
+        "迷路了"
+      ],
+      "answer": "气势很强",
+      "explanation": "正文说大家觉得吕布的气势很强。"
+    },
+    {
+      "id": "q2",
+      "type": "single_choice",
+      "prompt": "刘备、关羽、张飞靠什么稳住局面？",
+      "options": [
+        "配合",
+        "争吵",
+        "睡觉"
+      ],
+      "answer": "配合",
+      "explanation": "他们看彼此位置，互相配合。"
+    },
+    {
+      "id": "q3",
+      "type": "single_choice",
+      "prompt": "故事里的强大队伍需要什么？",
+      "options": [
+        "心站在一起",
+        "每个人只顾自己",
+        "声音越大越好"
+      ],
+      "answer": "心站在一起",
+      "explanation": "结尾说真正强大的队伍，心要站在一起。"
+    }
+  ],
+  "retell_prompt": "用自己的话说说三位兄弟怎样一起稳住虎牢关前的局面。"
+}
