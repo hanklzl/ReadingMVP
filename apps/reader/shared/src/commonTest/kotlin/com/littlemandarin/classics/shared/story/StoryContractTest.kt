@@ -18,6 +18,22 @@ class StoryContractTest {
     }
 
     @Test
+    fun decodeStoryParsesParagraphPinyinCells() {
+        val story = StoryJson.decodeStory(storyJsonWithPinyinCells)
+
+        val paragraph = story.paragraphs.single()
+
+        assertEquals("桃园，好", paragraph.text)
+        assertEquals(listOf("桃", "园", "，", "好"), paragraph.cells.map { it.c })
+        assertEquals(listOf("táo", "yuán", "", "hǎo"), paragraph.cells.map { it.p })
+        assertPinyinCellsMatchParagraphText(
+            storyId = story.id,
+            paragraphIndex = 0,
+            paragraph = paragraph,
+        )
+    }
+
+    @Test
     fun repositoryListsAllTenStoriesAndFindsPeachGardenOath() = runTest {
         val repository = DefaultStoryRepository()
 
@@ -31,6 +47,24 @@ class StoryContractTest {
         assertEquals("桃园三结义", peachGarden.titleZh)
         assertEquals("The Oath of the Peach Garden", peachGarden.titleEn)
         assertEquals("说说刘备、关羽、张飞为什么愿意结为兄弟。", peachGarden.retellPrompt)
+    }
+
+    @Test
+    fun repositoryStoriesProvidePinyinCellsForEveryParagraph() = runTest {
+        val repository = DefaultStoryRepository()
+
+        val stories = repository.listStories()
+
+        assertEquals(10, stories.size)
+        stories.forEach { story ->
+            story.paragraphs.forEachIndexed { index, paragraph ->
+                assertPinyinCellsMatchParagraphText(
+                    storyId = story.id,
+                    paragraphIndex = index,
+                    paragraph = paragraph,
+                )
+            }
+        }
     }
 }
 
@@ -64,6 +98,44 @@ private fun assertCompleteStoryModel(story: Story) {
     assertTrue(story.retellPrompt.isNotBlank(), "retell prompt should be present")
 }
 
+private fun assertPinyinCellsMatchParagraphText(
+    storyId: String,
+    paragraphIndex: Int,
+    paragraph: Paragraph,
+) {
+    val context = "$storyId paragraph ${paragraphIndex + 1}"
+    assertEquals(
+        expected = paragraph.text.length,
+        actual = paragraph.cells.size,
+        message = "$context should have one pinyin cell per text character",
+    )
+    assertEquals(
+        expected = paragraph.text,
+        actual = paragraph.cells.joinToString(separator = "") { it.c },
+        message = "$context cells should reconstruct paragraph text",
+    )
+
+    paragraph.cells.forEachIndexed { cellIndex, cell ->
+        val cellContext = "$context cell ${cellIndex + 1}"
+        assertEquals(
+            expected = 1,
+            actual = cell.c.length,
+            message = "$cellContext should contain exactly one character",
+        )
+
+        if (isHanCharacter(cell.c[0])) {
+            assertTrue(cell.p.isNotBlank(), "$cellContext Han character should have pinyin")
+        } else {
+            assertTrue(cell.p.isEmpty(), "$cellContext non-Han character should not have pinyin")
+        }
+    }
+}
+
+private fun isHanCharacter(character: Char): Boolean =
+    character in '\u3400'..'\u4DBF' ||
+        character in '\u4E00'..'\u9FFF' ||
+        character in '\uF900'..'\uFAFF'
+
 private val expectedStoryIds = listOf(
     "peach-garden-oath",
     "three-heroes-vs-lubu",
@@ -76,6 +148,104 @@ private val expectedStoryIds = listOf(
     "seven-captures",
     "empty-fort",
 )
+
+private val storyJsonWithPinyinCells = """
+{
+  "id": "cells-inline",
+  "title_zh": "桃园",
+  "title_en": "Peach Garden",
+  "level": 1,
+  "age_range": "5-8",
+  "source_note": "Inline test fixture.",
+  "paragraphs": [
+    {
+      "text": "桃园，好",
+      "pinyin": "táo yuán， hǎo",
+      "cells": [
+        {
+          "c": "桃",
+          "p": "táo"
+        },
+        {
+          "c": "园",
+          "p": "yuán"
+        },
+        {
+          "c": "，",
+          "p": ""
+        },
+        {
+          "c": "好",
+          "p": "hǎo"
+        }
+      ]
+    }
+  ],
+  "vocab": [
+    {
+      "word": "桃园",
+      "pinyin": "táo yuán",
+      "meaning": "peach garden"
+    },
+    {
+      "word": "朋友",
+      "pinyin": "péng yǒu",
+      "meaning": "friend"
+    },
+    {
+      "word": "约定",
+      "pinyin": "yuē dìng",
+      "meaning": "promise"
+    },
+    {
+      "word": "帮助",
+      "pinyin": "bāng zhù",
+      "meaning": "help"
+    },
+    {
+      "word": "善良",
+      "pinyin": "shàn liáng",
+      "meaning": "kindness"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q1",
+      "type": "single_choice",
+      "prompt": "故事里提到哪里？",
+      "options": [
+        "桃园",
+        "雪山"
+      ],
+      "answer": "桃园",
+      "explanation": "正文写到了桃园。"
+    },
+    {
+      "id": "q2",
+      "type": "single_choice",
+      "prompt": "桃园怎么样？",
+      "options": [
+        "很好",
+        "很远"
+      ],
+      "answer": "很好",
+      "explanation": "正文说桃园好。"
+    },
+    {
+      "id": "q3",
+      "type": "single_choice",
+      "prompt": "这个测试关注什么？",
+      "options": [
+        "逐字拼音",
+        "开放聊天"
+      ],
+      "answer": "逐字拼音",
+      "explanation": "这个 JSON 包含逐字拼音 cells。"
+    }
+  ],
+  "retell_prompt": "说说桃园里发生了什么。"
+}
+""".trimIndent()
 
 private val peachGardenOathJson = """
 {

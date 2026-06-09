@@ -21,10 +21,23 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["text", "pinyin"],
+        "required": ["text", "pinyin", "cells"],
         "properties": {
           "text": { "type": "string", "minLength": 1 },
-          "pinyin": { "type": "string", "minLength": 1, "description": "与 text 对齐的拼音，多音字按语境" }
+          "pinyin": { "type": "string", "minLength": 1, "description": "整段拼音，多音字按语境" },
+          "cells": {
+            "type": "array",
+            "description": "与 text Unicode 字符一一对应的逐字拼音；汉字 p 非空，非汉字 p 为空字符串。",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["c", "p"],
+              "properties": {
+                "c": { "type": "string", "minLength": 1, "maxLength": 1 },
+                "p": { "type": "string" }
+              }
+            }
+          }
         }
       }
     },

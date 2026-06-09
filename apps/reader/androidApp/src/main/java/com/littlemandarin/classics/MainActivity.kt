@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -87,6 +89,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
@@ -140,6 +143,7 @@ import com.littlemandarin.classics.shared.service.TtsService
 import com.littlemandarin.classics.shared.service.createAiService
 import com.littlemandarin.classics.shared.service.createTtsService
 import com.littlemandarin.classics.shared.story.DefaultStoryRepository
+import com.littlemandarin.classics.shared.story.Paragraph
 import com.littlemandarin.classics.shared.story.Question
 import com.littlemandarin.classics.shared.story.Story
 import com.littlemandarin.classics.shared.story.Vocab
@@ -934,8 +938,7 @@ private fun ReadingScreen(
             ) {
                 if (paragraph != null) {
                     PinyinTextBlock(
-                        text = paragraph.text,
-                        pinyin = paragraph.pinyin,
+                        paragraph = paragraph,
                         showPinyin = settings.showPinyinByDefault,
                         readingType = readingType,
                     )
@@ -2098,8 +2101,7 @@ private fun LevelFilterRow(
 
 @Composable
 private fun PinyinTextBlock(
-    text: String,
-    pinyin: String,
+    paragraph: Paragraph,
     showPinyin: Boolean,
     readingType: ReadingTypeStyles,
 ) {
@@ -2112,19 +2114,77 @@ private fun PinyinTextBlock(
             modifier = Modifier.padding(LmcSpacing.ReadingPanelPadding),
             verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space3),
         ) {
-            if (showPinyin) {
+            if (showPinyin && paragraph.cells.isNotEmpty()) {
+                RubyFlowText(
+                    paragraph = paragraph,
+                    readingType = readingType,
+                )
+            } else {
                 Text(
-                    text = pinyin,
-                    style = readingType.pinyin,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    text = paragraph.text,
+                    style = readingType.hanzi,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
             }
-            Text(
-                text = text,
-                style = readingType.hanzi,
-                color = MaterialTheme.colorScheme.onSurface,
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun RubyFlowText(
+    paragraph: Paragraph,
+    readingType: ReadingTypeStyles,
+) {
+    FlowRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clearAndSetSemantics {
+                contentDescription = paragraph.text
+            },
+        horizontalArrangement = Arrangement.Start,
+        verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+    ) {
+        paragraph.cells.forEach { cell ->
+            RubyCell(
+                hanzi = cell.c,
+                pinyin = cell.p,
+                readingType = readingType,
             )
         }
+    }
+}
+
+@Composable
+private fun RubyCell(
+    hanzi: String,
+    pinyin: String,
+    readingType: ReadingTypeStyles,
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        val hasPinyin = pinyin.isNotBlank()
+        Text(
+            text = if (hasPinyin) pinyin else " ",
+            style = readingType.pinyin,
+            color = if (hasPinyin) {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            } else {
+                Color.Transparent
+            },
+            maxLines = 1,
+            softWrap = false,
+            textAlign = TextAlign.Center,
+        )
+        Text(
+            text = hanzi,
+            style = readingType.hanzi,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            softWrap = false,
+            textAlign = TextAlign.Center,
+        )
     }
 }
 

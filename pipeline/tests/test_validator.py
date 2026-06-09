@@ -10,6 +10,10 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 SCHEMA_PATH = REPO_ROOT / "content" / "schema" / "story.schema.json"
 
 
+def cells_for_test(text):
+    return [{"c": char, "p": "x"} for char in text]
+
+
 def build_story(**overrides):
     paragraph = "桃园里三个朋友一起读书学习帮助乡亲" * 5
     story = {
@@ -22,10 +26,10 @@ def build_story(**overrides):
         "source_url": "https://zh.wikisource.org/wiki/三國演義/第001回",
         "cover_image": "stories/peach-garden-oath/cover.png",
         "paragraphs": [
-            {"text": paragraph, "pinyin": "tao yuan li san ge peng you"},
-            {"text": paragraph, "pinyin": "tao yuan li san ge peng you"},
-            {"text": paragraph, "pinyin": "tao yuan li san ge peng you"},
-            {"text": paragraph, "pinyin": "tao yuan li san ge peng you"},
+            {"text": paragraph, "pinyin": "tao yuan li san ge peng you", "cells": cells_for_test(paragraph)},
+            {"text": paragraph, "pinyin": "tao yuan li san ge peng you", "cells": cells_for_test(paragraph)},
+            {"text": paragraph, "pinyin": "tao yuan li san ge peng you", "cells": cells_for_test(paragraph)},
+            {"text": paragraph, "pinyin": "tao yuan li san ge peng you", "cells": cells_for_test(paragraph)},
         ],
         "vocab": [
             {"word": "桃园", "pinyin": "táo yuán", "meaning": "peach garden", "example": "桃园里有花。"},
@@ -96,6 +100,51 @@ class ValidatorTest(unittest.TestCase):
 
     def test_count_hanzi_ignores_punctuation_and_latin_text(self):
         self.assertEqual(5, count_hanzi("桃园ABC，三结义!"))
+
+    def test_cells_must_align_exactly_with_text_characters(self):
+        story = build_story()
+        story["paragraphs"][0]["cells"] = story["paragraphs"][0]["cells"][:-1]
+        text_length = len(story["paragraphs"][0]["text"])
+        cell_length = len(story["paragraphs"][0]["cells"])
+        story_path = self.write_story(story)
+
+        result = validate_story_file(story_path, SCHEMA_PATH)
+
+        self.assertFalse(result.passed)
+        self.assertIn(
+            f"paragraph 1 cells length must equal text length, got {cell_length} cells for {text_length} characters",
+            result.errors,
+        )
+
+    def test_cells_require_hanzi_pinyin_and_blank_non_hanzi_pinyin(self):
+        text = "桃园，A1"
+        filler = "桃园里三个朋友一起读书学习帮助乡亲" * 5
+        story = build_story(
+            paragraphs=[
+                {
+                    "text": text,
+                    "pinyin": "táo yuán，A1",
+                    "cells": [
+                        {"c": "桃", "p": ""},
+                        {"c": "园", "p": "yuán"},
+                        {"c": "，", "p": "comma"},
+                        {"c": "A", "p": ""},
+                        {"c": "1", "p": ""},
+                    ],
+                },
+                {"text": filler, "pinyin": "x", "cells": cells_for_test(filler)},
+                {"text": filler, "pinyin": "x", "cells": cells_for_test(filler)},
+                {"text": filler, "pinyin": "x", "cells": cells_for_test(filler)},
+                {"text": filler, "pinyin": "x", "cells": cells_for_test(filler)},
+            ]
+        )
+        story_path = self.write_story(story)
+
+        result = validate_story_file(story_path, SCHEMA_PATH)
+
+        self.assertFalse(result.passed)
+        self.assertIn("paragraph 1 cell 1 hanzi '桃' must have non-empty pinyin", result.errors)
+        self.assertIn("paragraph 1 cell 3 non-hanzi '，' must have empty pinyin", result.errors)
 
 
 if __name__ == "__main__":

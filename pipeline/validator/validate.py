@@ -11,6 +11,7 @@ from jsonschema import Draft202012Validator
 
 
 HANZI_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]")
+HANZI_CHAR_RE = re.compile(r"^[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]$")
 
 
 @dataclass(frozen=True)
@@ -27,6 +28,10 @@ class ValidationResult:
 
 def count_hanzi(text: str) -> int:
     return len(HANZI_RE.findall(text))
+
+
+def is_hanzi_char(char: str) -> bool:
+    return bool(HANZI_CHAR_RE.fullmatch(char))
 
 
 def load_json(path: Path) -> Any:
@@ -68,6 +73,40 @@ def validate_story(story: dict[str, Any], schema: dict[str, Any], path: Path | N
             errors.append(f"paragraph {index} text must be non-empty")
         if not str(paragraph.get("pinyin", "")).strip():
             errors.append(f"paragraph {index} pinyin must be non-empty")
+        text = paragraph.get("text") if isinstance(paragraph.get("text"), str) else ""
+        cells = paragraph.get("cells")
+        if not isinstance(cells, list):
+            errors.append(f"paragraph {index} cells must be a list")
+            continue
+
+        text_chars = list(text)
+        if len(cells) != len(text_chars):
+            errors.append(
+                f"paragraph {index} cells length must equal text length, got {len(cells)} cells "
+                f"for {len(text_chars)} characters"
+            )
+
+        for cell_index, expected_char in enumerate(text_chars, start=1):
+            if cell_index > len(cells):
+                break
+            cell = cells[cell_index - 1]
+            if not isinstance(cell, dict):
+                errors.append(f"paragraph {index} cell {cell_index} must be an object")
+                continue
+
+            actual_char = cell.get("c")
+            pinyin_value = cell.get("p")
+            if actual_char != expected_char:
+                errors.append(
+                    f"paragraph {index} cell {cell_index} c must equal text character "
+                    f"'{expected_char}', got '{actual_char}'"
+                )
+
+            if is_hanzi_char(expected_char):
+                if not isinstance(pinyin_value, str) or not pinyin_value.strip():
+                    errors.append(f"paragraph {index} cell {cell_index} hanzi '{expected_char}' must have non-empty pinyin")
+            elif pinyin_value != "":
+                errors.append(f"paragraph {index} cell {cell_index} non-hanzi '{expected_char}' must have empty pinyin")
 
     for key in ("title_zh", "title_en", "source_note", "source_url", "retell_prompt"):
         if not str(story.get(key, "")).strip():

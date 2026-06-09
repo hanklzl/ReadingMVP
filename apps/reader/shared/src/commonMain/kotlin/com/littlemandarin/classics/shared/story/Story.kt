@@ -30,6 +30,13 @@ data class Story(
 data class Paragraph(
     val text: String,
     val pinyin: String,
+    val cells: List<PinyinCell> = emptyList(),
+)
+
+@Serializable
+data class PinyinCell(
+    val c: String,
+    val p: String,
 )
 
 @Serializable

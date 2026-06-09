@@ -547,6 +547,22 @@ enum LMCReadingSize: String, CaseIterable {
         }
     }
 
+    var hanziLineHeight: CGFloat {
+        switch self {
+        case .small: return 36
+        case .medium: return 42
+        case .large: return 48
+        }
+    }
+
+    var pinyinLineHeight: CGFloat {
+        switch self {
+        case .small: return 22
+        case .medium: return 24
+        case .large: return 28
+        }
+    }
+
     static func value(from rawValue: String) -> LMCReadingSize {
         LMCReadingSize(rawValue: rawValue) ?? .medium
     }
@@ -2224,23 +2240,158 @@ private struct ReadingParagraphView: View {
     let isCurrent: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: LMCSpace.s2) {
-            if showPinyin {
-                Text(paragraph.pinyin)
-                    .font(size.pinyinFont)
-                    .foregroundStyle(LMCColor.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+        content
+            .padding(LMCSpace.s3)
+            .background(isCurrent ? LMCColor.surface.opacity(0.8) : Color.clear)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(paragraph.text))
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        if showPinyin {
+            LMCRubyTextFlow(cells: paragraph.lmcRubyCells, size: size)
+        } else {
             Text(paragraph.text)
                 .font(size.hanziFont)
                 .foregroundStyle(LMCColor.textPrimary)
                 .lineSpacing(size.hanziLineSpacing)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(LMCSpace.s3)
-        .background(isCurrent ? LMCColor.surface.opacity(0.8) : Color.clear)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
+}
+
+private struct LMCRubyCellData: Equatable {
+    let character: String
+    let pinyin: String
+}
+
+private extension Paragraph {
+    var lmcRubyCells: [LMCRubyCellData] {
+        if cells.isEmpty {
+            return text.map { character in
+                LMCRubyCellData(character: String(character), pinyin: "")
+            }
+        }
+
+        return cells.map { cell in
+            LMCRubyCellData(character: cell.c, pinyin: cell.p)
+        }
+    }
+}
+
+private struct LMCRubyTextFlow: View {
+    let cells: [LMCRubyCellData]
+    let size: LMCReadingSize
+
+    var body: some View {
+        LMCRubyFlowLayout(horizontalSpacing: LMCSpace.s1, verticalSpacing: LMCSpace.s2) {
+            ForEach(Array(cells.enumerated()), id: \.offset) { _, cell in
+                LMCRubyCellView(cell: cell, size: size)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+private struct LMCRubyCellView: View {
+    let cell: LMCRubyCellData
+    let size: LMCReadingSize
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Text(cell.pinyin.isEmpty ? " " : cell.pinyin)
+                .font(size.pinyinFont)
+                .foregroundStyle(LMCColor.textSecondary)
+                .lineLimit(1)
+                .multilineTextAlignment(.center)
+                .opacity(cell.pinyin.isEmpty ? 0 : 1)
+                .frame(height: size.pinyinLineHeight, alignment: .bottom)
+
+            Text(cell.character)
+                .font(size.hanziFont)
+                .foregroundStyle(LMCColor.textPrimary)
+                .lineLimit(1)
+                .multilineTextAlignment(.center)
+                .frame(height: size.hanziLineHeight, alignment: .top)
+        }
+        .fixedSize(horizontal: true, vertical: true)
+    }
+}
+
+private struct LMCRubyFlowLayout: Layout {
+    let horizontalSpacing: CGFloat
+    let verticalSpacing: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let rows = rows(for: subviews, proposalWidth: proposal.width)
+        let width = proposal.width ?? rows.map(\.width).max() ?? 0
+        let height = rows.enumerated().reduce(CGFloat.zero) { result, row in
+            result + row.element.height + (row.offset == rows.count - 1 ? 0 : verticalSpacing)
+        }
+        return CGSize(width: width, height: height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let rows = rows(for: subviews, proposalWidth: bounds.width)
+        var y = bounds.minY
+
+        for row in rows {
+            var x = bounds.minX
+            for item in row.items {
+                subviews[item.index].place(
+                    at: CGPoint(x: x, y: y),
+                    anchor: .topLeading,
+                    proposal: ProposedViewSize(item.size)
+                )
+                x += item.size.width + horizontalSpacing
+            }
+            y += row.height + verticalSpacing
+        }
+    }
+
+    private func rows(for subviews: Subviews, proposalWidth: CGFloat?) -> [LMCRubyFlowRow] {
+        let availableWidth = proposalWidth ?? .greatestFiniteMagnitude
+        let itemProposal = ProposedViewSize(width: nil, height: nil)
+        var rows: [LMCRubyFlowRow] = []
+        var currentItems: [LMCRubyFlowRow.Item] = []
+        var currentWidth = CGFloat.zero
+        var currentHeight = CGFloat.zero
+
+        for index in subviews.indices {
+            let size = subviews[index].sizeThatFits(itemProposal)
+            let nextWidth = currentItems.isEmpty ? size.width : currentWidth + horizontalSpacing + size.width
+
+            if !currentItems.isEmpty, nextWidth > availableWidth {
+                rows.append(LMCRubyFlowRow(items: currentItems, width: currentWidth, height: currentHeight))
+                currentItems = [LMCRubyFlowRow.Item(index: index, size: size)]
+                currentWidth = size.width
+                currentHeight = size.height
+            } else {
+                currentItems.append(LMCRubyFlowRow.Item(index: index, size: size))
+                currentWidth = nextWidth
+                currentHeight = max(currentHeight, size.height)
+            }
+        }
+
+        if !currentItems.isEmpty {
+            rows.append(LMCRubyFlowRow(items: currentItems, width: currentWidth, height: currentHeight))
+        }
+
+        return rows
+    }
+}
+
+private struct LMCRubyFlowRow {
+    struct Item {
+        let index: Int
+        let size: CGSize
+    }
+
+    let items: [Item]
+    let width: CGFloat
+    let height: CGFloat
 }
 
 private struct ReadingBottomBar: View {
