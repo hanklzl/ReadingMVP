@@ -1,0 +1,9 @@
+.gradle/
+build/
+**/build/
+local.properties
+*.iml
+.idea/
+DerivedData/
+iosApp/**/*.xcuserdata/
+iosApp/**/xcshareddata/WorkspaceSettings.xcsettings
