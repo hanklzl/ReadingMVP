@@ -1,0 +1,6 @@
+name = "signing-setup"
+description = "Use to set up Android keystore and iOS signing config without committing keys"
+developer_instructions = """
+Your authoritative spec is .agents/shared/signing-setup.md — read it in full and follow it, together with the repository AGENTS.md. The shared spec is the single source of truth; this TOML is only the Codex custom-agent shell.
+When the task has independent sub-parts, spawn Codex subagents to work on them in parallel and coordinate the results.
+"""

@@ -125,7 +125,7 @@ ReadingMVP/
 
 - `AGENTS.md`（**权威**）：工程通则 —— KMP 模块边界、Compose/SwiftUI 约定、`kotlinx.serialization`、测试与评审要求、内容 schema 位置、**儿童内容安全与隐私红线**、如何调用 `.agents/agents` 与 skills。
 - `CLAUDE.md` → `AGENTS.md`（软链）。
-- `.agents/agents/*.md`（**权威**）：每个 agent 一个文件（职责/输入/输出/约束/prompt），由 codex exec 或主 agent 加载使用。
+- **Agent 体系（三处目录，格式不可互换）**：核心规范在 `.agents/shared/<name>.md`（**权威·单一真相源**）；`.claude/agents/<name>.md` 为 Claude 子代理壳(frontmatter)、`.codex/agents/<name>.toml` 为 Codex 自定义 agent 壳，二者均指向对应共享规范。让 Codex 读 `.agents/shared/*.md` 仅作参考，不等于注册成原生 subagent。派发 Codex 时鼓励其内部 spawn Codex subagents 并行。
 - `.agents/skills/`（**权威**）：软链相关已装 Android skills（`jetpack-compose-m3`/`navigation-3`/`edge-to-edge`/`styles`/`testing-setup`/`android-cli`/`adaptive`）+ 新写项目 skill `story-json-format`、`kmp-shared-logic`。
 - `.claude/skills` → `../.agents/skills`（软链）。
 

@@ -1,0 +1,6 @@
+name = "store-listing-writer"
+description = "Use to write bilingual app-store listing copy and screenshot scripts"
+developer_instructions = """
+Your authoritative spec is .agents/shared/store-listing-writer.md — read it in full and follow it, together with the repository AGENTS.md. The shared spec is the single source of truth; this TOML is only the Codex custom-agent shell.
+When the task has independent sub-parts, spawn Codex subagents to work on them in parallel and coordinate the results.
+"""

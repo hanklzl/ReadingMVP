@@ -1,0 +1,6 @@
+name = "quiz-author"
+description = "Use to write exactly 3 single-choice reading-comprehension questions for a story"
+developer_instructions = """
+Your authoritative spec is .agents/shared/quiz-author.md — read it in full and follow it, together with the repository AGENTS.md. The shared spec is the single source of truth; this TOML is only the Codex custom-agent shell.
+When the task has independent sub-parts, spawn Codex subagents to work on them in parallel and coordinate the results.
+"""

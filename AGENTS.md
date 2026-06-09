@@ -12,7 +12,9 @@ apps/reader/{shared,androidApp,iosApp}   # ① KMP 移动端：shared 纯逻辑 
 content/{schema,sources,stories}          # 内容数据(app 构建时打包)
 pipeline/{scraper,transformer,validator}  # ② 内容抓取/创建(Python)
 release/                                   # 上架产物/文案/合规
-.agents/{agents,skills}                    # 权威：agent 定义 + skills
+.agents/shared/<name>.md   # 权威·共享 agent 规范(唯一真相源)
+.agents/skills/             # 安装/软链的 skills
+.claude/agents/<name>.md   # Claude 子代理壳   .codex/agents/<name>.toml  # Codex 自定义 agent 壳
 docs/specs/                                # 设计文档
 ```
 
@@ -24,10 +26,13 @@ docs/specs/                                # 设计文档
   - 内容：`content-safety-reviewer`（适龄/安全）+ `story-qa-validator`（schema/字数/答案一致）双闸。
 - **完成定义(DoD)**：见设计 §11；Android 全部跑通即达本迭代 MVP。
 
-## 4. Agent 注册表与用法
-- `.agents/agents/<name>.md` 是各专项 agent 的权威定义（职责/输入/输出/约束/流程）。
-- **启用某 agent**：把其 `.md` 作为该 Codex 会话的指令（`base-instructions` 或 prompt 开头加载该文件全文），并叠加本文件通则。
-- 注册表（22 个）见设计 §7.2。内容类 agent 由 `pipeline/transformer` 经 `codex exec` 逐篇调用。
+## 4. Agent 体系（三处目录，格式不可互换）
+- **共享规范（权威·单一真相源）**：`.agents/shared/<name>.md` —— 各专项 agent 的核心职责/输入/输出/约束/流程。Claude 与 Codex 都先读对应共享规范。
+- **Claude 子代理壳**：`.claude/agents/<name>.md`（YAML frontmatter `name`/`description`；正文指向并遵循对应 `.agents/shared/<name>.md`）。Claude 递归扫描此目录、按 frontmatter `name` 注册。
+- **Codex 自定义 agent 壳**：`.codex/agents/<name>.toml`（`name`/`description`/`developer_instructions`；指向并遵循对应共享规范）。
+- **格式不可互换**：`.claude/agents/*.md` 与 `.codex/agents/*.toml` 是各自工具的原生格式；让 Codex *读取* `.agents/shared/*.md` 只是当作参考规范，**并不**等于把它注册成原生 subagent。新增/改名 agent 时三处同步（以共享规范为准，壳可由脚本再生）。
+- **派发给 Codex 时**：鼓励 Codex 在任务内部 **spawn 自己的 Codex subagents** 并行处理相互独立的子任务并汇总结果。
+- 注册表（22）见设计 §7.2；内容类经 `pipeline/transformer` 调用。
 
 ## 5. 工程约定（Engineering）
 ### KMP
