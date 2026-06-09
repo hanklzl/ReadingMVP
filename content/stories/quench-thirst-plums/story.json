@@ -1,0 +1,109 @@
+{
+  "id": "quench-thirst-plums",
+  "title_zh": "望梅止渴",
+  "title_en": "Quenching Thirst with Plums",
+  "level": 1,
+  "age_range": "5-8",
+  "source_note": "Based on public-domain 《世说新语·假谲》 Cao Cao anecdote, rewritten for children.",
+  "source_url": "https://zh.wikisource.org/zh-hans/世說新語/假譎",
+  "cover_image": "stories/quench-thirst-plums/cover.png",
+  "paragraphs": [
+    {
+      "text": "有一次，曹操带着队伍赶路。太阳很大，路又长，大家走得口渴，脚步也慢了下来。曹操看在眼里，知道大家需要鼓励。他先让队伍放慢一点，又提醒大家不要互相抱怨。",
+      "pinyin": "yǒu yī cì， cáo cāo dài zhe duì wǔ gǎn lù。 tài yáng hěn dà， lù yòu zhǎng， dà jiā zǒu dé kǒu kě， jiǎo bù yě màn le xià lái。 cáo cāo kàn zài yǎn lǐ， zhī dào dà jiā xū yào gǔ lì。 tā xiān ràng duì wǔ fàng màn yì diǎn， yòu tí xǐng dà jiā bú yào hù xiāng bào yuàn。"
+    },
+    {
+      "text": "他没有责备大家，而是指着前方说，前面好像有一片梅林，梅子又酸又甜，想到味道就会舒服些。大家听了，嘴里仿佛有了清凉的感觉。有人还笑着说，酸梅子的味道已经跑到舌尖上了。",
+      "pinyin": "tā méi yǒu zé bèi dà jiā， ér shì zhǐ zhe qián fāng shuō， qián miàn hǎo xiàng yǒu yī piàn méi lín， méi zi yòu suān yòu tián， xiǎng dào wèi dào jiù huì shū fú xiē。 dà jiā tīng le， zuǐ lǐ fǎng fú yǒu le qīng liáng de gǎn jué。 yǒu rén hái xiào zhe shuō， suān méi zi de wèi dào yǐ jīng pǎo dào shé jiān shàng le。"
+    },
+    {
+      "text": "队伍重新打起精神，继续向前走。有人想着酸甜的梅子，有人想着快点找到水源，脚步渐渐稳了。大家开始互相照看，前面的人提醒后面的人跟上，后面的人也不再着急。",
+      "pinyin": "duì wǔ chóng xīn dǎ qǐ jīng shén， jì xù xiàng qián zǒu。 yǒu rén xiǎng zhe suān tián de méi zi， yǒu rén xiǎng zhe kuài diǎn zhǎo dào shuǐ yuán， jiǎo bù jiàn jiàn wěn le。 dà jiā kāi shǐ hù xiāng zhào kàn， qián miàn de rén tí xǐng hòu miàn de rén gēn shàng， hòu miàn de rén yě bù zài zháo jí。"
+    },
+    {
+      "text": "过了一会儿，大家真的找到水源，可以安心休息。曹操用一个巧妙的想法，帮助大家把难走的一段路坚持过去。找到水以后，大家更明白，先稳住心，路就能一步一步走完。",
+      "pinyin": "guò le yī huì er， dà jiā zhēn de zhǎo dào shuǐ yuán， kě yǐ ān xīn xiū xī。 cáo cāo yòng yí gè qiǎo miào de xiǎng fǎ， bāng zhù dà jiā bǎ nán zǒu de yī duàn lù jiān chí guò qù。 zhǎo dào shuǐ yǐ hòu， dà jiā gèng míng bái， xiān wěn zhù xīn， lù jiù néng yí bù yí bù zǒu wán。"
+    },
+    {
+      "text": "这个故事后来成了成语“望梅止渴”。它提醒我们，遇到困难时，温和的鼓励和清楚的目标，能让人多一分力量。当然，真正解决问题还要继续寻找办法，就像大家最后找到了水源。",
+      "pinyin": "zhè ge gù shì hòu lái chéng le chéng yǔ “wàng méi zhǐ kě”。 tā tí xǐng wǒ men， yù dào kùn nán shí， wēn hé de gǔ lì hé qīng chǔ de mù biāo， néng ràng rén duō yī fēn lì liàng。 dāng rán， zhēn zhèng jiě jué wèn tí hái yào jì xù xún zhǎo bàn fǎ， jiù xiàng dà jiā zuì hòu zhǎo dào le shuǐ yuán。"
+    }
+  ],
+  "vocab": [
+    {
+      "word": "口渴",
+      "pinyin": "kǒu kě",
+      "meaning": "thirsty",
+      "example": "大家走得口渴。"
+    },
+    {
+      "word": "鼓励",
+      "pinyin": "gǔ lì",
+      "meaning": "encouragement",
+      "example": "大家需要鼓励。"
+    },
+    {
+      "word": "梅林",
+      "pinyin": "méi lín",
+      "meaning": "plum grove",
+      "example": "前面好像有一片梅林。"
+    },
+    {
+      "word": "酸甜",
+      "pinyin": "suān tián",
+      "meaning": "sour and sweet",
+      "example": "梅子又酸又甜。"
+    },
+    {
+      "word": "水源",
+      "pinyin": "shuǐ yuán",
+      "meaning": "water source",
+      "example": "大家真的找到水源。"
+    },
+    {
+      "word": "坚持",
+      "pinyin": "jiān chí",
+      "meaning": "to keep going",
+      "example": "大家坚持走过难路。"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q1",
+      "type": "single_choice",
+      "prompt": "队伍一开始为什么慢了下来？",
+      "options": [
+        "大家口渴",
+        "大家在唱歌",
+        "大家找到梅子"
+      ],
+      "answer": "大家口渴",
+      "explanation": "正文说太阳大、路长，大家走得口渴。"
+    },
+    {
+      "id": "q2",
+      "type": "single_choice",
+      "prompt": "曹操用什么想法鼓励大家？",
+      "options": [
+        "前面有梅林",
+        "天上会下雪",
+        "马上回家"
+      ],
+      "answer": "前面有梅林",
+      "explanation": "曹操让大家想到酸甜的梅子。"
+    },
+    {
+      "id": "q3",
+      "type": "single_choice",
+      "prompt": "“望梅止渴”提醒我们遇到困难时可以怎样？",
+      "options": [
+        "用目标鼓励自己",
+        "马上放弃",
+        "责备同伴"
+      ],
+      "answer": "用目标鼓励自己",
+      "explanation": "故事说温和的鼓励和清楚的目标能带来力量。"
+    }
+  ],
+  "retell_prompt": "说说曹操怎样用梅子的想象帮助大家继续赶路。"
+}

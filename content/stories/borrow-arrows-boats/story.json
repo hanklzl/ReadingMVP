@@ -1,0 +1,109 @@
+{
+  "id": "borrow-arrows-boats",
+  "title_zh": "草船借箭",
+  "title_en": "Borrowing Arrows with Straw Boats",
+  "level": 2,
+  "age_range": "5-8",
+  "source_note": "Based on public-domain 《三国演义》, rewritten for children.",
+  "source_url": "https://zh.wikisource.org/wiki/三國演義/第046回",
+  "cover_image": "stories/borrow-arrows-boats/cover.png",
+  "paragraphs": [
+    {
+      "text": "周瑜请诸葛亮在三天内准备十万枝箭。这个任务听起来很难，大家都替他担心。诸葛亮却很从容，只说到时候一定交上。他没有先解释很多，而是把需要的东西一件件记下来。",
+      "pinyin": "zhōu yú qǐng zhū gě liàng zài sān tiān nèi zhǔn bèi shí wàn zhī jiàn。 zhè ge rèn wù tīng qǐ lái hěn nán， dà jiā dōu tì tā dān xīn。 zhū gě liàng què hěn cóng róng， zhǐ shuō dào shí hòu yí dìng jiāo shàng。 tā méi yǒu xiān jiě shì hěn duō， ér shì bǎ xū yào de dōng xī yī jiàn jiàn jì xià lái。"
+    },
+    {
+      "text": "他请鲁肃帮忙准备二十条草船，又在船上扎满草把。鲁肃虽然不明白原因，还是按约定帮忙。到了大雾很浓的清晨，江面白茫茫一片，远处几乎看不清。",
+      "pinyin": "tā qǐng lǔ sù bāng máng zhǔn bèi èr shí tiáo cǎo chuán， yòu zài chuán shàng zā mǎn cǎo bǎ。 lǔ sù suī rán bù míng bái yuán yīn， hái shì àn yuē dìng bāng máng。 dào le dà wù hěn nóng de qīng chén， jiāng miàn bái máng máng yī piàn， yuǎn chù jī hū kàn bù qīng。"
+    },
+    {
+      "text": "诸葛亮让草船慢慢靠近曹营，又让船上敲起鼓声。对岸的人看不清情况，只好向声音来的地方放出许多箭。草船排得整整齐齐，像安静的朋友一起完成任务。",
+      "pinyin": "zhū gě liàng ràng cǎo chuán màn màn kào jìn cáo yíng， yòu ràng chuán shàng qiāo qǐ gǔ shēng。 duì àn de rén kàn bù qīng qíng kuàng， zhǐ hǎo xiàng shēng yīn lái de dì fāng fàng chū xǔ duō jiàn。 cǎo chuán pái dé zhěng zhěng qí qí， xiàng ān jìng de péng yǒu yì qǐ wán chéng rèn wù。"
+    },
+    {
+      "text": "箭纷纷落在草把上，草船两边很快插满了箭。诸葛亮看时机差不多，就带着船队顺风回来。回来的路上，他还让船换个方向，好让两边都能装满。",
+      "pinyin": "jiàn fēn fēn luò zài cǎo bǎ shàng， cǎo chuán liǎng biān hěn kuài chā mǎn le jiàn。 zhū gě liàng kàn shí jī chà bu duō， jiù dài zhe chuán duì shùn fēng huí lái。 huí lái de lù shàng， tā hái ràng chuán huàn gè fāng xiàng， hǎo ràng liǎng biān dōu néng zhuāng mǎn。"
+    },
+    {
+      "text": "三天期限到了，箭如数送到。大家这才明白，诸葛亮靠的不是急躁，而是观察天气、准备周全和守住约定。一个好办法，常常来自细心观察，也来自朋友之间的信任。",
+      "pinyin": "sān tiān qī xiàn dào le， jiàn rú shù sòng dào。 dà jiā zhè cái míng bái， zhū gě liàng kào de bú shì jí zào， ér shì guān chá tiān qì、 zhǔn bèi zhōu quán hé shǒu zhù yuē dìng。 yí gè hǎo bàn fǎ， cháng cháng lái zì xì xīn guān chá， yě lái zì péng yǒu zhī jiān de xìn rèn。"
+    }
+  ],
+  "vocab": [
+    {
+      "word": "草船",
+      "pinyin": "cǎo chuán",
+      "meaning": "straw-covered boat",
+      "example": "鲁肃准备二十条草船。"
+    },
+    {
+      "word": "草把",
+      "pinyin": "cǎo bǎ",
+      "meaning": "bundles of straw",
+      "example": "船上扎满草把。"
+    },
+    {
+      "word": "大雾",
+      "pinyin": "dà wù",
+      "meaning": "heavy fog",
+      "example": "大雾很浓的清晨。"
+    },
+    {
+      "word": "鼓声",
+      "pinyin": "gǔ shēng",
+      "meaning": "drum sound",
+      "example": "船上敲起鼓声。"
+    },
+    {
+      "word": "从容",
+      "pinyin": "cóng róng",
+      "meaning": "calm and unhurried",
+      "example": "诸葛亮很从容。"
+    },
+    {
+      "word": "约定",
+      "pinyin": "yuē dìng",
+      "meaning": "agreement",
+      "example": "他守住约定。"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q1",
+      "type": "single_choice",
+      "prompt": "周瑜请诸葛亮准备什么？",
+      "options": [
+        "十万枝箭",
+        "一篮梅子",
+        "三间茅庐"
+      ],
+      "answer": "十万枝箭",
+      "explanation": "正文开头说周瑜请诸葛亮在三天内准备十万枝箭。"
+    },
+    {
+      "id": "q2",
+      "type": "single_choice",
+      "prompt": "诸葛亮利用了什么天气？",
+      "options": [
+        "大雾",
+        "大雪",
+        "彩虹"
+      ],
+      "answer": "大雾",
+      "explanation": "草船出发时，大雾很浓，远处看不清。"
+    },
+    {
+      "id": "q3",
+      "type": "single_choice",
+      "prompt": "诸葛亮成功的重要原因是什么？",
+      "options": [
+        "观察和准备",
+        "乱发脾气",
+        "忘记期限"
+      ],
+      "answer": "观察和准备",
+      "explanation": "结尾说他观察天气、准备周全，并守住约定。"
+    }
+  ],
+  "retell_prompt": "说说诸葛亮怎样用草船和大雾完成约定。"
+}

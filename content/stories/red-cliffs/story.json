@@ -1,0 +1,109 @@
+{
+  "id": "red-cliffs",
+  "title_zh": "赤壁同心",
+  "title_en": "Teamwork at Red Cliffs",
+  "level": 3,
+  "age_range": "5-8",
+  "source_note": "Based on public-domain 《三国演义》, rewritten for children.",
+  "source_url": "https://zh.wikisource.org/wiki/三國演義/第049回",
+  "cover_image": "stories/red-cliffs/cover.png",
+  "paragraphs": [
+    {
+      "text": "赤壁江边，曹操的船队很多，江面显得十分热闹。孙权和刘备一方人数较少，大家知道，只有合作，才可能想出好办法。江边百姓也盼着风浪早点过去，日子重新安定。",
+      "pinyin": "chì bì jiāng biān， cáo cāo de chuán duì hěn duō， jiāng miàn xiǎn de shí fēn rè nào。 sūn quán hé liú bèi yī fāng rén shù jiào shǎo， dà jiā zhī dào， zhǐ yǒu hé zuò， cái kě néng xiǎng chū hǎo bàn fǎ。 jiāng biān bǎi xìng yě pàn zháo fēng làng zǎo diǎn guò qù， rì zi chóng xīn ān dìng。"
+    },
+    {
+      "text": "周瑜负责安排船只，诸葛亮负责观察风向，黄盖负责传递信号。每个人做的事不同，目标却一样：保护百姓，让江边早日安定。他们反复核对时间，提醒同伴不要抢先行动。",
+      "pinyin": "zhōu yú fù zé ān pái chuán zhī， zhū gě liàng fù zé guān chá fēng xiàng， huáng gài fù zé chuán dì xìn hào。 měi gè rén zuò de shì bù tóng， mù biāo què yī yàng： bǎo hù bǎi xìng， ràng jiāng biān zǎo rì ān dìng。 tā men fǎn fù hé duì shí jiān， tí xǐng tóng bàn bú yào qiǎng xiān xíng dòng。"
+    },
+    {
+      "text": "他们发现曹操的船连在一起，转身不太方便。夜里，东南风起，信号传来，江面出现明亮火光，曹操的船队一下子乱了阵脚。火光在故事里只是计策的信号，不是吓人的场面。",
+      "pinyin": "tā men fā xiàn cáo cāo de chuán lián zài yì qǐ， zhuǎn shēn bù tài fāng biàn。 yè lǐ， dōng nán fēng qǐ， xìn hào chuán lái， jiāng miàn chū xiàn míng liàng huǒ guāng， cáo cāo de chuán duì yī xià zi luàn le zhèn jiǎo。 huǒ guāng zài gù shì lǐ zhǐ shì jì cè de xìn hào， bú shì xià rén de chǎng miàn。"
+    },
+    {
+      "text": "孙刘两方没有追着吵闹，而是按计划守住江岸，帮助自己的人安全前进。曹操见形势不利，带着船队后退。大家把路让给需要离开的人，也把注意力放在照看队伍上。",
+      "pinyin": "sūn liú liǎng fāng méi yǒu zhuī zhe chǎo nào， ér shì àn jì huà shǒu zhù jiāng àn， bāng zhù zì jǐ de rén ān quán qián jìn。 cáo cāo jiàn xíng shì bù lì， dài zhe chuán duì hòu tuì。 dà jiā bǎ lù ràng gěi xū yào lí kāi de rén， yě bǎ zhù yì lì fàng zài zhào kàn duì wǔ shàng。"
+    },
+    {
+      "text": "赤壁的故事很有名。它告诉我们，聪明不是一个人的表演，而是许多人看准时机、互相信任、一起完成重要的事。分工清楚、彼此相信，小队伍也能做成大事情。",
+      "pinyin": "chì bì de gù shì hěn yǒu míng。 tā gào sù wǒ men， cōng míng bú shì yí gè rén de biǎo yǎn， ér shì xǔ duō rén kàn zhǔn shí jī、 hù xiāng xìn rèn、 yì qǐ wán chéng zhòng yào de shì。 fēn gōng qīng chǔ、 bǐ cǐ xiāng xìn， xiǎo duì wǔ yě néng zuò chéng dà shì qíng。"
+    }
+  ],
+  "vocab": [
+    {
+      "word": "赤壁",
+      "pinyin": "chì bì",
+      "meaning": "Red Cliffs",
+      "example": "赤壁江边船队很多。"
+    },
+    {
+      "word": "合作",
+      "pinyin": "hé zuò",
+      "meaning": "cooperation",
+      "example": "只有合作才有好办法。"
+    },
+    {
+      "word": "风向",
+      "pinyin": "fēng xiàng",
+      "meaning": "wind direction",
+      "example": "诸葛亮观察风向。"
+    },
+    {
+      "word": "信号",
+      "pinyin": "xìn hào",
+      "meaning": "signal",
+      "example": "黄盖负责传递信号。"
+    },
+    {
+      "word": "保护",
+      "pinyin": "bǎo hù",
+      "meaning": "to protect",
+      "example": "目标是保护百姓。"
+    },
+    {
+      "word": "时机",
+      "pinyin": "shí jī",
+      "meaning": "right timing",
+      "example": "他们看准时机。"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q1",
+      "type": "single_choice",
+      "prompt": "孙权和刘备一方为什么需要合作？",
+      "options": [
+        "人数较少",
+        "想办花会",
+        "要修茅庐"
+      ],
+      "answer": "人数较少",
+      "explanation": "正文说他们人数较少，只有合作才可能想出好办法。"
+    },
+    {
+      "id": "q2",
+      "type": "single_choice",
+      "prompt": "诸葛亮负责观察什么？",
+      "options": [
+        "风向",
+        "梅子",
+        "桃花"
+      ],
+      "answer": "风向",
+      "explanation": "第二段说诸葛亮负责观察风向。"
+    },
+    {
+      "id": "q3",
+      "type": "single_choice",
+      "prompt": "赤壁故事强调聪明来自什么？",
+      "options": [
+        "互相信任和合作",
+        "一个人表演",
+        "谁声音最大"
+      ],
+      "answer": "互相信任和合作",
+      "explanation": "结尾说聪明是许多人看准时机、互相信任、一起完成重要的事。"
+    }
+  ],
+  "retell_prompt": "说说赤壁江边的人们怎样分工合作。"
+}

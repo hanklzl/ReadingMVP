@@ -1,0 +1,109 @@
+{
+  "id": "seven-captures",
+  "title_zh": "七擒孟获",
+  "title_en": "Winning Trust Seven Times",
+  "level": 3,
+  "age_range": "5-8",
+  "source_note": "Based on public-domain 《三国演义》, rewritten for children.",
+  "source_url": "https://zh.wikisource.org/wiki/三國演義/第088回",
+  "cover_image": "stories/seven-captures/cover.png",
+  "paragraphs": [
+    {
+      "text": "诸葛亮来到南方，见到当地首领孟获。孟获勇敢，也很爱自己的百姓，可他一开始不相信诸葛亮的诚意。他担心家乡受委屈，所以总想亲自看个明白。",
+      "pinyin": "zhū gě liàng lái dào nán fāng， jiàn dào dāng dì shǒu lǐng mèng huò。 mèng huò yǒng gǎn， yě hěn ài zì jǐ de bǎi xìng， kě tā yī kāi shǐ bù xiāng xìn zhū gě liàng de chéng yì。 tā dān xīn jiā xiāng shòu wěi qū， suǒ yǐ zǒng xiǎng qīn zì kàn gè míng bái。"
+    },
+    {
+      "text": "诸葛亮没有只想让人害怕。他说，要让人真正信服，先要让对方明白自己的心。于是，每次孟获不服，他都放他回去再谈。旁人觉得奇怪，诸葛亮却说，心服比口服更重要。",
+      "pinyin": "zhū gě liàng méi yǒu zhǐ xiǎng ràng rén hài pà。 tā shuō， yào ràng rén zhēn zhèng xìn fú， xiān yào ràng duì fāng míng bái zì jǐ de xīn。 yú shì， měi cì mèng huò bù fú， tā dōu fàng tā huí qù zài tán。 páng rén jué de qí guài， zhū gě liàng què shuō， xīn fú bǐ kǒu fú gèng zhòng yào。"
+    },
+    {
+      "text": "一次又一次，诸葛亮守信，也请队伍尊重当地百姓。孟获看见他们不抢东西，不欺负人，心里的疑问慢慢少了。有人送来水和食物，诸葛亮也让大家礼貌道谢。",
+      "pinyin": "yī cì yòu yī cì， zhū gě liàng shǒu xìn， yě qǐng duì wǔ zūn zhòng dāng dì bǎi xìng。 mèng huò kàn jiàn tā men bù qiǎng dōng xī， bù qī fù rén， xīn lǐ de yí wèn màn màn shǎo le。 yǒu rén sòng lái shuǐ hé shí wù， zhū gě liàng yě ràng dà jiā lǐ mào dào xiè。"
+    },
+    {
+      "text": "到了第七次，孟获终于明白，诸葛亮不是为了逞强，而是希望大家少争执、多安定。他认真表示愿意和好，也愿意一起照看南方的百姓。",
+      "pinyin": "dào le dì qī cì， mèng huò zhōng yú míng bái， zhū gě liàng bú shì wèi le chěng qiáng， ér shì xī wàng dà jiā shǎo zhēng zhí、 duō ān dìng。 tā rèn zhēn biǎo shì yuàn yì hé hǎo， yě yuàn yì yì qǐ zhào kàn nán fāng de bǎi xìng。"
+    },
+    {
+      "text": "七擒孟获的故事告诉我们，宽容有时比强硬更有力量。让别人信服，靠的是守信、尊重和为百姓着想。当彼此都愿意好好说话，原来的距离就会慢慢变近。",
+      "pinyin": "qī qín mèng huò de gù shì gào sù wǒ men， kuān róng yǒu shí bǐ qiáng yìng gèng yǒu lì liàng。 ràng bié rén xìn fú， kào de shì shǒu xìn、 zūn zhòng hé wèi bǎi xìng zhuó xiǎng。 dāng bǐ cǐ dōu yuàn yì hǎo hǎo shuō huà， yuán lái de jù lí jiù huì màn màn biàn jìn。"
+    }
+  ],
+  "vocab": [
+    {
+      "word": "孟获",
+      "pinyin": "mèng huò",
+      "meaning": "Meng Huo",
+      "example": "诸葛亮见到孟获。"
+    },
+    {
+      "word": "首领",
+      "pinyin": "shǒu lǐng",
+      "meaning": "leader",
+      "example": "孟获是当地首领。"
+    },
+    {
+      "word": "诚意",
+      "pinyin": "chéng yì",
+      "meaning": "sincerity",
+      "example": "他不相信诸葛亮的诚意。"
+    },
+    {
+      "word": "信服",
+      "pinyin": "xìn fú",
+      "meaning": "to be convinced",
+      "example": "要让人真正信服。"
+    },
+    {
+      "word": "守信",
+      "pinyin": "shǒu xìn",
+      "meaning": "to keep one's word",
+      "example": "诸葛亮守信。"
+    },
+    {
+      "word": "宽容",
+      "pinyin": "kuān róng",
+      "meaning": "tolerance",
+      "example": "宽容有时更有力量。"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q1",
+      "type": "single_choice",
+      "prompt": "孟获一开始相信诸葛亮的诚意吗？",
+      "options": [
+        "不相信",
+        "完全相信",
+        "没有见过"
+      ],
+      "answer": "不相信",
+      "explanation": "第一段说孟获一开始不相信诸葛亮的诚意。"
+    },
+    {
+      "id": "q2",
+      "type": "single_choice",
+      "prompt": "诸葛亮怎样对待不服的孟获？",
+      "options": [
+        "放他回去再谈",
+        "不再说话",
+        "让他去摘梅子"
+      ],
+      "answer": "放他回去再谈",
+      "explanation": "正文说每次孟获不服，诸葛亮都放他回去再谈。"
+    },
+    {
+      "id": "q3",
+      "type": "single_choice",
+      "prompt": "这个故事认为让别人信服靠什么？",
+      "options": [
+        "守信和尊重",
+        "吵得更大声",
+        "只想逞强"
+      ],
+      "answer": "守信和尊重",
+      "explanation": "结尾说让别人信服，靠的是守信、尊重和为百姓着想。"
+    }
+  ],
+  "retell_prompt": "说说诸葛亮怎样一步一步让孟获信服。"
+}

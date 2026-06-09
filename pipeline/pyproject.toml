@@ -1,0 +1,20 @@
+[project]
+name = "little-mandarin-content-pipeline"
+version = "0.1.0"
+description = "Content scraping, transformation, and validation tools for Little Mandarin Classics."
+requires-python = ">=3.11"
+dependencies = [
+    "beautifulsoup4>=4.12.3",
+    "jsonschema>=4.23.0",
+    "pypinyin>=0.51.0",
+    "requests>=2.32.3",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.3.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
