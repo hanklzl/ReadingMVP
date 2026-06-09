@@ -1,0 +1,42 @@
+# macOS
+.DS_Store
+
+# Gradle / Kotlin / Android
+.gradle/
+**/build/
+local.properties
+*.iml
+.kotlin/
+captures/
+
+# IDE
+.idea/
+
+# Xcode / iOS
+xcuserdata/
+*.xcuserstate
+DerivedData/
+.swiftpm/
+Pods/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+
+# Secrets / signing — 切勿提交
+*.keystore
+*.jks
+*.p12
+*.mobileprovision
+google-services.json
+GoogleService-Info.plist
+secrets.*
