@@ -244,6 +244,9 @@ final class ReaderViewModel: ObservableObject {
     @Published private(set) var loadingState: LMCLoadingState = .idle
     @Published private(set) var isSpeaking = false
     @Published private(set) var readingAudioStatus: LMCReadingAudioStatus = .idle
+    @Published private(set) var readingMode: LMCReadingPlaybackMode = .readAlong
+    @Published private(set) var autoContinueEnabled = true
+    @Published private(set) var playbackSpeed: LMCReadingPlaybackSpeed = .defaultSlow
     @Published private(set) var launchGate: LMCLaunchGate = .loading
     @Published private(set) var wordBookSummary: WordBookSummary?
     @Published private(set) var streakSummary: StreakSummary?
@@ -269,6 +272,7 @@ final class ReaderViewModel: ObservableObject {
     private let aiService = LMCAiExplanationAdapter()
     private var speechTask: Task<Void, Never>?
     private var readingAudioTask: Task<Void, Never>?
+    private var activeSentenceShouldAutoContinue = true
     private var generatedAudioPlayer: AVAudioPlayer?
     private var generatedAudioDelegate: LMCGeneratedAudioDelegate?
 
@@ -412,6 +416,19 @@ final class ReaderViewModel: ObservableObject {
         storyProgress(for: story).status == .completed ? "status_completed" : "status_not_started"
     }
 
+    func setReadingMode(_ mode: LMCReadingPlaybackMode) {
+        readingMode = mode
+    }
+
+    func setAutoContinue(_ enabled: Bool) {
+        autoContinueEnabled = enabled
+    }
+
+    func setPlaybackSpeed(_ speed: LMCReadingPlaybackSpeed) {
+        playbackSpeed = speed
+        generatedAudioPlayer?.rate = Float(speed.multiplier)
+    }
+
     func speakCurrent(_ text: String) {
         speak(text)
     }
@@ -428,13 +445,44 @@ final class ReaderViewModel: ObservableObject {
             stopSpeaking()
             return
         }
+        activeSentenceShouldAutoContinue = readingMode == .readAlong && autoContinueEnabled
+        playReadingSentence(story: story, location: location, shouldTrack: true)
+    }
+
+    func playTappedSentence(story: Story, paragraphIndex: Int, sentenceIndex: Int) {
+        guard let location = story.lmcNormalizedSentenceLocation(
+            paragraphIndex: paragraphIndex,
+            sentenceIndex: sentenceIndex
+        ) else {
+            stopSpeaking()
+            return
+        }
+        activeSentenceShouldAutoContinue = readingMode == .readAlong && autoContinueEnabled
+        playReadingSentence(story: story, location: location, shouldTrack: true)
+    }
+
+    func playSentenceOnly(story: Story, paragraphIndex: Int, sentenceIndex: Int) {
+        guard let location = story.lmcNormalizedSentenceLocation(
+            paragraphIndex: paragraphIndex,
+            sentenceIndex: sentenceIndex
+        ) else {
+            stopSpeaking()
+            return
+        }
+        activeSentenceShouldAutoContinue = false
+        playReadingSentence(story: story, location: location, shouldTrack: true)
+    }
+
+    func repeatCurrentSentence(story: Story) {
+        guard let location = readingAudioLocation else { return }
+        activeSentenceShouldAutoContinue = false
         playReadingSentence(story: story, location: location, shouldTrack: true)
     }
 
     func pauseSentencePlayback() {
         guard case .playing(let location, let source) = readingAudioStatus else { return }
         switch source {
-        case .generated:
+        case .recorded:
             generatedAudioPlayer?.pause()
         case .tts:
             readingAudioTask?.cancel()
@@ -450,7 +498,7 @@ final class ReaderViewModel: ObservableObject {
     func resumeSentencePlayback(story: Story) {
         guard case .paused(let location, let source) = readingAudioStatus else { return }
         switch source {
-        case .generated where generatedAudioPlayer != nil:
+        case .recorded where generatedAudioPlayer != nil:
             guard generatedAudioPlayer?.play() == true else {
                 playReadingSentence(story: story, location: location, shouldTrack: false)
                 return
@@ -468,11 +516,31 @@ final class ReaderViewModel: ObservableObject {
             stopSpeaking()
             return
         }
-        playReadingSentence(story: story, location: nextLocation, shouldTrack: true)
+        if isReadingAudioActive && !isReadingAudioPaused {
+            playReadingSentence(story: story, location: nextLocation, shouldTrack: true)
+        } else {
+            readingAudioStatus = .paused(nextLocation, .tts)
+        }
+    }
+
+    func previousSentencePlayback(story: Story) {
+        guard let location = readingAudioLocation,
+              let previousLocation = story.lmcPreviousSentenceLocation(before: location) else {
+            return
+        }
+        if isReadingAudioActive && !isReadingAudioPaused {
+            playReadingSentence(story: story, location: previousLocation, shouldTrack: true)
+        } else {
+            readingAudioStatus = .paused(previousLocation, .tts)
+        }
     }
 
     func stopSentencePlayback() {
+        let location = readingAudioLocation
         stopSpeaking()
+        if let location {
+            readingAudioStatus = .stopped(location)
+        }
     }
 
     func vocabSpeechText(_ word: Vocab) -> String {
@@ -509,14 +577,16 @@ final class ReaderViewModel: ObservableObject {
         _ story: Story,
         paragraphIndex: Int,
         sentenceIndex: Int? = nil,
-        audioSource: LMCAudioSource = .tts
+        audioSource: LMCAudioSource = .tts,
+        playbackSpeedBucket: String? = nil
     ) {
         analytics.track(
             ReaderAnalyticsEvents.shared.paragraphAudioPlay(
                 storyId: story.id,
                 paragraphIndex: Int32(paragraphIndex + 1),
                 audioSource: audioSource.rawValue,
-                sentenceIndex: sentenceIndex.map { KotlinInt(int: Int32($0)) }
+                sentenceIndex: sentenceIndex.map { KotlinInt(int: Int32($0)) },
+                playbackSpeedBucket: playbackSpeedBucket
             )
         )
     }
@@ -676,7 +746,10 @@ final class ReaderViewModel: ObservableObject {
                 story: story,
                 savedParagraphIndex: Int32(saved),
                 audioManifest: emptyAudioManifest(for: story),
-                savedSentenceIndex: 0
+                savedSentenceIndex: 0,
+                playbackMode: sharedReadingMode,
+                autoContinue: autoContinueEnabled,
+                playbackSpeed: sharedPlaybackSpeed
             ).paragraphIndex
         )
     }
@@ -692,7 +765,10 @@ final class ReaderViewModel: ObservableObject {
             paragraphIndex: Int32(paragraphIndex),
             sentenceIndex: 0,
             audioManifest: emptyAudioManifest(for: story),
-            playbackStatus: .stopped
+            playbackStatus: .stopped,
+            playbackMode: sharedReadingMode,
+            autoContinue: autoContinueEnabled,
+            playbackSpeed: sharedPlaybackSpeed
         )
     }
 
@@ -714,6 +790,26 @@ final class ReaderViewModel: ObservableObject {
 
     private func emptyAudioManifest(for story: Story) -> StoryAudioManifest {
         StoryAudioManifest.companion.empty(storyId: story.id)
+    }
+
+    private var sharedReadingMode: ReadingSessionMode {
+        switch readingMode {
+        case .readAlong:
+            return .readalong
+        case .tapToListen:
+            return .taptolisten
+        }
+    }
+
+    private var sharedPlaybackSpeed: ReadingPlaybackSpeed {
+        switch playbackSpeed {
+        case .slow:
+            return .slow
+        case .defaultSlow:
+            return .defaultslow
+        case .normal:
+            return .normal
+        }
     }
 
     func filteredStories(level selectedLevel: Int?) -> [Story] {
@@ -768,7 +864,7 @@ final class ReaderViewModel: ObservableObject {
         readingAudioStatus = .idle
         speechTask = Task { @MainActor in
             isSpeaking = true
-            try? await ttsService.speak(text: text)
+            try? await ttsService.speak(text: text, speedMultiplier: 1.0)
         }
     }
 
@@ -801,6 +897,8 @@ final class ReaderViewModel: ObservableObject {
             try? AVAudioSession.sharedInstance().setActive(true)
 
             let player = try AVAudioPlayer(contentsOf: url)
+            player.enableRate = true
+            player.rate = Float(playbackSpeed.multiplier)
             let delegate = LMCGeneratedAudioDelegate { [weak self] in
                 Task { @MainActor [weak self] in
                     self?.finishReadingSentence(story: story, location: location)
@@ -812,14 +910,15 @@ final class ReaderViewModel: ObservableObject {
 
             generatedAudioPlayer = player
             generatedAudioDelegate = delegate
-            readingAudioStatus = .playing(location, .generated)
+            readingAudioStatus = .playing(location, .recorded)
             isSpeaking = true
             if shouldTrack {
                 trackParagraphAudioPlay(
                     story,
                     paragraphIndex: location.paragraphIndex,
                     sentenceIndex: location.sentenceIndex,
-                    audioSource: .generated
+                    audioSource: .recorded,
+                    playbackSpeedBucket: playbackSpeed.analyticsBucket
                 )
             }
             return true
@@ -842,14 +941,17 @@ final class ReaderViewModel: ObservableObject {
                 story,
                 paragraphIndex: location.paragraphIndex,
                 sentenceIndex: location.sentenceIndex,
-                audioSource: .tts
+                audioSource: .tts,
+                playbackSpeedBucket: playbackSpeed.analyticsBucket
             )
         }
 
         readingAudioTask = Task { @MainActor in
-            try? await ttsService.speak(text: text)
+            try? await ttsService.speak(text: text, speedMultiplier: Float(playbackSpeed.multiplier))
             do {
-                try await Task.sleep(nanoseconds: LMCTtsDurationEstimator.nanoseconds(for: text))
+                try await Task.sleep(
+                    nanoseconds: LMCTtsDurationEstimator.nanoseconds(for: text, speedMultiplier: playbackSpeed.multiplier)
+                )
             } catch {
                 return
             }
@@ -862,6 +964,12 @@ final class ReaderViewModel: ObservableObject {
 
     private func finishReadingSentence(story: Story, location: LMCSentenceLocation) {
         guard readingAudioStatus.location == location else { return }
+        guard activeSentenceShouldAutoContinue else {
+            readingAudioStatus = .stopped(location)
+            isSpeaking = false
+            stopGeneratedAudio()
+            return
+        }
         guard let nextLocation = story.lmcNextSentenceLocation(after: location) else {
             readingAudioStatus = .idle
             isSpeaking = false
@@ -1002,8 +1110,52 @@ enum LMCVocabOpenSource: String {
 }
 
 enum LMCAudioSource: String {
-    case generated
+    case recorded
     case tts
+}
+
+enum LMCReadingPlaybackMode: Hashable {
+    case readAlong
+    case tapToListen
+}
+
+enum LMCReadingPlaybackSpeed: CaseIterable, Hashable {
+    case slow
+    case defaultSlow
+    case normal
+
+    var multiplier: Double {
+        switch self {
+        case .slow:
+            return 0.80
+        case .defaultSlow:
+            return 0.90
+        case .normal:
+            return 1.00
+        }
+    }
+
+    var analyticsBucket: String {
+        switch self {
+        case .slow:
+            return "slow"
+        case .defaultSlow:
+            return "default_slow"
+        case .normal:
+            return "normal"
+        }
+    }
+
+    var labelKey: String {
+        switch self {
+        case .slow:
+            return "reading_speed_slow"
+        case .defaultSlow:
+            return "reading_speed_default"
+        case .normal:
+            return "reading_speed_normal"
+        }
+    }
 }
 
 struct LMCSentenceLocation: Equatable {
@@ -1020,6 +1172,7 @@ enum LMCReadingAudioStatus {
     case idle
     case playing(LMCSentenceLocation, LMCAudioSource)
     case paused(LMCSentenceLocation, LMCAudioSource)
+    case stopped(LMCSentenceLocation)
 
     var location: LMCSentenceLocation? {
         switch self {
@@ -1027,12 +1180,18 @@ enum LMCReadingAudioStatus {
             return nil
         case .playing(let location, _), .paused(let location, _):
             return location
+        case .stopped(let location):
+            return location
         }
     }
 
     var isActive: Bool {
-        if case .idle = self { return false }
-        return true
+        switch self {
+        case .playing, .paused:
+            return true
+        case .idle, .stopped:
+            return false
+        }
     }
 
     var isPaused: Bool {
@@ -2294,10 +2453,22 @@ private struct ReadingScreen: View {
     let openVocabulary: () -> Void
     @State private var paragraphIndex = 0
     @State private var askState: LMCAiAskState = .idle
+    @State private var autoFollowReading = true
+    @AppStorage("reading_coachmark_tts_row_dismissed") private var didDismissReadAlongCoachmark = false
 
     private var activeSentenceLocation: LMCSentenceLocation? {
         guard let location = viewModel.readingAudioLocation, location.storyId == story.id else { return nil }
         return location
+    }
+
+    private var canGoPreviousSentence: Bool {
+        guard let location = activeSentenceLocation else { return false }
+        return story.lmcPreviousSentenceLocation(before: location) != nil
+    }
+
+    private var canGoNextSentence: Bool {
+        guard let location = activeSentenceLocation else { return false }
+        return story.lmcNextSentenceLocation(after: location) != nil
     }
 
     private var readingState: ReadingSessionState {
@@ -2327,7 +2498,7 @@ private struct ReadingScreen: View {
                     if viewModel.isReadingAudioActive {
                         viewModel.stopSentencePlayback()
                     } else {
-                        viewModel.startSentencePlayback(story: story, paragraphIndex: paragraphIndex)
+                        startPlaybackAtVisiblePosition()
                     }
                 }
             )
@@ -2336,6 +2507,21 @@ private struct ReadingScreen: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: LMCSpace.s5) {
                         readingControls
+                        if viewModel.isReadingAudioActive,
+                           !autoFollowReading,
+                           let location = activeSentenceLocation {
+                            Button {
+                                autoFollowReading = true
+                                paragraphIndex = location.paragraphIndex
+                                withAnimation(.easeInOut(duration: 0.25)) {
+                                    proxy.scrollTo(location.scrollId, anchor: .center)
+                                }
+                            } label: {
+                                Label("reading_back_to_reading_place", systemImage: "scope")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(LMCSecondaryButtonStyle())
+                        }
                         askPanel
 
                         VStack(alignment: .leading, spacing: LMCSpace.s5) {
@@ -2347,7 +2533,23 @@ private struct ReadingScreen: View {
                                     size: size,
                                     showPinyin: showPinyin,
                                     isCurrentParagraph: index == paragraphIndex,
-                                    activeSentenceIndex: activeSentenceLocation?.paragraphIndex == index ? activeSentenceLocation?.sentenceIndex : nil
+                                    activeSentenceIndex: activeSentenceLocation?.paragraphIndex == index ? activeSentenceLocation?.sentenceIndex : nil,
+                                    playSentence: { sentenceIndex in
+                                        autoFollowReading = true
+                                        viewModel.playTappedSentence(
+                                            story: story,
+                                            paragraphIndex: index,
+                                            sentenceIndex: sentenceIndex
+                                        )
+                                    },
+                                    playSentenceOnly: { sentenceIndex in
+                                        autoFollowReading = true
+                                        viewModel.playSentenceOnly(
+                                            story: story,
+                                            paragraphIndex: index,
+                                            sentenceIndex: sentenceIndex
+                                        )
+                                    }
                                 )
                             }
                         }
@@ -2360,9 +2562,17 @@ private struct ReadingScreen: View {
                     .frame(maxWidth: LMCSpace.readingMaxWidth + LMCSpace.s8)
                     .frame(maxWidth: .infinity)
                 }
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 8).onChanged { _ in
+                        if viewModel.isReadingAudioActive {
+                            autoFollowReading = false
+                        }
+                    }
+                )
                 .onChange(of: viewModel.readingAudioLocation) { location in
                     guard let location, location.storyId == story.id else { return }
                     paragraphIndex = location.paragraphIndex
+                    guard autoFollowReading else { return }
                     withAnimation(.easeInOut(duration: 0.25)) {
                         proxy.scrollTo(location.scrollId, anchor: .center)
                     }
@@ -2422,8 +2632,49 @@ private struct ReadingScreen: View {
                 LMCSegmentedReadingSize(readingSize: $readingSize)
             }
 
+            LMCPlaybackModeControl(mode: readingModeBinding)
+
+            HStack(alignment: .center, spacing: LMCSpace.s3) {
+                Toggle(isOn: autoContinueBinding) {
+                    Text("reading_auto_continue")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(LMCColor.textPrimary)
+                }
+                .tint(LMCColor.secondary)
+                .disabled(viewModel.readingMode == .tapToListen)
+
+                Spacer(minLength: LMCSpace.s2)
+
+                Menu {
+                    ForEach(LMCReadingPlaybackSpeed.allCases, id: \.self) { speed in
+                        Button {
+                            viewModel.setPlaybackSpeed(speed)
+                        } label: {
+                            Label(
+                                LocalizedStringKey(speed.labelKey),
+                                systemImage: speed == viewModel.playbackSpeed ? "checkmark" : "speedometer"
+                            )
+                        }
+                    }
+                } label: {
+                    Label(
+                        LocalizedStringKey(viewModel.playbackSpeed.labelKey),
+                        systemImage: "speedometer"
+                    )
+                    .lineLimit(1)
+                }
+                .buttonStyle(LMCSecondaryButtonStyle())
+                .accessibilityLabel(Text("reading_playback_speed"))
+            }
+
             if viewModel.isReadingAudioActive {
                 HStack(spacing: LMCSpace.s2) {
+                    IconButton(
+                        systemName: "backward.end.fill",
+                        labelKey: "reading_previous_sentence",
+                        action: { viewModel.previousSentencePlayback(story: story) }
+                    )
+                    .disabled(!canGoPreviousSentence)
                     IconButton(
                         systemName: viewModel.isReadingAudioPaused ? "play.fill" : "pause.fill",
                         labelKey: viewModel.isReadingAudioPaused ? "reading_resume_audio" : "reading_pause_audio",
@@ -2436,10 +2687,16 @@ private struct ReadingScreen: View {
                         }
                     )
                     IconButton(
+                        systemName: "repeat",
+                        labelKey: "reading_repeat_sentence",
+                        action: { viewModel.repeatCurrentSentence(story: story) }
+                    )
+                    IconButton(
                         systemName: "forward.end.fill",
                         labelKey: "reading_next_sentence",
                         action: { viewModel.advanceSentencePlayback(story: story) }
                     )
+                    .disabled(!canGoNextSentence)
                     IconButton(
                         systemName: "stop.circle.fill",
                         labelKey: "reading_stop_audio",
@@ -2453,17 +2710,54 @@ private struct ReadingScreen: View {
                 if viewModel.isReadingAudioActive {
                     viewModel.stopSentencePlayback()
                 } else {
-                    viewModel.startSentencePlayback(story: story, paragraphIndex: paragraphIndex)
+                    startPlaybackAtVisiblePosition()
                 }
             } label: {
                 Label(
-                    LocalizedStringKey(viewModel.isReadingAudioActive ? "reading_stop_audio" : "reading_read_all"),
+                    LocalizedStringKey(primaryAudioButtonLabelKey),
                     systemImage: viewModel.isReadingAudioActive ? "stop.circle.fill" : "speaker.wave.2.fill"
                 )
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(LMCSecondaryButtonStyle())
+
+            if !didDismissReadAlongCoachmark {
+                ReadingAudioCoachmark {
+                    didDismissReadAlongCoachmark = true
+                }
+            }
         }
+    }
+
+    private var primaryAudioButtonLabelKey: String {
+        if viewModel.isReadingAudioActive {
+            return "reading_stop_audio"
+        }
+        return viewModel.readingMode == .readAlong ? "reading_read_all" : "reading_sentence_play"
+    }
+
+    private var readingModeBinding: Binding<LMCReadingPlaybackMode> {
+        Binding(
+            get: { viewModel.readingMode },
+            set: { mode in viewModel.setReadingMode(mode) }
+        )
+    }
+
+    private var autoContinueBinding: Binding<Bool> {
+        Binding(
+            get: { viewModel.autoContinueEnabled },
+            set: { enabled in viewModel.setAutoContinue(enabled) }
+        )
+    }
+
+    private func startPlaybackAtVisiblePosition() {
+        autoFollowReading = true
+        let retainedLocation = activeSentenceLocation?.paragraphIndex == paragraphIndex ? activeSentenceLocation : nil
+        viewModel.startSentencePlayback(
+            story: story,
+            paragraphIndex: retainedLocation?.paragraphIndex ?? paragraphIndex,
+            sentenceIndex: retainedLocation?.sentenceIndex ?? 0
+        )
     }
 
     private var askPanel: some View {
@@ -3383,6 +3677,60 @@ private struct ReadingTopBar: View {
     }
 }
 
+private struct LMCPlaybackModeControl: View {
+    @Binding var mode: LMCReadingPlaybackMode
+
+    var body: some View {
+        HStack(spacing: LMCSpace.s1) {
+            playbackModeButton(.readAlong, labelKey: "reading_mode_read_along", systemName: "speaker.wave.2.fill")
+            playbackModeButton(.tapToListen, labelKey: "reading_mode_tap_to_listen", systemName: "hand.tap.fill")
+        }
+        .padding(LMCSpace.s1)
+        .background(LMCColor.outlineVariant)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    private func playbackModeButton(
+        _ candidate: LMCReadingPlaybackMode,
+        labelKey: LocalizedStringKey,
+        systemName: String
+    ) -> some View {
+        let selected = mode == candidate
+        return Button {
+            mode = candidate
+        } label: {
+            Label(labelKey, systemImage: systemName)
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(selected ? LMCColor.onPrimary : LMCColor.textPrimary)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .background(selected ? LMCColor.primary : LMCColor.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct ReadingAudioCoachmark: View {
+    let dismiss: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: LMCSpace.s2) {
+            Label("reading_coachmark_play", systemImage: "speaker.wave.2.fill")
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(LMCColor.textPrimary)
+            Label("reading_coachmark_sentence", systemImage: "hand.tap.fill")
+                .font(.system(size: 15))
+                .foregroundStyle(LMCColor.textSecondary)
+            Button("action_done", action: dismiss)
+                .buttonStyle(LMCSecondaryButtonStyle())
+        }
+        .padding(LMCSpace.s3)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(LMCColor.secondaryContainer)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+}
+
 private struct ReadingParagraphView: View {
     let storyId: String
     let paragraphIndex: Int
@@ -3391,6 +3739,8 @@ private struct ReadingParagraphView: View {
     let showPinyin: Bool
     let isCurrentParagraph: Bool
     let activeSentenceIndex: Int?
+    let playSentence: (Int) -> Void
+    let playSentenceOnly: (Int) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: LMCSpace.s3) {
@@ -3399,7 +3749,9 @@ private struct ReadingParagraphView: View {
                     sentence: sentence,
                     size: size,
                     showPinyin: showPinyin,
-                    isActive: activeSentenceIndex == sentence.index
+                    isActive: activeSentenceIndex == sentence.index,
+                    playSentence: { playSentence(sentence.index) },
+                    playSentenceOnly: { playSentenceOnly(sentence.index) }
                 )
                 .id(LMCSentenceLocation(
                     storyId: storyId,
@@ -3422,9 +3774,32 @@ private struct ReadingSentenceView: View {
     let size: LMCReadingSize
     let showPinyin: Bool
     let isActive: Bool
+    let playSentence: () -> Void
+    let playSentenceOnly: () -> Void
 
     @ViewBuilder
     var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: LMCSpace.s2) {
+            Button(action: playSentenceOnly) {
+                Image(systemName: "speaker.wave.2.fill")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(isActive ? LMCColor.onSecondaryContainer : LMCColor.secondary)
+                    .frame(width: LMCSpace.minTouch, height: LMCSpace.minTouch)
+                    .background(isActive ? LMCColor.secondary : LMCColor.secondaryContainer)
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("reading_sentence_play"))
+
+            sentenceContent
+                .onTapGesture(perform: playSentence)
+                .accessibilityAddTraits(.isButton)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private var sentenceContent: some View {
         if showPinyin {
             LMCRubyTextFlow(cells: sentence.cells, size: size)
                 .padding(.horizontal, LMCSpace.s2)
@@ -3432,6 +3807,7 @@ private struct ReadingSentenceView: View {
                 .background(sentenceBackground)
                 .overlay(sentenceBorder)
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .frame(maxWidth: .infinity, alignment: .leading)
         } else {
             Text(sentence.text)
                 .font(size.hanziFont)
@@ -3556,6 +3932,27 @@ private extension Story {
 
         return nil
     }
+
+    func lmcPreviousSentenceLocation(before location: LMCSentenceLocation) -> LMCSentenceLocation? {
+        guard location.storyId == id, paragraphs.indices.contains(location.paragraphIndex) else { return nil }
+
+        for candidateParagraphIndex in stride(from: location.paragraphIndex, through: 0, by: -1) {
+            let segments = paragraphs[candidateParagraphIndex].lmcSentenceSegments
+            guard !segments.isEmpty else { continue }
+            let candidateSentenceIndex = candidateParagraphIndex == location.paragraphIndex
+                ? location.sentenceIndex - 1
+                : segments.count - 1
+            if segments.indices.contains(candidateSentenceIndex) {
+                return LMCSentenceLocation(
+                    storyId: id,
+                    paragraphIndex: candidateParagraphIndex,
+                    sentenceIndex: candidateSentenceIndex
+                )
+            }
+        }
+
+        return nil
+    }
 }
 
 private enum LMCSentenceSplitter {
@@ -3669,10 +4066,10 @@ private struct LMCAudioManifestSentence: Decodable {
 }
 
 private enum LMCTtsDurationEstimator {
-    static func nanoseconds(for text: String) -> UInt64 {
+    static func nanoseconds(for text: String, speedMultiplier: Double = 1.0) -> UInt64 {
         let characterCount = max(4, text.count)
         let seconds = min(14.0, max(1.4, Double(characterCount) * 0.28 + 0.6))
-        return UInt64(seconds * 1_000_000_000)
+        return UInt64((seconds / max(0.5, speedMultiplier)) * 1_000_000_000)
     }
 }
 

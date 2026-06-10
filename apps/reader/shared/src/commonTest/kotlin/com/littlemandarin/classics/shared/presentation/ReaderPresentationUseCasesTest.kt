@@ -317,6 +317,7 @@ class ReaderPresentationUseCasesTest {
             paragraphIndex = 0,
             audioSource = "generated",
             sentenceIndex = 1,
+            playbackSpeedBucket = ReadingPlaybackSpeed.DefaultSlow.analyticsBucket,
         )
         val vocabOpen = ReaderAnalyticsEvents.vocabOpen(story, vocabIndex = 1, openSource = "story")
 
@@ -336,6 +337,11 @@ class ReaderPresentationUseCasesTest {
         assertEquals("2", pinyinToggle.properties.getValue("paragraph_index").toString())
         assertEquals(AnalyticsEventName.ParagraphAudioPlay, paragraphAudioPlay.eventName)
         assertEquals("1", paragraphAudioPlay.properties.getValue("sentence_index").toString())
+        assertEquals("recorded", paragraphAudioPlay.properties.getValue("audio_source").toString().trim('"'))
+        assertEquals(
+            "default_slow",
+            paragraphAudioPlay.properties.getValue("playback_speed_bucket").toString().trim('"'),
+        )
         assertEquals(AnalyticsEventName.VocabOpen, vocabOpen.eventName)
         assertEquals("first:2", vocabOpen.properties.getValue("vocab_id").toString().trim('"'))
     }

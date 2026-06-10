@@ -32,10 +32,11 @@ private class AndroidAudioService(
     private val lock = Any()
     private var mediaPlayer: MediaPlayer? = null
 
-    override suspend fun play(resourcePath: String) {
+    override suspend fun play(resourcePath: String, speedMultiplier: Float) {
         if (resourcePath.isBlank()) return
 
         val audioFile = resolveAudioFile(resourcePath)
+        val safeSpeed = speedMultiplier.coerceIn(MinPlaybackSpeed, MaxPlaybackSpeed)
         suspendCancellableCoroutine { continuation ->
             val player = MediaPlayer()
             var settled = false
@@ -74,6 +75,7 @@ private class AndroidAudioService(
                 }
                 player.setDataSource(audioFile.absolutePath)
                 player.prepare()
+                player.playbackParams = player.playbackParams.setSpeed(safeSpeed)
                 synchronized(lock) {
                     releasePlayerLocked()
                     mediaPlayer = player
@@ -97,8 +99,9 @@ private class AndroidAudioService(
         storyId: String,
         paragraphIndex: Int,
         sentenceIndex: Int,
+        speedMultiplier: Float,
     ) {
-        play(sentenceAudioResourcePath(storyId, paragraphIndex, sentenceIndex))
+        play(sentenceAudioResourcePath(storyId, paragraphIndex, sentenceIndex), speedMultiplier)
     }
 
     override suspend fun pause() {
@@ -161,5 +164,7 @@ private class AndroidAudioService(
 
     private companion object {
         const val AudioCacheDirectoryName: String = "little-mandarin-audio"
+        const val MinPlaybackSpeed: Float = 0.5f
+        const val MaxPlaybackSpeed: Float = 1.5f
     }
 }

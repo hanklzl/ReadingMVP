@@ -17,6 +17,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -53,6 +54,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -74,8 +77,12 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -152,6 +159,10 @@ import com.littlemandarin.classics.shared.presentation.ReaderLanguage
 import com.littlemandarin.classics.shared.presentation.ReaderSettings
 import com.littlemandarin.classics.shared.presentation.ReaderSettingsService
 import com.littlemandarin.classics.shared.presentation.ReadingSessionReducer
+import com.littlemandarin.classics.shared.presentation.ReadingAudioSource
+import com.littlemandarin.classics.shared.presentation.ReadingPlaybackStatus
+import com.littlemandarin.classics.shared.presentation.ReadingPlaybackSpeed
+import com.littlemandarin.classics.shared.presentation.ReadingSessionMode
 import com.littlemandarin.classics.shared.presentation.ReadingTextSize
 import com.littlemandarin.classics.shared.presentation.SentenceSegment
 import com.littlemandarin.classics.shared.presentation.SentenceSegmenter
@@ -1504,20 +1515,32 @@ private fun ReadingScreen(
             ),
         )
     }
+    val scope = rememberCoroutineScope()
+    val lifecycleOwner = LocalLifecycleOwner.current
     val paragraphIndex = readingState.paragraphIndex
     val paragraphCount = readingState.paragraphCount
-    val scope = rememberCoroutineScope()
     val paragraph = readingState.currentParagraph
     val sentenceSegments = remember(paragraph?.text) {
         paragraph?.let { SentenceSegmenter.segment(it.text) }.orEmpty()
     }
     val sentenceCountInParagraph = sentenceSegments.size
     val listState = rememberLazyListState()
+    val isListDragged by listState.interactionSource.collectIsDraggedAsState()
+    var autoFollowEnabled by remember(story.id) { mutableStateOf(true) }
+    val context = LocalContext.current
+    val readingPrefs = remember(context) {
+        context.getSharedPreferences(ReadingPrefsName, Context.MODE_PRIVATE)
+    }
+    var showCoachmark by remember(story.id) {
+        mutableStateOf(!readingPrefs.getBoolean(ReadingCoachmarkDismissedKey, false))
+    }
     var playbackState by remember(story.id) {
         mutableStateOf(
             SentencePlaybackUiState(
                 paragraphIndex = paragraphIndex,
                 sentenceCountInParagraph = sentenceCountInParagraph,
+                autoContinue = readingState.autoContinue,
+                playbackSpeed = readingState.playbackSpeed,
             ),
         )
     }
@@ -1534,21 +1557,36 @@ private fun ReadingScreen(
         onReadingPositionChange(story.id, paragraphIndex)
     }
 
+    LaunchedEffect(story.id, readingState.playbackSpeed, readingState.autoContinue) {
+        playbackState = playbackState.copy(
+            autoContinue = readingState.autoContinue,
+            playbackSpeed = readingState.playbackSpeed,
+        )
+    }
+
     LaunchedEffect(
         playbackState.paragraphIndex,
         playbackState.sentenceIndex,
         playbackState.status,
         paragraphIndex,
         sentenceCountInParagraph,
+        autoFollowEnabled,
     ) {
         if (
             playbackState.status != SentencePlaybackStatus.Stopped &&
             playbackState.paragraphIndex == paragraphIndex &&
-            sentenceCountInParagraph > 0
+            sentenceCountInParagraph > 0 &&
+            autoFollowEnabled
         ) {
             listState.animateScrollToItem(
                 playbackState.sentenceIndex.coerceIn(0, sentenceCountInParagraph - 1),
             )
+        }
+    }
+
+    LaunchedEffect(isListDragged, playbackState.status) {
+        if (isListDragged && playbackState.status != SentencePlaybackStatus.Stopped) {
+            autoFollowEnabled = false
         }
     }
 
@@ -1563,15 +1601,18 @@ private fun ReadingScreen(
 
     fun stopSentencePlayback() {
         stopAudioTransport()
+        readingState = readingSessionReducer.stop(readingState)
         playbackState = SentencePlaybackUiState(
             paragraphIndex = paragraphIndex,
             sentenceCountInParagraph = sentenceCountInParagraph,
+            autoContinue = readingState.autoContinue,
+            playbackSpeed = readingState.playbackSpeed,
         )
     }
 
     fun startSentencePlayback(
         target: SentencePlaybackTarget,
-        playThroughStory: Boolean = true,
+        playThroughStory: Boolean = readingState.shouldAutoAdvanceAfterSentence,
     ) {
         if (story.paragraphs.getOrNull(target.paragraphIndex) == null) return
 
@@ -1579,6 +1620,9 @@ private fun ReadingScreen(
         playbackJob = scope.launch {
             audioService.stop()
             ttsService.stop()
+
+            var isFirstSentence = true
+            var previousTarget: SentencePlaybackTarget? = null
 
             var nextTarget: SentencePlaybackTarget? = target
             while (nextTarget != null) {
@@ -1592,12 +1636,28 @@ private fun ReadingScreen(
                     sentenceIndex = activeTarget.sentenceIndex,
                 )
                 val audioSource = if (hasGeneratedAudio) {
-                    SentenceAudioSource.Generated
+                    ReadingAudioSource.Recorded
                 } else {
-                    SentenceAudioSource.Tts
+                    ReadingAudioSource.Tts
                 }
+                val speed = readingState.playbackSpeed
+                val sameParagraphAsPrevious = previousTarget?.paragraphIndex == activeTarget.paragraphIndex
 
-                readingState = readingSessionReducer.stateFor(story, activeTarget.paragraphIndex)
+                if (!isFirstSentence) {
+                    delay(if (sameParagraphAsPrevious) 340L else 560L)
+                }
+                isFirstSentence = false
+                previousTarget = activeTarget
+
+                readingState = readingSessionReducer.stateFor(
+                    story = story,
+                    paragraphIndex = activeTarget.paragraphIndex,
+                    sentenceIndex = activeTarget.sentenceIndex,
+                    playbackStatus = ReadingPlaybackStatus.Playing,
+                    playbackMode = readingState.playbackMode,
+                    autoContinue = readingState.autoContinue,
+                    playbackSpeed = speed,
+                )
                 playbackState = SentencePlaybackUiState(
                     status = SentencePlaybackStatus.Playing,
                     paragraphIndex = activeTarget.paragraphIndex,
@@ -1605,6 +1665,8 @@ private fun ReadingScreen(
                     sentenceCountInParagraph = targetSegments.size,
                     audioSource = audioSource,
                     playThroughStory = playThroughStory,
+                    autoContinue = readingState.autoContinue,
+                    playbackSpeed = speed,
                 )
                 analytics.track(
                     ReaderAnalyticsEvents.paragraphAudioPlay(
@@ -1612,6 +1674,7 @@ private fun ReadingScreen(
                         paragraphIndex = activeTarget.paragraphIndex,
                         audioSource = audioSource.analyticsValue,
                         sentenceIndex = activeTarget.sentenceIndex,
+                        playbackSpeedBucket = speed.analyticsBucket,
                     ),
                 )
 
@@ -1621,25 +1684,27 @@ private fun ReadingScreen(
                             storyId = story.id,
                             paragraphIndex = activeTarget.paragraphIndex,
                             sentenceIndex = activeTarget.sentenceIndex,
+                            speedMultiplier = speed.multiplier.toFloat(),
                         )
                     } catch (cancellation: CancellationException) {
                         throw cancellation
                     } catch (_: Throwable) {
-                        playbackState = playbackState.copy(audioSource = SentenceAudioSource.Tts)
+                        playbackState = playbackState.copy(audioSource = ReadingAudioSource.Tts)
                         analytics.track(
                             ReaderAnalyticsEvents.paragraphAudioPlay(
                                 storyId = story.id,
                                 paragraphIndex = activeTarget.paragraphIndex,
-                                audioSource = SentenceAudioSource.Tts.analyticsValue,
+                                audioSource = ReadingAudioSource.Tts.analyticsValue,
                                 sentenceIndex = activeTarget.sentenceIndex,
+                                playbackSpeedBucket = speed.analyticsBucket,
                             ),
                         )
-                        ttsService.speak(sentence.text)
-                        delay(estimatedSentencePlaybackMillis(sentence.text))
+                        ttsService.speak(sentence.text, speed.multiplier.toFloat())
+                        delay(estimatedSentencePlaybackMillis(sentence.text, speed))
                     }
                 } else {
-                    ttsService.speak(sentence.text)
-                    delay(estimatedSentencePlaybackMillis(sentence.text))
+                    ttsService.speak(sentence.text, speed.multiplier.toFloat())
+                    delay(estimatedSentencePlaybackMillis(sentence.text, speed))
                 }
 
                 nextTarget = if (playThroughStory) {
@@ -1650,6 +1715,7 @@ private fun ReadingScreen(
             }
 
             if (playbackState.status == SentencePlaybackStatus.Playing) {
+                readingState = readingSessionReducer.stop(readingState)
                 playbackState = SentencePlaybackUiState(
                     paragraphIndex = playbackState.paragraphIndex,
                     sentenceCountInParagraph = playbackState.sentenceCountInParagraph,
@@ -1666,11 +1732,18 @@ private fun ReadingScreen(
             0
         }
         if (sentenceCountInParagraph > 0) {
+            val nextReadingState = readingSessionReducer.playReadAlong(
+                story = story,
+                state = readingState,
+            )
+            readingState = nextReadingState
+            autoFollowEnabled = true
             startSentencePlayback(
                 target = SentencePlaybackTarget(
                     paragraphIndex = paragraphIndex,
                     sentenceIndex = targetSentenceIndex,
                 ),
+                playThroughStory = nextReadingState.shouldAutoAdvanceAfterSentence,
             )
         }
     }
@@ -1682,8 +1755,9 @@ private fun ReadingScreen(
         playbackJob = null
         val activePlayback = playbackState
         playbackState = activePlayback.copy(status = SentencePlaybackStatus.Paused)
+        readingState = readingSessionReducer.pause(readingState)
         scope.launch {
-            if (activePlayback.audioSource == SentenceAudioSource.Generated) {
+            if (activePlayback.audioSource == ReadingAudioSource.Recorded) {
                 audioService.pause()
             } else {
                 ttsService.stop()
@@ -1692,6 +1766,8 @@ private fun ReadingScreen(
     }
 
     fun resumeSentencePlayback() {
+        readingState = readingSessionReducer.resume(readingState)
+        autoFollowEnabled = true
         startSentencePlayback(
             target = SentencePlaybackTarget(
                 paragraphIndex = playbackState.paragraphIndex,
@@ -1701,28 +1777,138 @@ private fun ReadingScreen(
         )
     }
 
-    fun playNextSentence() {
-        val baseTarget = if (playbackState.paragraphIndex in story.paragraphs.indices) {
-            SentencePlaybackTarget(
-                paragraphIndex = playbackState.paragraphIndex,
-                sentenceIndex = playbackState.sentenceIndex,
+    fun returnToReadingPlace() {
+        autoFollowEnabled = true
+        scope.launch {
+            listState.animateScrollToItem(
+                playbackState.sentenceIndex.coerceIn(0, (playbackState.sentenceCountInParagraph - 1).coerceAtLeast(0)),
             )
-        } else {
-            SentencePlaybackTarget(paragraphIndex = paragraphIndex, sentenceIndex = 0)
         }
-        val nextTarget = nextSentenceTarget(story, baseTarget) ?: return
+    }
+
+    fun playNextSentence() {
+        val transition = readingSessionReducer.nextSentence(story, readingState)
+        val nextState = transition.state
+        if (
+            nextState.paragraphIndex == readingState.paragraphIndex &&
+            nextState.sentenceIndex == readingState.sentenceIndex
+        ) {
+            return
+        }
+        val wasPlaying = playbackState.status == SentencePlaybackStatus.Playing
+        val playThrough = playbackState.playThroughStory && readingState.autoContinue
+        stopAudioTransport()
+        readingState = nextState
+        autoFollowEnabled = true
+        playbackState = playbackState.copy(
+            status = SentencePlaybackStatus.Stopped,
+            paragraphIndex = nextState.paragraphIndex,
+            sentenceIndex = nextState.sentenceIndex,
+            sentenceCountInParagraph = nextState.segments.size,
+            audioSource = null,
+        )
+        if (wasPlaying) {
+            startSentencePlayback(
+                target = SentencePlaybackTarget(nextState.paragraphIndex, nextState.sentenceIndex),
+                playThroughStory = playThrough,
+            )
+        }
+    }
+
+    fun playPreviousSentence() {
+        val transition = readingSessionReducer.previousSentence(story, readingState)
+        val previousState = transition.state
+        if (
+            previousState.paragraphIndex == readingState.paragraphIndex &&
+            previousState.sentenceIndex == readingState.sentenceIndex
+        ) {
+            return
+        }
+        val wasPlaying = playbackState.status == SentencePlaybackStatus.Playing
+        val playThrough = playbackState.playThroughStory && readingState.autoContinue
+        stopAudioTransport()
+        readingState = previousState
+        autoFollowEnabled = true
+        playbackState = playbackState.copy(
+            status = SentencePlaybackStatus.Stopped,
+            paragraphIndex = previousState.paragraphIndex,
+            sentenceIndex = previousState.sentenceIndex,
+            sentenceCountInParagraph = previousState.segments.size,
+            audioSource = null,
+        )
+        if (wasPlaying) {
+            startSentencePlayback(
+                target = SentencePlaybackTarget(previousState.paragraphIndex, previousState.sentenceIndex),
+                playThroughStory = playThrough,
+            )
+        }
+    }
+
+    fun repeatCurrentSentence() {
+        val currentMode = readingState.playbackMode
+        val repeatState = readingSessionReducer.repeatSentence(story, readingState)
+        readingState = repeatState.copy(playbackMode = currentMode)
+        autoFollowEnabled = true
         startSentencePlayback(
-            target = nextTarget,
-            playThroughStory = playbackState.playThroughStory || playbackState.status == SentencePlaybackStatus.Playing,
+            target = SentencePlaybackTarget(repeatState.paragraphIndex, repeatState.sentenceIndex),
+            playThroughStory = false,
+        )
+    }
+
+    fun playSentenceFromTap(sentenceIndex: Int) {
+        val selectedState = readingSessionReducer.playSentence(
+            story = story,
+            state = readingState,
+            paragraphIndex = paragraphIndex,
+            sentenceIndex = sentenceIndex,
+            playbackMode = readingState.playbackMode,
+        )
+        readingState = selectedState
+        autoFollowEnabled = true
+        startSentencePlayback(
+            target = SentencePlaybackTarget(paragraphIndex, selectedState.sentenceIndex),
+            playThroughStory = selectedState.shouldAutoAdvanceAfterSentence,
+        )
+    }
+
+    fun replaySentenceOnly(sentenceIndex: Int) {
+        val currentMode = readingState.playbackMode
+        val selectedState = readingSessionReducer.playSentence(
+            story = story,
+            state = readingState,
+            paragraphIndex = paragraphIndex,
+            sentenceIndex = sentenceIndex,
+            playbackMode = ReadingSessionMode.TapToListen,
+        )
+        readingState = selectedState.copy(playbackMode = currentMode)
+        autoFollowEnabled = true
+        startSentencePlayback(
+            target = SentencePlaybackTarget(paragraphIndex, selectedState.sentenceIndex),
+            playThroughStory = false,
         )
     }
 
     fun resetPlaybackForParagraph(targetParagraphIndex: Int) {
         stopAudioTransport()
+        autoFollowEnabled = false
         playbackState = SentencePlaybackUiState(
             paragraphIndex = targetParagraphIndex,
             sentenceCountInParagraph = sentenceCountFor(story, targetParagraphIndex),
+            autoContinue = readingState.autoContinue,
+            playbackSpeed = readingState.playbackSpeed,
         )
+    }
+
+    DisposableEffect(lifecycleOwner, playbackState.status) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP && playbackState.status == SentencePlaybackStatus.Playing) {
+                pauseSentencePlayback()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
     Column(
@@ -1764,8 +1950,28 @@ private fun ReadingScreen(
             },
             onTextSizeChange = onTextSizeChange,
         )
+        val canGoPreviousSentence = previousSentenceTarget(
+            story = story,
+            target = SentencePlaybackTarget(
+                paragraphIndex = playbackState.paragraphIndex,
+                sentenceIndex = playbackState.sentenceIndex,
+            ),
+        ) != null
+        val canGoNextSentence = nextSentenceTarget(
+            story = story,
+            target = SentencePlaybackTarget(
+                paragraphIndex = playbackState.paragraphIndex,
+                sentenceIndex = playbackState.sentenceIndex,
+            ),
+        ) != null
+        val showReturnToReadingPlace = !autoFollowEnabled &&
+            playbackState.status != SentencePlaybackStatus.Stopped &&
+            playbackState.sentenceCountInParagraph > 0
         ReadingFullAudioRow(
             playbackState = playbackState,
+            playbackMode = readingState.playbackMode,
+            canGoPreviousSentence = canGoPreviousSentence,
+            canGoNextSentence = canGoNextSentence,
             onPrimaryClick = {
                 when (playbackState.status) {
                     SentencePlaybackStatus.Playing -> pauseSentencePlayback()
@@ -1773,9 +1979,32 @@ private fun ReadingScreen(
                     SentencePlaybackStatus.Stopped -> startCurrentSentencePlayback()
                 }
             },
+            onPreviousSentence = ::playPreviousSentence,
             onNextSentence = ::playNextSentence,
+            onRepeatSentence = ::repeatCurrentSentence,
             onStop = ::stopSentencePlayback,
+            onAutoContinueChange = { enabled ->
+                readingState = readingSessionReducer.setAutoContinue(readingState, enabled)
+                playbackState = playbackState.copy(autoContinue = enabled)
+            },
+            onReturnToReadingPlace = { returnToReadingPlace() },
+            showReturnToReadingPlace = showReturnToReadingPlace,
+            onPlaybackModeChange = { mode ->
+                readingState = readingSessionReducer.setPlaybackMode(readingState, mode)
+            },
+            onPlaybackSpeedChange = { speed ->
+                readingState = readingSessionReducer.setPlaybackSpeed(readingState, speed)
+                playbackState = playbackState.copy(playbackSpeed = speed)
+            },
         )
+        if (showCoachmark) {
+            ReadingAudioCoachmark(
+                onDismiss = {
+                    readingPrefs.edit().putBoolean(ReadingCoachmarkDismissedKey, true).apply()
+                    showCoachmark = false
+                },
+            )
+        }
         Box(
             modifier = Modifier
                 .weight(1f)
@@ -1807,6 +2036,10 @@ private fun ReadingScreen(
                                 isHighlighted = playbackState.status != SentencePlaybackStatus.Stopped &&
                                     playbackState.paragraphIndex == paragraphIndex &&
                                     playbackState.sentenceIndex == sentenceIndex,
+                                sentenceIndex = sentenceIndex,
+                                sentenceCount = sentenceSegments.size,
+                                onSentenceClick = { playSentenceFromTap(sentenceIndex) },
+                                onSpeakerClick = { replaySentenceOnly(sentenceIndex) },
                             )
                         }
                     } else {
@@ -1898,15 +2131,6 @@ private fun ReadingScreen(
     }
 }
 
-private data class SentencePlaybackUiState(
-    val status: SentencePlaybackStatus = SentencePlaybackStatus.Stopped,
-    val paragraphIndex: Int = 0,
-    val sentenceIndex: Int = 0,
-    val sentenceCountInParagraph: Int = 0,
-    val audioSource: SentenceAudioSource? = null,
-    val playThroughStory: Boolean = true,
-)
-
 private data class SentencePlaybackTarget(
     val paragraphIndex: Int,
     val sentenceIndex: Int,
@@ -1918,10 +2142,19 @@ private enum class SentencePlaybackStatus {
     Paused,
 }
 
-private enum class SentenceAudioSource(val analyticsValue: String) {
-    Generated("generated"),
-    Tts("tts"),
-}
+private const val ReadingCoachmarkDismissedKey = "reading_coachmark_tts_row_dismissed"
+private const val ReadingPrefsName = "little_mandarin_reader_settings"
+
+private data class SentencePlaybackUiState(
+    val status: SentencePlaybackStatus = SentencePlaybackStatus.Stopped,
+    val paragraphIndex: Int = 0,
+    val sentenceIndex: Int = 0,
+    val sentenceCountInParagraph: Int = 0,
+    val audioSource: ReadingAudioSource? = null,
+    val playThroughStory: Boolean = true,
+    val autoContinue: Boolean = true,
+    val playbackSpeed: ReadingPlaybackSpeed = ReadingPlaybackSpeed.DefaultSlow,
+)
 
 private fun nextSentenceTarget(
     story: Story,
@@ -1946,6 +2179,29 @@ private fun nextSentenceTarget(
     return null
 }
 
+private fun previousSentenceTarget(
+    story: Story,
+    target: SentencePlaybackTarget,
+): SentencePlaybackTarget? {
+    if (target.sentenceIndex > 0) {
+        return target.copy(sentenceIndex = target.sentenceIndex - 1)
+    }
+
+    var previousParagraphIndex = target.paragraphIndex - 1
+    while (previousParagraphIndex >= 0) {
+        val count = sentenceCountFor(story, previousParagraphIndex)
+        if (count > 0) {
+            return SentencePlaybackTarget(
+                paragraphIndex = previousParagraphIndex,
+                sentenceIndex = count - 1,
+            )
+        }
+        previousParagraphIndex -= 1
+    }
+
+    return null
+}
+
 private fun sentenceCountFor(
     story: Story,
     paragraphIndex: Int,
@@ -1954,8 +2210,13 @@ private fun sentenceCountFor(
     ?.let { SentenceSegmenter.segment(it.text).size }
     ?: 0
 
-private fun estimatedSentencePlaybackMillis(text: String): Long =
-    (text.length.coerceAtLeast(4) * 320L).coerceIn(1_400L, 12_000L)
+private fun estimatedSentencePlaybackMillis(
+    text: String,
+    speed: ReadingPlaybackSpeed,
+): Long {
+    val baseMillis = (text.length.coerceAtLeast(4) * 320L).coerceIn(1_400L, 12_000L)
+    return (baseMillis.toDouble() / speed.multiplier.coerceAtLeast(0.5)).toLong().coerceIn(1_400L, 12_000L)
+}
 
 private fun Paragraph.cellsFor(sentence: SentenceSegment): List<PinyinCell> {
     if (cells.isEmpty()) return emptyList()
@@ -2655,15 +2916,26 @@ private fun ReadingControls(
 @Composable
 private fun ReadingFullAudioRow(
     playbackState: SentencePlaybackUiState,
+    playbackMode: ReadingSessionMode,
+    canGoPreviousSentence: Boolean,
+    canGoNextSentence: Boolean,
     onPrimaryClick: () -> Unit,
+    onPreviousSentence: () -> Unit,
     onNextSentence: () -> Unit,
+    onRepeatSentence: () -> Unit,
     onStop: () -> Unit,
+    onAutoContinueChange: (Boolean) -> Unit,
+    onReturnToReadingPlace: () -> Unit,
+    showReturnToReadingPlace: Boolean,
+    onPlaybackSpeedChange: (ReadingPlaybackSpeed) -> Unit,
+    onPlaybackModeChange: (ReadingSessionMode) -> Unit,
 ) {
     val audioSourceText = when (playbackState.audioSource) {
-        SentenceAudioSource.Generated -> stringResource(R.string.reading_audio_source_generated)
-        SentenceAudioSource.Tts -> stringResource(R.string.reading_audio_source_tts)
+        ReadingAudioSource.Recorded -> stringResource(R.string.reading_audio_source_recorded)
+        ReadingAudioSource.Tts -> stringResource(R.string.reading_audio_source_tts)
         null -> null
     }
+    var speedMenuExpanded by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -2713,11 +2985,76 @@ private fun ReadingFullAudioRow(
         }
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+        ) {
+            FilterChip(
+                selected = playbackMode == ReadingSessionMode.ReadAlong,
+                onClick = { onPlaybackModeChange(ReadingSessionMode.ReadAlong) },
+                label = { Text(text = stringResource(R.string.reading_mode_read_along)) },
+                modifier = Modifier.heightIn(min = LmcSpacing.ChipHeight),
+                colors = lmcFilterChipColors(),
+            )
+            FilterChip(
+                selected = playbackMode == ReadingSessionMode.TapToListen,
+                onClick = { onPlaybackModeChange(ReadingSessionMode.TapToListen) },
+                label = { Text(text = stringResource(R.string.reading_mode_tap_to_listen)) },
+                modifier = Modifier.heightIn(min = LmcSpacing.ChipHeight),
+                colors = lmcFilterChipColors(),
+            )
+            Row(
+                modifier = Modifier.heightIn(min = LmcSpacing.MinTouchTarget),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space1),
+            ) {
+                Text(
+                    text = stringResource(R.string.reading_auto_continue),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Switch(
+                    checked = playbackState.autoContinue,
+                    onCheckedChange = onAutoContinueChange,
+                )
+            }
+            Box {
+                OutlinedButton(
+                    onClick = { speedMenuExpanded = true },
+                    modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
+                ) {
+                    Text(
+                        text = stringResource(
+                            R.string.reading_speed_value,
+                            stringResource(R.string.reading_playback_speed),
+                            stringResource(playbackState.playbackSpeed.labelRes()),
+                        ),
+                    )
+                }
+                DropdownMenu(
+                    expanded = speedMenuExpanded,
+                    onDismissRequest = { speedMenuExpanded = false },
+                ) {
+                    ReadingPlaybackSpeed.entries.forEach { speed ->
+                        DropdownMenuItem(
+                            text = { Text(text = stringResource(speed.labelRes())) },
+                            onClick = {
+                                speedMenuExpanded = false
+                                onPlaybackSpeedChange(speed)
+                            },
+                        )
+                    }
+                }
+            }
+        }
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space2, Alignment.End),
             verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
         ) {
             OutlinedButton(
                 onClick = onPrimaryClick,
+                enabled = playbackState.sentenceCountInParagraph > 0 ||
+                    playbackState.status != SentencePlaybackStatus.Stopped,
                 modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
             ) {
                 LmcCanvasIcon(
@@ -2740,6 +3077,19 @@ private fun ReadingFullAudioRow(
                 )
             }
             OutlinedButton(
+                enabled = canGoPreviousSentence,
+                onClick = onPreviousSentence,
+                modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
+            ) {
+                LmcCanvasIcon(
+                    icon = LmcIcon.Previous,
+                    color = MaterialTheme.colorScheme.secondary,
+                )
+                Spacer(modifier = Modifier.width(LmcSpacing.Space2))
+                Text(text = stringResource(R.string.reading_previous_sentence))
+            }
+            OutlinedButton(
+                enabled = canGoNextSentence,
                 onClick = onNextSentence,
                 modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
             ) {
@@ -2750,6 +3100,18 @@ private fun ReadingFullAudioRow(
                 Spacer(modifier = Modifier.width(LmcSpacing.Space2))
                 Text(text = stringResource(R.string.reading_next_sentence))
             }
+            OutlinedButton(
+                enabled = playbackState.sentenceCountInParagraph > 0,
+                onClick = onRepeatSentence,
+                modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
+            ) {
+                LmcCanvasIcon(
+                    icon = LmcIcon.Repeat,
+                    color = MaterialTheme.colorScheme.secondary,
+                )
+                Spacer(modifier = Modifier.width(LmcSpacing.Space2))
+                Text(text = stringResource(R.string.reading_repeat_sentence))
+            }
             if (playbackState.status != SentencePlaybackStatus.Stopped) {
                 TextButton(
                     onClick = onStop,
@@ -2757,6 +3119,52 @@ private fun ReadingFullAudioRow(
                 ) {
                     Text(text = stringResource(R.string.action_stop_audio))
                 }
+            }
+            if (showReturnToReadingPlace) {
+                TextButton(
+                    onClick = onReturnToReadingPlace,
+                    modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
+                ) {
+                    Text(text = stringResource(R.string.reading_back_to_reading_place))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReadingAudioCoachmark(
+    onDismiss: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = LmcSpacing.ScreenPadding)
+            .padding(bottom = LmcSpacing.Space3),
+        shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+    ) {
+        Column(
+            modifier = Modifier.padding(LmcSpacing.CardPadding),
+            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+        ) {
+            Text(
+                text = stringResource(R.string.reading_coachmark_play),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+            Text(
+                text = stringResource(R.string.reading_coachmark_sentence),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier
+                    .align(Alignment.End)
+                    .heightIn(min = LmcSpacing.MinTouchTarget),
+            ) {
+                Text(text = stringResource(R.string.action_done))
             }
         }
     }
@@ -3214,6 +3622,7 @@ private fun PinyinTextBlock(
                 text = paragraph.text,
                 cells = paragraph.cells,
                 readingType = readingType,
+                isHighlighted = false,
             )
         } else {
             Text(
@@ -3232,28 +3641,62 @@ private fun SentenceTextBlock(
     showPinyin: Boolean,
     readingType: ReadingTypeStyles,
     isHighlighted: Boolean,
+    sentenceIndex: Int,
+    sentenceCount: Int,
+    onSentenceClick: () -> Unit,
+    onSpeakerClick: () -> Unit,
 ) {
     val sentenceCells = remember(paragraph.cells, sentence.startOffset, sentence.endOffset) {
         paragraph.cellsFor(sentence)
     }
+    val speakerDescription = stringResource(
+        R.string.reading_sentence_speaker,
+        sentenceIndex + 1,
+        sentenceCount.coerceAtLeast(1),
+    )
 
-    SentenceSurface(isHighlighted = isHighlighted) {
-        if (showPinyin && sentenceCells.isNotEmpty()) {
-            RubyFlowText(
-                text = sentence.text,
-                cells = sentenceCells,
-                readingType = readingType,
-            )
-        } else {
-            Text(
-                text = sentence.text,
-                style = readingType.hanzi,
-                color = if (isHighlighted) {
-                    MaterialTheme.colorScheme.onSecondaryContainer
-                } else {
-                    MaterialTheme.colorScheme.onSurface
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+    ) {
+        IconButton(
+            onClick = onSpeakerClick,
+            modifier = Modifier
+                .size(LmcSpacing.MinTouchTarget)
+                .semantics {
+                    contentDescription = speakerDescription
                 },
+        ) {
+            LmcCanvasIcon(
+                icon = LmcIcon.Audio,
+                color = MaterialTheme.colorScheme.secondary,
             )
+        }
+        SentenceSurface(
+            isHighlighted = isHighlighted,
+            modifier = Modifier
+                .weight(1f)
+                .clickable(onClick = onSentenceClick),
+        ) {
+            if (showPinyin && sentenceCells.isNotEmpty()) {
+                RubyFlowText(
+                    text = sentence.text,
+                    cells = sentenceCells,
+                    readingType = readingType,
+                    isHighlighted = isHighlighted,
+                )
+            } else {
+                Text(
+                    text = sentence.text,
+                    style = readingType.hanzi,
+                    color = if (isHighlighted) {
+                        MaterialTheme.colorScheme.onSecondaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
+                )
+            }
         }
     }
 }
@@ -3261,10 +3704,11 @@ private fun SentenceTextBlock(
 @Composable
 private fun SentenceSurface(
     isHighlighted: Boolean,
+    modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(LmcSpacing.ReadingPanelRadius),
         color = if (isHighlighted) {
             MaterialTheme.colorScheme.secondaryContainer
@@ -3286,6 +3730,7 @@ private fun RubyFlowText(
     text: String,
     cells: List<PinyinCell>,
     readingType: ReadingTypeStyles,
+    isHighlighted: Boolean,
 ) {
     FlowRow(
         modifier = Modifier
@@ -3301,6 +3746,7 @@ private fun RubyFlowText(
                 hanzi = cell.c,
                 pinyin = cell.p,
                 readingType = readingType,
+                isHighlighted = isHighlighted,
             )
         }
     }
@@ -3311,6 +3757,7 @@ private fun RubyCell(
     hanzi: String,
     pinyin: String,
     readingType: ReadingTypeStyles,
+    isHighlighted: Boolean,
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -3320,7 +3767,11 @@ private fun RubyCell(
             text = if (hasPinyin) pinyin else " ",
             style = readingType.pinyin,
             color = if (hasPinyin) {
-                MaterialTheme.colorScheme.onSurfaceVariant
+                if (isHighlighted) {
+                    MaterialTheme.colorScheme.onSecondaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
             } else {
                 Color.Transparent
             },
@@ -3331,7 +3782,11 @@ private fun RubyCell(
         Text(
             text = hanzi,
             style = readingType.hanzi,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = if (isHighlighted) {
+                MaterialTheme.colorScheme.onSecondaryContainer
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            },
             maxLines = 1,
             softWrap = false,
             textAlign = TextAlign.Center,
@@ -4913,6 +5368,16 @@ private fun LmcCanvasIcon(
                 drawLine(color, Offset(size.width * 0.38f, size.height * 0.22f), Offset(size.width * 0.66f, size.height * 0.5f), stroke.width, StrokeCap.Round)
                 drawLine(color, Offset(size.width * 0.66f, size.height * 0.5f), Offset(size.width * 0.38f, size.height * 0.78f), stroke.width, StrokeCap.Round)
             }
+            LmcIcon.Previous -> {
+                drawLine(color, Offset(size.width * 0.62f, size.height * 0.22f), Offset(size.width * 0.34f, size.height * 0.5f), stroke.width, StrokeCap.Round)
+                drawLine(color, Offset(size.width * 0.34f, size.height * 0.5f), Offset(size.width * 0.62f, size.height * 0.78f), stroke.width, StrokeCap.Round)
+                drawLine(color, Offset(size.width * 0.24f, size.height * 0.24f), Offset(size.width * 0.24f, size.height * 0.76f), stroke.width, StrokeCap.Round)
+            }
+            LmcIcon.Repeat -> {
+                drawArc(color, 35f, 270f, false, Offset(size.width * 0.20f, size.height * 0.18f), Size(size.width * 0.60f, size.height * 0.54f), style = stroke)
+                drawLine(color, Offset(size.width * 0.72f, size.height * 0.18f), Offset(size.width * 0.82f, size.height * 0.32f), stroke.width, StrokeCap.Round)
+                drawLine(color, Offset(size.width * 0.72f, size.height * 0.18f), Offset(size.width * 0.58f, size.height * 0.26f), stroke.width, StrokeCap.Round)
+            }
             LmcIcon.Parent -> {
                 drawRoundRect(color, Offset(size.width * 0.18f, size.height * 0.18f), Size(size.width * 0.64f, size.height * 0.64f), style = stroke)
                 drawLine(color, Offset(size.width * 0.32f, size.height * 0.68f), Offset(size.width * 0.32f, size.height * 0.52f), stroke.width, StrokeCap.Round)
@@ -5030,6 +5495,13 @@ private fun ReadingTextSize.labelRes(): Int = when (this) {
     ReadingTextSize.Small -> R.string.reading_text_size_small
     ReadingTextSize.Medium -> R.string.reading_text_size_medium
     ReadingTextSize.Large -> R.string.reading_text_size_large
+}
+
+@StringRes
+private fun ReadingPlaybackSpeed.labelRes(): Int = when (this) {
+    ReadingPlaybackSpeed.Slow -> R.string.reading_speed_slow
+    ReadingPlaybackSpeed.DefaultSlow -> R.string.reading_speed_default
+    ReadingPlaybackSpeed.Normal -> R.string.reading_speed_normal
 }
 
 private enum class WordBookFilter {
@@ -5302,6 +5774,8 @@ private enum class LmcIcon {
     Next,
     Parent,
     PauseAudio,
+    Previous,
+    Repeat,
     Settings,
     StopAudio,
     Today,

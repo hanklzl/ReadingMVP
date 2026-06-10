@@ -11,7 +11,7 @@ actual fun createAudioService(): AudioService = IosAudioService()
 private class IosAudioService : AudioService {
     private var player: AVAudioPlayer? = null
 
-    override suspend fun play(resourcePath: String) {
+    override suspend fun play(resourcePath: String, speedMultiplier: Float) {
         if (resourcePath.isBlank()) return
 
         stop()
@@ -19,6 +19,8 @@ private class IosAudioService : AudioService {
         val resolvedPath = resolvePath(resourcePath)
         val url = NSURL.fileURLWithPath(resolvedPath)
         val audioPlayer = AVAudioPlayer(contentsOfURL = url, error = null)
+        audioPlayer.enableRate = true
+        audioPlayer.rate = speedMultiplier.coerceIn(MinPlaybackSpeed, MaxPlaybackSpeed)
         audioPlayer.prepareToPlay()
         audioPlayer.play()
         player = audioPlayer
@@ -36,8 +38,9 @@ private class IosAudioService : AudioService {
         storyId: String,
         paragraphIndex: Int,
         sentenceIndex: Int,
+        speedMultiplier: Float,
     ) {
-        play(sentenceAudioResourcePath(storyId, paragraphIndex, sentenceIndex))
+        play(sentenceAudioResourcePath(storyId, paragraphIndex, sentenceIndex), speedMultiplier)
     }
 
     override suspend fun pause() {
@@ -66,5 +69,10 @@ private class IosAudioService : AudioService {
             ofType = resourceExtension,
             inDirectory = directory.ifBlank { null },
         )
+    }
+
+    private companion object {
+        const val MinPlaybackSpeed: Float = 0.5f
+        const val MaxPlaybackSpeed: Float = 1.5f
     }
 }

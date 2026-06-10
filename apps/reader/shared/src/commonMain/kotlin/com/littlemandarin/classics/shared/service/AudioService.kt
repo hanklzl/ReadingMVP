@@ -1,7 +1,7 @@
 package com.littlemandarin.classics.shared.service
 
 interface AudioService {
-    suspend fun play(resourcePath: String)
+    suspend fun play(resourcePath: String, speedMultiplier: Float = 1.0f)
 
     suspend fun hasSentenceAudio(
         storyId: String,
@@ -13,8 +13,12 @@ interface AudioService {
         storyId: String,
         paragraphIndex: Int,
         sentenceIndex: Int,
+        speedMultiplier: Float = 1.0f,
     ) {
-        play(sentenceAudioResourcePath(storyId, paragraphIndex, sentenceIndex))
+        play(
+            resourcePath = sentenceAudioResourcePath(storyId, paragraphIndex, sentenceIndex),
+            speedMultiplier = speedMultiplier,
+        )
     }
 
     suspend fun pause()
@@ -23,7 +27,7 @@ interface AudioService {
 }
 
 object NoOpAudioService : AudioService {
-    override suspend fun play(resourcePath: String) = Unit
+    override suspend fun play(resourcePath: String, speedMultiplier: Float) = Unit
 
     override suspend fun pause() = Unit
 

@@ -32,47 +32,48 @@ private class AndroidTtsService(
 ) : TtsService {
     private val lock = Any()
     private var isReady: Boolean = false
-    private var pendingText: String? = null
+    private var pendingUtterance: PendingUtterance? = null
 
     private val textToSpeech: TextToSpeech = TextToSpeech(context.applicationContext) { status ->
         if (status == TextToSpeech.SUCCESS) {
             configureChineseLocale()
-            val text = synchronized(lock) {
+            val utterance = synchronized(lock) {
                 isReady = true
-                pendingText.also { pendingText = null }
+                pendingUtterance.also { pendingUtterance = null }
             }
 
-            text?.let(::speakNow)
+            utterance?.let { speakNow(it.text, it.speedMultiplier) }
         } else {
             synchronized(lock) {
-                pendingText = null
+                pendingUtterance = null
             }
         }
     }
 
-    override suspend fun speak(text: String) {
+    override suspend fun speak(text: String, speedMultiplier: Float) {
         if (text.isBlank()) return
+        val safeSpeed = speedMultiplier.coerceIn(MinSpeechRate, MaxSpeechRate)
 
         val shouldSpeakNow = synchronized(lock) {
-            pendingText = null
+            pendingUtterance = null
             textToSpeech.stop()
 
             if (isReady) {
                 true
             } else {
-                pendingText = text
+                pendingUtterance = PendingUtterance(text, safeSpeed)
                 false
             }
         }
 
         if (shouldSpeakNow) {
-            speakNow(text)
+            speakNow(text, safeSpeed)
         }
     }
 
     override suspend fun stop() {
         synchronized(lock) {
-            pendingText = null
+            pendingUtterance = null
             textToSpeech.stop()
         }
     }
@@ -86,12 +87,20 @@ private class AndroidTtsService(
         }
     }
 
-    private fun speakNow(text: String) {
+    private fun speakNow(text: String, speedMultiplier: Float) {
         textToSpeech.stop()
+        textToSpeech.setSpeechRate(speedMultiplier)
         textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, UtteranceId)
     }
 
+    private data class PendingUtterance(
+        val text: String,
+        val speedMultiplier: Float,
+    )
+
     private companion object {
         const val UtteranceId: String = "little_mandarin_tts"
+        const val MinSpeechRate: Float = 0.5f
+        const val MaxSpeechRate: Float = 1.5f
     }
 }

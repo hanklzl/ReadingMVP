@@ -48,15 +48,23 @@ object ReaderAnalyticsEvents {
         paragraphIndex: Int,
         audioSource: String = "tts",
         sentenceIndex: Int? = null,
+        playbackSpeedBucket: String? = null,
     ): AnalyticsEventPayload = payload(
         eventName = AnalyticsEventName.ParagraphAudioPlay,
         properties = buildMap {
             put("story_id", AnalyticsProperties.string(storyId))
             put("paragraph_index", AnalyticsProperties.int(paragraphIndex))
-            put("audio_source", AnalyticsProperties.string(audioSource))
+            put("audio_source", AnalyticsProperties.string(normalizedAudioSource(audioSource)))
             sentenceIndex?.let { put("sentence_index", AnalyticsProperties.int(it)) }
+            playbackSpeedBucket?.let { put("playback_speed_bucket", AnalyticsProperties.string(it)) }
         },
     )
+
+    private fun normalizedAudioSource(audioSource: String): String =
+        when (audioSource.trim().lowercase()) {
+            "generated", "pre_generated", "pregenerated", "story_voice", "recorded" -> "recorded"
+            else -> "tts"
+        }
 
     fun pinyinToggle(
         storyId: String,
