@@ -193,7 +193,7 @@ struct ContentView: View {
                     viewModel: viewModel,
                     story: story,
                     close: { flowRoute = .vocabulary(storyId: story.id, openSource: .quizBack) },
-                    readAgain: { openStory(story, source: .quizCompletion) },
+                    readAgain: { restartStoryFromBeginning(story, source: .quizCompletion) },
                     done: {
                         selectedTab = .today
                         flowRoute = nil
@@ -214,8 +214,20 @@ struct ContentView: View {
     }
 
     private func openStory(_ story: Story, source: LMCStoryOpenSource) {
+        guard !viewModel.isCompleted(story) else {
+            restartStoryFromBeginning(story, source: source)
+            return
+        }
         viewModel.trackStoryOpen(story, openSource: source)
         flowRoute = .reading(storyId: story.id)
+    }
+
+    private func restartStoryFromBeginning(_ story: Story, source: LMCStoryOpenSource) {
+        viewModel.trackStoryOpen(story, openSource: source)
+        Task { @MainActor in
+            await viewModel.resetReadingParagraphIndex(for: story)
+            flowRoute = .reading(storyId: story.id)
+        }
     }
 
     private func selectTab(_ tab: LMCTab, parentEntryPoint: LMCParentReportEntryPoint) {
@@ -769,6 +781,11 @@ final class ReaderViewModel: ObservableObject {
     func saveReadingParagraphIndex(_ index: Int, for story: Story) {
         readingPositions[story.id] = index
         Task { try? await settingsService.setReadingParagraphIndex(storyId: story.id, paragraphIndex: Int32(index)) }
+    }
+
+    func resetReadingParagraphIndex(for story: Story) async {
+        readingPositions[story.id] = 0
+        try? await settingsService.setReadingParagraphIndex(storyId: story.id, paragraphIndex: Int32(0))
     }
 
     func readingState(for story: Story, paragraphIndex: Int) -> ReadingSessionState {
@@ -2870,6 +2887,11 @@ private struct ReadingScreen: View {
             .buttonStyle(LMCSecondaryButtonStyle())
             .disabled(askState == .loading || currentParagraph.text.isEmpty)
 
+            Text("reading_ai_boundary")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(LMCColor.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+
             switch askState {
             case .idle:
                 EmptyView()
@@ -3087,6 +3109,17 @@ private struct QuizScreen: View {
                         }
                     }
 
+                    if !questionState.submitted && questionState.selectedAnswer == nil {
+                        Text("quiz_select_answer_prompt")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(LMCColor.info)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(LMCSpace.s3)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(LMCColor.infoContainer)
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    }
+
                     if questionState.submitted, let result = questionState.result {
                         FeedbackMessage(isCorrect: result.isCorrect, explanation: question.explanation)
                     }
@@ -3169,7 +3202,7 @@ private struct QuizScreen: View {
             .accessibilityAddTraits(.updatesFrequently)
 
             LMCBottomActionBar {
-                Button("action_read_again", action: readAgain)
+                Button("action_read_again_from_start", action: readAgain)
                     .buttonStyle(LMCSecondaryButtonStyle())
                 Button("action_done", action: done)
                     .buttonStyle(LMCPrimaryButtonStyle())
@@ -3215,21 +3248,10 @@ private struct ParentReportScreen: View {
     }
 
     private var parentGate: some View {
-        VStack(alignment: .leading, spacing: LMCSpace.s5) {
-            Text("parent_gate_message")
-                .font(.system(size: 18))
-                .foregroundStyle(LMCColor.textPrimary)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Button("action_continue") {
-                gatePassed = true
-                viewModel.trackParentReportOpen(entryPoint: entryPoint)
-            }
-            .buttonStyle(LMCPrimaryButtonStyle())
+        LMCAdultGateCard(messageKey: "parent_gate_message") {
+            gatePassed = true
+            viewModel.trackParentReportOpen(entryPoint: entryPoint)
         }
-        .padding(LMCSpace.s4)
-        .background(LMCColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     private var reportContent: some View {
@@ -3279,6 +3301,70 @@ private struct ParentReportScreen: View {
     }
 }
 
+private struct LMCAdultGateCard: View {
+    let messageKey: LocalizedStringKey
+    let unlock: () -> Void
+    @State private var answer = ""
+    @State private var showError = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: LMCSpace.s4) {
+            Label("parent_gate_title", systemImage: "lock.shield.fill")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(LMCColor.textPrimary)
+
+            Text(messageKey)
+                .font(.system(size: 17))
+                .foregroundStyle(LMCColor.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text("parent_gate_question")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(LMCColor.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            TextField("parent_gate_answer_label", text: $answer)
+                .keyboardType(.numberPad)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled(true)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(LMCColor.textPrimary)
+                .padding(LMCSpace.s3)
+                .frame(minHeight: LMCSpace.minTouch)
+                .background(LMCColor.surfaceVariant)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(showError ? LMCColor.error : LMCColor.outlineVariant, lineWidth: 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .onChange(of: answer) { _ in showError = false }
+
+            if showError {
+                Text("parent_gate_error")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(LMCColor.error)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Button("parent_gate_button") {
+                if answer.trimmingCharacters(in: .whitespacesAndNewlines) == LMCParentGateExpectedAnswer {
+                    showError = false
+                    unlock()
+                } else {
+                    showError = true
+                }
+            }
+            .buttonStyle(LMCPrimaryButtonStyle())
+        }
+        .padding(LMCSpace.s4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(LMCColor.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+}
+
+private let LMCParentGateExpectedAnswer = "23"
+
 private struct SettingsScreen: View {
     @ObservedObject var viewModel: ReaderViewModel
     @Binding var localeIdentifier: String
@@ -3288,6 +3374,7 @@ private struct SettingsScreen: View {
     let openParent: () -> Void
     @State private var showPrivacy = false
     @State private var showFeedback = false
+    @State private var adultSettingsUnlocked = false
 
     var body: some View {
         LMCScreen(maxWidth: LMCSpace.readingMaxWidth) {
@@ -3330,38 +3417,23 @@ private struct SettingsScreen: View {
                 SettingsInfoRow(titleKey: "settings_audio_voice", valueKey: "settings_audio_system")
             }
 
-            SettingsSection(titleKey: "settings_ai") {
-                VStack(alignment: .leading, spacing: LMCSpace.s3) {
-                    Text("settings_ai_backend_base_url")
-                        .font(.system(size: 18))
-                        .foregroundStyle(LMCColor.textPrimary)
-
-                    TextField("settings_ai_backend_placeholder", text: $aiBackendBaseURL)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled(true)
-                        .keyboardType(.URL)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(LMCColor.textPrimary)
-                        .padding(LMCSpace.s3)
-                        .frame(minHeight: LMCSpace.minTouch)
-                        .background(LMCColor.surfaceVariant)
-                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-
-                    Button("settings_ai_use_mock") {
-                        Task {
-                            aiBackendBaseURL = await viewModel.resetAiBackendBaseURL()
-                        }
-                    }
-                    .buttonStyle(LMCSecondaryButtonStyle())
-                }
-            }
-
-            SettingsSection(titleKey: "settings_parent") {
-                SettingsNavigationRow(titleKey: "parent_title", systemName: "chart.bar.xaxis", action: openParent)
+            SettingsSection(titleKey: "settings_privacy") {
+                Text("parent_privacy_note")
+                    .font(.system(size: 16))
+                    .foregroundStyle(LMCColor.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
                 Divider().background(LMCColor.outlineVariant)
                 SettingsNavigationRow(titleKey: "settings_privacy", systemName: "shield.checkered", action: { showPrivacy = true })
-                Divider().background(LMCColor.outlineVariant)
-                SettingsNavigationRow(titleKey: "settings_give_feedback", systemName: "bubble.left.and.bubble.right.fill", action: { showFeedback = true })
+            }
+
+            SettingsSection(titleKey: "settings_grownups") {
+                if adultSettingsUnlocked {
+                    adultSettingsContent
+                } else {
+                    LMCAdultGateCard(messageKey: "settings_grownups_gate_message") {
+                        adultSettingsUnlocked = true
+                    }
+                }
             }
 
             Text("settings_about")
@@ -3379,6 +3451,47 @@ private struct SettingsScreen: View {
                 .preferredColorScheme(.light)
         }
     }
+
+    private var adultSettingsContent: some View {
+        VStack(alignment: .leading, spacing: LMCSpace.s3) {
+            SettingsNavigationRow(titleKey: "parent_title", systemName: "chart.bar.xaxis", action: openParent)
+            Divider().background(LMCColor.outlineVariant)
+            SettingsNavigationRow(titleKey: "settings_give_feedback", systemName: "bubble.left.and.bubble.right.fill", action: { showFeedback = true })
+            Divider().background(LMCColor.outlineVariant)
+            VStack(alignment: .leading, spacing: LMCSpace.s3) {
+                Text("settings_developer")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(LMCColor.textPrimary)
+
+                Text("settings_ai_boundary")
+                    .font(.system(size: 15))
+                    .foregroundStyle(LMCColor.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text("settings_ai_backend_base_url")
+                    .font(.system(size: 18))
+                    .foregroundStyle(LMCColor.textPrimary)
+
+                TextField("settings_ai_backend_placeholder", text: $aiBackendBaseURL)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled(true)
+                    .keyboardType(.URL)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(LMCColor.textPrimary)
+                    .padding(LMCSpace.s3)
+                    .frame(minHeight: LMCSpace.minTouch)
+                    .background(LMCColor.surfaceVariant)
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+                Button("settings_ai_use_mock") {
+                    Task {
+                        aiBackendBaseURL = await viewModel.resetAiBackendBaseURL()
+                    }
+                }
+                .buttonStyle(LMCSecondaryButtonStyle())
+            }
+        }
+    }
 }
 
 private struct FeedbackSheet: View {
@@ -3392,6 +3505,15 @@ private struct FeedbackSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: LMCSpace.s6) {
                     SectionTitle("feedback_title")
+
+                    Text("feedback_privacy_warning")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(LMCColor.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(LMCSpace.s4)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(LMCColor.infoContainer)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
                     SettingsSection(titleKey: "feedback_satisfaction") {
                         Picker("feedback_satisfaction", selection: $draft.satisfaction) {
@@ -3442,9 +3564,15 @@ private struct FeedbackSheet: View {
                     }
 
                     SettingsSection(titleKey: "feedback_parent_contact") {
+                        Text("feedback_parent_contact_note")
+                            .font(.system(size: 15))
+                            .foregroundStyle(LMCColor.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+
                         TextField("feedback_parent_contact_placeholder", text: $draft.parentContact)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled(true)
+                            .keyboardType(.emailAddress)
                             .font(.system(size: 16))
                             .foregroundStyle(LMCColor.textPrimary)
                             .padding(LMCSpace.s3)
@@ -4795,25 +4923,26 @@ private struct QuizOptionRow: View {
 
     private var iconName: String {
         if isSubmitted && isCorrectAnswer { return "checkmark.circle.fill" }
-        if isSubmitted && isSubmittedAnswer && !isCorrectAnswer { return "xmark.circle.fill" }
+        if isSubmitted && isSubmittedAnswer && !isCorrectAnswer { return "book.circle.fill" }
         return isSelected ? "largecircle.fill.circle" : "circle"
     }
 
     private var iconColor: Color {
         if isSubmitted && isCorrectAnswer { return LMCColor.success }
-        if isSubmitted && isSubmittedAnswer && !isCorrectAnswer { return LMCColor.error }
+        if isSubmitted && isSubmittedAnswer && !isCorrectAnswer { return LMCColor.info }
         return isSelected ? LMCColor.secondary : LMCColor.outline
     }
 
     private var background: Color {
         if isSubmitted && isCorrectAnswer { return LMCColor.successContainer }
+        if isSubmitted && isSubmittedAnswer && !isCorrectAnswer { return LMCColor.infoContainer }
         if isSelected { return LMCColor.secondaryContainer }
         return LMCColor.surface
     }
 
     private var borderColor: Color {
         if isSubmitted && isCorrectAnswer { return LMCColor.success }
-        if isSubmitted && isSubmittedAnswer && !isCorrectAnswer { return LMCColor.error }
+        if isSubmitted && isSubmittedAnswer && !isCorrectAnswer { return LMCColor.info }
         if isSelected { return LMCColor.secondary }
         return LMCColor.outline
     }

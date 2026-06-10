@@ -54,7 +54,7 @@
     <string name="action_submit">提交</string>
     <string name="action_done">完成</string>
     <string name="action_quiz">小测验</string>
-    <string name="action_read_again">再读一遍</string>
+    <string name="action_read_again">从第 1 段再读</string>
     <string name="action_open_settings">打开设置</string>
     <string name="action_open_parent_report">打开家长报告</string>
     <string name="action_open_privacy">打开隐私说明</string>
@@ -178,10 +178,11 @@
     <string name="reading_saved_progress">阅读进度已保存。</string>
     <string name="reading_finish_to_words">复习生字</string>
     <string name="reading_tts_unavailable">暂时无法朗读。</string>
-    <string name="reading_ask_title">问一问</string>
-    <string name="reading_ask_button">问一问</string>
-    <string name="reading_ask_loading">正在想一想...</string>
-    <string name="reading_ask_error">暂时无法使用 AI 帮助。</string>
+    <string name="reading_ask_title">解释这里</string>
+    <string name="reading_ask_button">解释</string>
+    <string name="reading_ask_boundary">只解释当前故事这一段，不是开放聊天。</string>
+    <string name="reading_ask_loading">正在解释...</string>
+    <string name="reading_ask_error">暂时无法解释这段故事。</string>
     <string name="ai_answer_stub">这句话在帮助讲故事。继续读，看看接下来发生什么。</string>
 
     <!-- Vocabulary -->
@@ -228,9 +229,9 @@
     <string name="quiz_submit">提交</string>
     <string name="quiz_next">下一题</string>
     <string name="quiz_correct">答对了</string>
-    <string name="quiz_incorrect">我们回到故事里再看看。</string>
+    <string name="quiz_incorrect">没关系，故事里的提示会帮你。</string>
     <string name="quiz_correct_title">读得真仔细</string>
-    <string name="quiz_incorrect_title">再看看故事</string>
+    <string name="quiz_incorrect_title">跟着故事提示再想想</string>
     <string name="quiz_feedback_explanation_label">故事提示</string>
     <string name="quiz_select_answer_prompt">请选择一个答案再继续。</string>
     <string name="quiz_completion_title">完成啦</string>
@@ -245,8 +246,11 @@
     <!-- Parent report -->
     <string name="parent_area_title">家长区</string>
     <string name="parent_gate_title">家长查看</string>
-    <string name="parent_gate_body">这里是家长查看的区域。</string>
-    <string name="parent_gate_instruction">请在家长或照护者在场时继续。</string>
+    <string name="parent_gate_body">通过家长检查前，不显示阅读进度和成人设置。</string>
+    <string name="parent_gate_instruction">家长检查：17 + 6 等于几？</string>
+    <string name="parent_gate_answer_label">答案</string>
+    <string name="parent_gate_button">解锁成人区域</string>
+    <string name="parent_gate_error">请让家长再试一次。</string>
     <string name="parent_report_title">家长报告</string>
     <string name="parent_title">家长报告</string>
     <string name="parent_this_week">本周</string>
@@ -256,7 +260,7 @@
     <string name="parent_words_reviewed">复习生字</string>
     <string name="parent_story_progress">故事进度</string>
     <string name="parent_privacy_title">隐私</string>
-    <string name="parent_privacy_note">无需填写个人信息。</string>
+    <string name="parent_privacy_note">不会要求填写儿童姓名、生日、学校、照片、位置或联系方式。AI 只围绕故事解释，数据分析必须匿名。</string>
     <string name="parent_progress_completed">已完成</string>
     <string name="parent_progress_not_started">未开始</string>
     <string name="parent_progress_percent_format">%1$d%%</string>
@@ -292,13 +296,15 @@
     <string name="settings_audio_voice_system">系统</string>
     <string name="settings_audio_voice_summary">使用设备的文字转语音声音。</string>
     <string name="settings_parent">家长</string>
+    <string name="settings_grown_ups">家长区域</string>
     <string name="settings_parent_report">家长报告</string>
     <string name="settings_parent_report_summary">查看本地阅读进度。</string>
     <string name="settings_privacy">隐私</string>
-    <string name="settings_privacy_summary">无需填写儿童个人信息。</string>
+    <string name="settings_privacy_summary">不填写儿童姓名、学校、位置或联系方式。</string>
     <string name="settings_feedback">给我们反馈</string>
     <string name="settings_feedback_saved">反馈已保存在本设备。</string>
     <string name="settings_ai">AI</string>
+    <string name="settings_developer">开发者</string>
     <string name="settings_ai_backend_base_url">AI 后端地址</string>
     <string name="settings_ai_backend_summary">使用 mock 或留空即为本地模式，不需要密钥。</string>
     <string name="settings_about">关于</string>
@@ -307,7 +313,7 @@
     <string name="settings_selected_language">已选择的语言</string>
 
     <!-- Feedback -->
-    <string name="feedback_privacy_note">请不要填写儿童姓名、学校、生日或精确位置。</string>
+    <string name="feedback_privacy_note">仅供家长或照护者填写。请不要填写儿童姓名、学校、生日、位置、电话、邮箱或其他联系方式。</string>
     <string name="feedback_satisfaction">满意度</string>
     <string name="feedback_satisfaction_satisfied">满意</string>
     <string name="feedback_satisfaction_okay">还可以</string>
@@ -323,7 +329,8 @@
     <string name="feedback_issue_progress">进度</string>
     <string name="feedback_issue_other">其他</string>
     <string name="feedback_suggestion">建议</string>
-    <string name="feedback_parent_contact_optional">家长联系方式（选填）</string>
+    <string name="feedback_parent_contact_optional">家长邮箱（选填）</string>
+    <string name="feedback_parent_contact_warning">如需回复，只填写家长邮箱。不要填写儿童联系方式。</string>
     <string name="feedback_submit">保存反馈</string>
 
     <!-- Privacy -->
@@ -354,7 +361,7 @@
     <string name="prompt_reading_first">先读今日故事，再试试小测验。</string>
     <string name="prompt_story_only_reply">这个问题和今天的故事关系不大，我们先回到故事里吧。</string>
     <string name="prompt_audio_story_only">朗读只播放当前故事内容。</string>
-    <string name="prompt_no_open_chat">可以问和今天故事有关的问题，我们继续一起读。</string>
+    <string name="prompt_no_open_chat">只解释当前故事或段落，我们继续一起读。</string>
 
     <!-- Accessibility -->
     <string name="a11y_open_parent_area">打开家长区</string>

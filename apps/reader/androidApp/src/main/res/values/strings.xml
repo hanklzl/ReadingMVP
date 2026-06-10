@@ -56,7 +56,7 @@
     <string name="action_submit">Submit</string>
     <string name="action_done">Done</string>
     <string name="action_quiz">Quiz</string>
-    <string name="action_read_again">Read again</string>
+    <string name="action_read_again">Read again: paragraph 1</string>
     <string name="action_open_settings">Open settings</string>
     <string name="action_open_parent_report">Open parent report</string>
     <string name="action_open_privacy">Open privacy</string>
@@ -180,10 +180,11 @@
     <string name="reading_saved_progress">Progress saved.</string>
     <string name="reading_finish_to_words">Review new words</string>
     <string name="reading_tts_unavailable">Audio is not available right now.</string>
-    <string name="reading_ask_title">Ask</string>
-    <string name="reading_ask_button">Ask</string>
-    <string name="reading_ask_loading">Thinking...</string>
-    <string name="reading_ask_error">AI help is not available right now.</string>
+    <string name="reading_ask_title">Explain this part</string>
+    <string name="reading_ask_button">Explain</string>
+    <string name="reading_ask_boundary">Only explains the current story paragraph. No open chat.</string>
+    <string name="reading_ask_loading">Explaining...</string>
+    <string name="reading_ask_error">Story explanation is not available right now.</string>
     <string name="ai_answer_stub">This part helps explain the story. Keep reading to see what happens next.</string>
 
     <!-- Vocabulary -->
@@ -230,9 +231,9 @@
     <string name="quiz_submit">Submit</string>
     <string name="quiz_next">Next</string>
     <string name="quiz_correct">Correct</string>
-    <string name="quiz_incorrect">Let us look back at the story.</string>
+    <string name="quiz_incorrect">Good try. The story clue can help.</string>
     <string name="quiz_correct_title">Nice reading</string>
-    <string name="quiz_incorrect_title">Look back at the story</string>
+    <string name="quiz_incorrect_title">Try it with the story clue</string>
     <string name="quiz_feedback_explanation_label">Story clue</string>
     <string name="quiz_select_answer_prompt">Choose an answer to continue.</string>
     <string name="quiz_completion_title">Story Complete</string>
@@ -247,8 +248,11 @@
     <!-- Parent report -->
     <string name="parent_area_title">Parent Area</string>
     <string name="parent_gate_title">For grown-ups</string>
-    <string name="parent_gate_body">This area is for grown-ups.</string>
-    <string name="parent_gate_instruction">Continue when a parent or caregiver is present.</string>
+    <string name="parent_gate_body">Parent progress and adult settings stay hidden until a grown-up passes this check.</string>
+    <string name="parent_gate_instruction">Grown-up check: what is 17 + 6?</string>
+    <string name="parent_gate_answer_label">Answer</string>
+    <string name="parent_gate_button">Unlock adult area</string>
+    <string name="parent_gate_error">Ask a grown-up to try again.</string>
     <string name="parent_report_title">Parent Report</string>
     <string name="parent_title">Parent Report</string>
     <string name="parent_this_week">This week</string>
@@ -258,7 +262,7 @@
     <string name="parent_words_reviewed">Words reviewed</string>
     <string name="parent_story_progress">Story progress</string>
     <string name="parent_privacy_title">Privacy</string>
-    <string name="parent_privacy_note">No personal details are required.</string>
+    <string name="parent_privacy_note">We do not ask for a child name, birthday, school, photo, location, or contact details. AI explanations stay within the story and analytics must be anonymous.</string>
     <string name="parent_progress_completed">completed</string>
     <string name="parent_progress_not_started">not started</string>
     <string name="parent_progress_percent_format">%1$d%%</string>
@@ -297,13 +301,15 @@
     <string name="settings_audio_voice_system">System</string>
     <string name="settings_audio_voice_summary">Uses the device text-to-speech voice.</string>
     <string name="settings_parent">Parent</string>
+    <string name="settings_grown_ups">For grown-ups</string>
     <string name="settings_parent_report">Parent report</string>
     <string name="settings_parent_report_summary">View local reading progress.</string>
     <string name="settings_privacy">Privacy</string>
-    <string name="settings_privacy_summary">No child personal details are required.</string>
+    <string name="settings_privacy_summary">No child name, school, location, or contact details.</string>
     <string name="settings_feedback">Give feedback</string>
     <string name="settings_feedback_saved">Feedback saved on this device.</string>
     <string name="settings_ai">AI</string>
+    <string name="settings_developer">Developer</string>
     <string name="settings_ai_backend_base_url">AI backend base URL</string>
     <string name="settings_ai_backend_summary">Use mock or leave blank for local mode. No API key is needed.</string>
     <string name="settings_about">About</string>
@@ -312,7 +318,7 @@
     <string name="settings_selected_language">Selected language</string>
 
     <!-- Feedback -->
-    <string name="feedback_privacy_note">Please do not include a child name, school, birthday, or exact location.</string>
+    <string name="feedback_privacy_note">For parents and caregivers only. Do not enter a child name, school, birthday, location, phone, email, or other contact details.</string>
     <string name="feedback_satisfaction">Satisfaction</string>
     <string name="feedback_satisfaction_satisfied">Satisfied</string>
     <string name="feedback_satisfaction_okay">Okay</string>
@@ -328,7 +334,8 @@
     <string name="feedback_issue_progress">Progress</string>
     <string name="feedback_issue_other">Other</string>
     <string name="feedback_suggestion">Suggestion</string>
-    <string name="feedback_parent_contact_optional">Parent contact (optional)</string>
+    <string name="feedback_parent_contact_optional">Parent email (optional)</string>
+    <string name="feedback_parent_contact_warning">Use only a parent email if you want a reply. Do not enter a child contact detail.</string>
     <string name="feedback_submit">Save feedback</string>
 
     <!-- Privacy -->
@@ -359,7 +366,7 @@
     <string name="prompt_reading_first">Read today story first, then try the quiz.</string>
     <string name="prompt_story_only_reply">That question is not closely related to the story for today. Let us come back to the story.</string>
     <string name="prompt_audio_story_only">Audio reads only the current story content.</string>
-    <string name="prompt_no_open_chat">Ask about today story so we can keep reading together.</string>
+    <string name="prompt_no_open_chat">This only explains the current story or paragraph, so we can keep reading together.</string>
 
     <!-- Accessibility -->
     <string name="a11y_open_parent_area">Open parent area</string>

@@ -154,6 +154,23 @@
         }
       }
     },
+    "action_read_again_from_start" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read again from paragraph 1"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "从第 1 段重新读"
+          }
+        }
+      }
+    },
     "action_start_quiz" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -500,13 +517,30 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Parent contact"
+            "value" : "Parent email (optional)"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "家长联系方式"
+            "value" : "家长邮箱（可选）"
+          }
+        }
+      }
+    },
+    "feedback_parent_contact_note" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only a parent email is optional. Do not enter a child name, school, location, phone number, or other contact details."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仅可选填写家长邮箱。请不要填写孩子姓名、学校、位置、电话号码或其他联系方式。"
           }
         }
       }
@@ -517,13 +551,30 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Optional email or WeChat"
+            "value" : "parent@example.com (optional)"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "可选邮箱或微信"
+            "value" : "parent@example.com（可选）"
+          }
+        }
+      }
+    },
+    "feedback_privacy_warning" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For parents only. Please describe the issue without child names, school, exact location, photos, phone numbers, or other personal details."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仅供家长填写。请描述问题，不要填写孩子姓名、学校、具体位置、照片、电话号码或其他个人信息。"
           }
         }
       }
@@ -857,13 +908,98 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This area is for grown-ups. No child name or personal details are needed."
+            "value" : "This area shows reading progress for a grown-up. Answer the check below to continue. No child name or personal details are needed."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "这里给家长查看。不需要孩子姓名或个人信息。"
+            "value" : "这里会显示阅读进度，仅供家长查看。请回答下方检查题继续。不需要孩子姓名或个人信息。"
+          }
+        }
+      }
+    },
+    "parent_gate_button" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlock adult area"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "解锁家长区域"
+          }
+        }
+      }
+    },
+    "parent_gate_question" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grown-up check: what is 17 + 6?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "家长检查：17 + 6 等于几？"
+          }
+        }
+      }
+    },
+    "parent_gate_answer_label" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answer"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "答案"
+          }
+        }
+      }
+    },
+    "parent_gate_error" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ask a grown-up to try again."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请让家长再试一次。"
+          }
+        }
+      }
+    },
+    "parent_gate_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grown-up check"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "家长验证"
           }
         }
       }
@@ -1027,13 +1163,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Correct"
+            "value" : "Nice thinking"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "答对了"
+            "value" : "想得很好"
           }
         }
       }
@@ -1061,13 +1197,30 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Let's look back at the story"
+            "value" : "Good try. Let's look back at the story."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "我们回到故事里看看"
+            "value" : "没关系，我们回到故事里看看。"
+          }
+        }
+      }
+    },
+    "quiz_select_answer_prompt" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose one answer when you are ready."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "准备好了就先选一个答案。"
           }
         }
       }
@@ -1146,13 +1299,30 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Answer"
+            "value" : "Story explanation"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "回答"
+            "value" : "故事解释"
+          }
+        }
+      }
+    },
+    "reading_ai_boundary" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only explains this story and the current paragraph."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "只解释当前故事和这一段。"
           }
         }
       }
@@ -1163,13 +1333,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The story helper cannot answer right now."
+            "value" : "The story helper cannot explain this part right now."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "故事小助手现在还不能回答。"
+            "value" : "故事小助手现在还不能解释这里。"
           }
         }
       }
@@ -1180,13 +1350,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Thinking"
+            "value" : "Explaining this part"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "正在想"
+            "value" : "正在解释这里"
           }
         }
       }
@@ -1197,13 +1367,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ask"
+            "value" : "Explain this part"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "问一问"
+            "value" : "解释这里"
           }
         }
       }
@@ -1752,6 +1922,23 @@
         }
       }
     },
+    "settings_ai_boundary" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI explanations are controlled and only about the current story. This backend setting is for grown-up testing."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI 解释是受控的，只围绕当前故事。后端设置仅供家长或测试使用。"
+          }
+        }
+      }
+    },
     "settings_ai_backend_placeholder" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1850,6 +2037,57 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "给我们反馈"
+          }
+        }
+      }
+    },
+    "settings_developer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Developer"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开发者"
+          }
+        }
+      }
+    },
+    "settings_grownups" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For grown-ups"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "家长区域"
+          }
+        }
+      }
+    },
+    "settings_grownups_gate_message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parent report, feedback, and developer settings are for grown-ups. Answer the check below to open them."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "家长报告、反馈和开发者设置仅供家长使用。请回答下方检查题打开。"
           }
         }
       }

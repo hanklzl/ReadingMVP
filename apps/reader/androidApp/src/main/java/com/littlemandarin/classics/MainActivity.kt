@@ -548,6 +548,7 @@ private fun ReaderAppContent(
     } else {
         ReaderRoutes.Onboarding
     }
+    var parentGatePassed by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -666,6 +667,8 @@ private fun ReaderAppContent(
                         progressRecords = progressRecords,
                         readingPositions = readingPositions,
                         storyPresentationUseCases = storyPresentationUseCases,
+                        parentGatePassed = parentGatePassed,
+                        onParentGatePassed = { parentGatePassed = true },
                         onStoryClick = { storyId ->
                             analytics.trackStoryOpen(stories, storyId, openSource = "parent_report")
                             navController.navigate(ReaderRoutes.reading(storyId))
@@ -683,6 +686,8 @@ private fun ReaderAppContent(
                     onPinyinDefaultChange = onPinyinDefaultChange,
                     onTextSizeChange = onTextSizeChange,
                     onAiBackendBaseUrlChange = onAiBackendBaseUrlChange,
+                    parentGatePassed = parentGatePassed,
+                    onParentGatePassed = { parentGatePassed = true },
                     onParentReport = {
                         analytics.track(ReaderAnalyticsEvents.parentReportOpen("settings"))
                         navController.navigateTopLevel(ReaderRoutes.Parent)
@@ -750,13 +755,17 @@ private fun ReaderAppContent(
                             wordReviewVersion += 1
                         },
                         onReadAgain = {
-                            analytics.trackStoryOpen(
-                                story = story,
-                                storyOrder = storyOrder,
-                                openSource = "quiz_completion",
-                            )
-                            navController.navigate(ReaderRoutes.reading(story.id)) {
-                                popUpTo(ReaderRoutes.Today)
+                            appScope.launch {
+                                settingsService.setReadingParagraphIndex(story.id, 0)
+                                readingPositions = readingPositions + (story.id to 0)
+                                analytics.trackStoryOpen(
+                                    story = story,
+                                    storyOrder = storyOrder,
+                                    openSource = "quiz_completion",
+                                )
+                                navController.navigate(ReaderRoutes.reading(story.id)) {
+                                    popUpTo(ReaderRoutes.Today)
+                                }
                             }
                         },
                         onDone = {
@@ -2260,6 +2269,7 @@ private enum class SentencePlaybackStatus {
 
 private const val ReadingCoachmarkDismissedKey = "reading_coachmark_tts_row_dismissed"
 private const val ReadingPrefsName = "little_mandarin_reader_settings"
+private const val ParentGateExpectedAnswer = "23"
 
 private data class SentencePlaybackUiState(
     val status: SentencePlaybackStatus = SentencePlaybackStatus.Stopped,
@@ -2614,6 +2624,8 @@ private fun ParentReportScreen(
     progressRecords: List<CompletionRecord>,
     readingPositions: Map<String, Int>,
     storyPresentationUseCases: StoryPresentationUseCases,
+    parentGatePassed: Boolean,
+    onParentGatePassed: () -> Unit,
     onStoryClick: (String) -> Unit,
     onSettings: () -> Unit,
 ) {
@@ -2642,55 +2654,61 @@ private fun ParentReportScreen(
                 },
             )
         }
-        item {
-            ParentGateNotice()
-        }
-        item {
-            SectionTitle(text = stringResource(R.string.parent_this_week))
-            Spacer(modifier = Modifier.height(LmcSpacing.Space2))
-            MetricGrid(
-                metrics = listOf(
-                    Metric(
-                        label = stringResource(R.string.parent_stories_read),
-                        value = numberFormat.format(parentReportSummary.storiesCompletedThisWeek),
-                    ),
-                    Metric(
-                        label = stringResource(R.string.parent_reading_days),
-                        value = numberFormat.format(parentReportSummary.readingDaysThisWeek),
-                    ),
-                    Metric(
-                        label = stringResource(R.string.parent_quiz_correct),
-                        value = stringResource(
-                            R.string.parent_quiz_correct_count,
-                            parentReportSummary.correctCount,
-                            parentReportSummary.questionCount,
+        if (!parentGatePassed) {
+            item {
+                ParentGateCard(onPassed = onParentGatePassed)
+            }
+            item {
+                PrivacyNotice()
+            }
+        } else {
+            item {
+                SectionTitle(text = stringResource(R.string.parent_this_week))
+                Spacer(modifier = Modifier.height(LmcSpacing.Space2))
+                MetricGrid(
+                    metrics = listOf(
+                        Metric(
+                            label = stringResource(R.string.parent_stories_read),
+                            value = numberFormat.format(parentReportSummary.storiesCompletedThisWeek),
+                        ),
+                        Metric(
+                            label = stringResource(R.string.parent_reading_days),
+                            value = numberFormat.format(parentReportSummary.readingDaysThisWeek),
+                        ),
+                        Metric(
+                            label = stringResource(R.string.parent_quiz_correct),
+                            value = stringResource(
+                                R.string.parent_quiz_correct_count,
+                                parentReportSummary.correctCount,
+                                parentReportSummary.questionCount,
+                            ),
+                        ),
+                        Metric(
+                            label = stringResource(R.string.parent_words_reviewed),
+                            value = numberFormat.format(parentReportSummary.vocabLearnedThisWeek),
                         ),
                     ),
-                    Metric(
-                        label = stringResource(R.string.parent_words_reviewed),
-                        value = numberFormat.format(parentReportSummary.vocabLearnedThisWeek),
-                    ),
-                ),
-            )
-        }
-        item {
-            SectionTitle(text = stringResource(R.string.parent_story_progress))
-            Spacer(modifier = Modifier.height(LmcSpacing.Space2))
-        }
-        items(stories, key = { it.id }) { story ->
-            StoryProgressRow(
-                story = story,
-                progress = storyPresentationUseCases.storyProgress(
+                )
+            }
+            item {
+                SectionTitle(text = stringResource(R.string.parent_story_progress))
+                Spacer(modifier = Modifier.height(LmcSpacing.Space2))
+            }
+            items(stories, key = { it.id }) { story ->
+                StoryProgressRow(
                     story = story,
-                    completedStoryIds = completedStoryIds,
-                    savedParagraphIndex = readingPositions[story.id] ?: -1,
-                ).fraction.toFloat(),
-                completed = story.id in completedStoryIds,
-                onClick = { onStoryClick(story.id) },
-            )
-        }
-        item {
-            PrivacyNotice()
+                    progress = storyPresentationUseCases.storyProgress(
+                        story = story,
+                        completedStoryIds = completedStoryIds,
+                        savedParagraphIndex = readingPositions[story.id] ?: -1,
+                    ).fraction.toFloat(),
+                    completed = story.id in completedStoryIds,
+                    onClick = { onStoryClick(story.id) },
+                )
+            }
+            item {
+                PrivacyNotice()
+            }
         }
     }
 }
@@ -2704,6 +2722,8 @@ private fun SettingsScreen(
     onPinyinDefaultChange: (Boolean) -> Unit,
     onTextSizeChange: (ReadingTextSize) -> Unit,
     onAiBackendBaseUrlChange: (String) -> Unit,
+    parentGatePassed: Boolean,
+    onParentGatePassed: () -> Unit,
     onParentReport: () -> Unit,
 ) {
     var showFeedbackForm by remember { mutableStateOf(false) }
@@ -2751,27 +2771,34 @@ private fun SettingsScreen(
             }
         }
         item {
-            SettingsSection(title = stringResource(R.string.settings_parent)) {
-                SettingsNavigationRow(
-                    label = stringResource(R.string.settings_parent_report),
-                    onClick = onParentReport,
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                SettingsValueRow(
-                    label = stringResource(R.string.settings_privacy),
-                    value = stringResource(R.string.settings_privacy_summary),
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                SettingsNavigationRow(
-                    label = stringResource(R.string.settings_feedback),
-                    onClick = {
-                        feedbackSaved = false
-                        showFeedbackForm = true
-                    },
-                )
+            if (!parentGatePassed) {
+                Column(verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2)) {
+                    SectionTitle(text = stringResource(R.string.settings_grown_ups))
+                    ParentGateCard(onPassed = onParentGatePassed)
+                }
+            } else {
+                SettingsSection(title = stringResource(R.string.settings_grown_ups)) {
+                    SettingsNavigationRow(
+                        label = stringResource(R.string.settings_parent_report),
+                        onClick = onParentReport,
+                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    SettingsValueRow(
+                        label = stringResource(R.string.settings_privacy),
+                        value = stringResource(R.string.settings_privacy_summary),
+                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    SettingsNavigationRow(
+                        label = stringResource(R.string.settings_feedback),
+                        onClick = {
+                            feedbackSaved = false
+                            showFeedbackForm = true
+                        },
+                    )
+                }
             }
         }
-        if (showFeedbackForm) {
+        if (parentGatePassed && showFeedbackForm) {
             item {
                 FeedbackForm(
                     feedbackService = feedbackService,
@@ -2782,7 +2809,7 @@ private fun SettingsScreen(
                 )
             }
         }
-        if (feedbackSaved) {
+        if (parentGatePassed && feedbackSaved) {
             item {
                 Text(
                     text = stringResource(R.string.settings_feedback_saved),
@@ -2792,12 +2819,14 @@ private fun SettingsScreen(
                 )
             }
         }
-        item {
-            SettingsSection(title = stringResource(R.string.settings_ai)) {
-                AiBackendBaseUrlRow(
-                    value = settings.aiBackendBaseUrl,
-                    onValueChange = onAiBackendBaseUrlChange,
-                )
+        if (parentGatePassed) {
+            item {
+                SettingsSection(title = stringResource(R.string.settings_developer)) {
+                    AiBackendBaseUrlRow(
+                        value = settings.aiBackendBaseUrl,
+                        onValueChange = onAiBackendBaseUrlChange,
+                    )
+                }
             }
         }
         item {
@@ -4149,6 +4178,11 @@ private fun AskExplanationCard(
                     Text(text = stringResource(R.string.reading_ask_button))
                 }
             }
+            Text(
+                text = stringResource(R.string.reading_ask_boundary),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             when (state) {
                 AiUiState.Idle -> Unit
                 AiUiState.Loading -> Row(
@@ -4533,6 +4567,13 @@ private fun QuizQuestionBody(
                 onClick = { onSelectAnswer(option) },
             )
         }
+        if (!submitted && selectedAnswer == null) {
+            Text(
+                text = stringResource(R.string.quiz_select_answer_prompt),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         if (submitted) {
             FeedbackMessage(
                 correct = result?.isCorrect == true,
@@ -4553,13 +4594,13 @@ private fun QuizOption(
     val shape = RoundedCornerShape(LmcSpacing.QuizOptionRadius)
     val borderColor = when {
         submitted && isCorrectAnswer -> LmcColors.Success
-        submitted && selected -> MaterialTheme.colorScheme.error
+        submitted && selected -> MaterialTheme.colorScheme.tertiary
         selected -> MaterialTheme.colorScheme.secondary
         else -> MaterialTheme.colorScheme.outline
     }
     val backgroundColor = when {
         submitted && isCorrectAnswer -> LmcColors.SuccessContainer
-        submitted && selected -> MaterialTheme.colorScheme.errorContainer
+        submitted && selected -> MaterialTheme.colorScheme.tertiaryContainer
         selected -> MaterialTheme.colorScheme.secondaryContainer
         else -> MaterialTheme.colorScheme.surface
     }
@@ -4587,7 +4628,7 @@ private fun QuizOption(
             } else {
                 OptionCircle(
                     selected = selected,
-                    error = submitted && selected && !isCorrectAnswer,
+                    error = false,
                 )
             }
             Text(
@@ -4608,15 +4649,15 @@ private fun FeedbackMessage(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(LmcSpacing.RadiusMd),
-        color = if (correct) LmcColors.SuccessContainer else MaterialTheme.colorScheme.errorContainer,
+        color = if (correct) LmcColors.SuccessContainer else MaterialTheme.colorScheme.tertiaryContainer,
     ) {
         Row(
             modifier = Modifier.padding(LmcSpacing.CardPadding),
             horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space3),
         ) {
             LmcCanvasIcon(
-                icon = if (correct) LmcIcon.Check else LmcIcon.Close,
-                color = if (correct) LmcColors.Success else MaterialTheme.colorScheme.error,
+                icon = if (correct) LmcIcon.Check else LmcIcon.Book,
+                color = if (correct) LmcColors.Success else MaterialTheme.colorScheme.onTertiaryContainer,
             )
             Column(verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space1)) {
                 Text(
@@ -4996,7 +5037,10 @@ private fun CompletionMilestoneBanner(
 }
 
 @Composable
-private fun ParentGateNotice() {
+private fun ParentGateCard(onPassed: () -> Unit) {
+    var answer by remember { mutableStateOf("") }
+    var showError by remember { mutableStateOf(false) }
+
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(LmcSpacing.RadiusLg),
@@ -5004,7 +5048,7 @@ private fun ParentGateNotice() {
     ) {
         Column(
             modifier = Modifier.padding(LmcSpacing.CardPadding),
-            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space3),
         ) {
             Text(
                 text = stringResource(R.string.parent_gate_title),
@@ -5016,6 +5060,43 @@ private fun ParentGateNotice() {
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSecondaryContainer,
             )
+            Text(
+                text = stringResource(R.string.parent_gate_instruction),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+            OutlinedTextField(
+                value = answer,
+                onValueChange = {
+                    answer = it
+                    showError = false
+                },
+                label = { Text(text = stringResource(R.string.parent_gate_answer_label)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                isError = showError,
+                supportingText = if (showError) {
+                    {
+                        Text(text = stringResource(R.string.parent_gate_error))
+                    }
+                } else {
+                    null
+                },
+            )
+            Button(
+                onClick = {
+                    if (answer.trim() == ParentGateExpectedAnswer) {
+                        showError = false
+                        onPassed()
+                    } else {
+                        showError = true
+                    }
+                },
+                modifier = Modifier.heightIn(min = LmcSpacing.ButtonPrimaryHeight),
+                shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+            ) {
+                Text(text = stringResource(R.string.parent_gate_button))
+            }
         }
     }
 }
@@ -5356,6 +5437,9 @@ private fun FeedbackForm(
                 label = { Text(text = stringResource(R.string.feedback_parent_contact_optional)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
+                supportingText = {
+                    Text(text = stringResource(R.string.feedback_parent_contact_warning))
+                },
             )
             Button(
                 enabled = buildFeedbackSubmissionUseCase.canSubmit(suggestion),
