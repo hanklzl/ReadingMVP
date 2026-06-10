@@ -11,7 +11,7 @@ from pypinyin import Style, load_phrases_dict, pinyin
 
 from source_catalog import SOURCE_RECORDS, STORY_IDS
 from transformer.story_data import STORY_DRAFTS
-from transformer.audio import generate_audio_manifest
+from transformer.audio import align_audio_manifest, generate_audio_manifest
 
 
 SOURCE_NOTE_DEFAULT = "Based on public-domain 《三国演义》, rewritten for children."
@@ -183,6 +183,7 @@ def generate_story(
     audio_provider: str | None = None,
     mock_audio: bool = False,
     allow_missing_provider: bool = False,
+    audio_align: bool = True,
     sync_app_resources: bool = False,
     app_stories_dir: Path | None = None,
 ) -> Path:
@@ -204,6 +205,7 @@ def generate_story(
             provider=audio_provider,
             use_mock=mock_audio,
             allow_missing_provider=allow_missing_provider,
+            align=audio_align,
         )
 
     if sync_app_resources and app_stories_dir is not None:
@@ -234,6 +236,7 @@ def generate_all(
     audio_provider: str | None = None,
     mock_audio: bool = False,
     allow_missing_provider: bool = False,
+    audio_align: bool = True,
     sync_app_resources: bool = False,
     app_stories_dir: Path | None = None,
 ) -> list[Path]:
@@ -246,11 +249,71 @@ def generate_all(
             audio_provider=audio_provider,
             mock_audio=mock_audio,
             allow_missing_provider=allow_missing_provider,
+            audio_align=audio_align,
             sync_app_resources=sync_app_resources,
             app_stories_dir=app_stories_dir,
         )
         for draft in selected_drafts(ids)
     ]
+
+
+def generate_audio_for_stories(
+    stories_dir: Path,
+    ids: list[str] | None = None,
+    *,
+    audio_provider: str | None = None,
+    mock_audio: bool = False,
+    allow_missing_provider: bool = False,
+    audio_align: bool = True,
+) -> list[Path]:
+    """Generate audio for stories from their EXISTING story.json (not rebuilt).
+
+    Reads each committed ``story.json`` and synthesizes audio from its paragraph
+    text only, leaving ``story.json`` untouched. This is what the ``--gen-only`` /
+    ``--align-only`` audio batch should use, so hand-applied content fixes (e.g.
+    neutral-tone pinyin corrections that the auto-generator would revert) survive
+    the audio run. Audio depends solely on paragraph text, so output is identical
+    to a full regenerate while preserving the manifest schema contract.
+    """
+
+    wanted = ids or list(STORY_IDS)
+    written: list[Path] = []
+    for story_id in wanted:
+        story_dir = stories_dir / story_id
+        story_path = story_dir / "story.json"
+        if not story_path.exists():
+            raise FileNotFoundError(f"Missing story.json for {story_id}: {story_path}")
+        story = json.loads(story_path.read_text(encoding="utf-8"))
+        generate_audio_manifest(
+            story,
+            story_dir,
+            provider=audio_provider,
+            use_mock=mock_audio,
+            allow_missing_provider=allow_missing_provider,
+            align=audio_align,
+        )
+        written.append(story_dir / "audio.json")
+    return written
+
+
+def align_audio_for_stories(stories_dir: Path, ids: list[str] | None = None) -> list[Path]:
+    """Run the forced aligner over already-generated audio.json files.
+
+    Used by the ``--align-only`` pass that runs in the ``qwen-asr`` venv (separate
+    from the ``qwen-tts`` venv that generated the wavs). Backfills real per-character
+    timings into each selected story's ``audio.json`` in place.
+    """
+
+    wanted = ids or list(STORY_IDS)
+    aligned: list[Path] = []
+    for story_id in wanted:
+        story_dir = stories_dir / story_id
+        manifest = story_dir / "audio.json"
+        if not manifest.exists():
+            raise FileNotFoundError(f"Missing audio manifest for {story_id}: {manifest}")
+        align_audio_manifest(story_dir)
+        aligned.append(manifest)
+    return aligned
 
 
 def sync_audio_assets_to_resources(*, story_id: str, stories_dir: Path, app_resources_dir: Path) -> None:
@@ -322,6 +385,24 @@ def main() -> int:
     parser.add_argument("--audio", action="store_true", help="Generate per-sentence sentence audio files.")
     parser.add_argument("--mock", action="store_true", help="Use mock TTS provider for offline generation.")
     parser.add_argument(
+        "--gen-only",
+        action="store_true",
+        help=(
+            "Audio generation only (synthesize wavs + audio.json with placeholder "
+            "char timings); skip forced alignment. Run in the qwen-tts venv, then "
+            "run --align-only in the qwen-asr venv to backfill real timings."
+        ),
+    )
+    parser.add_argument(
+        "--align-only",
+        action="store_true",
+        help=(
+            "Forced-alignment only: read existing audio.json + wavs and backfill "
+            "real per-character timings (chars[]) in place. Run in the qwen-asr venv. "
+            "Does not synthesize audio."
+        ),
+    )
+    parser.add_argument(
         "--sync-app-resources",
         action="store_true",
         help="Copy generated audio.json and audio/ wavs into apps/reader/shared resources.",
@@ -354,6 +435,29 @@ def main() -> int:
         for path in paths:
             print(path)
         print(f"Migrated cells in {len(paths)} story files")
+        return 0
+
+    if args.align_only:
+        paths = align_audio_for_stories(args.stories_dir, args.ids)
+        for path in paths:
+            print(path)
+        print(f"Aligned char timings in {len(paths)} audio manifests")
+        return 0
+
+    if args.gen_only:
+        # Audio-only pass: read existing story.json (preserve hand edits), generate
+        # wavs + placeholder timings; real timings come from a later --align-only pass.
+        paths = generate_audio_for_stories(
+            args.stories_dir,
+            args.ids,
+            audio_provider=args.audio_provider,
+            mock_audio=args.mock,
+            allow_missing_provider=args.skip_missing_audio_provider,
+            audio_align=False,
+        )
+        for path in paths:
+            print(path)
+        print(f"Generated audio (gen-only) for {len(paths)} stories")
         return 0
 
     paths = generate_all(

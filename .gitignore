@@ -23,6 +23,7 @@ Pods/
 __pycache__/
 *.pyc
 .venv/
+.venv*/
 venv/
 .env
 *.egg-info/

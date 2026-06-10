@@ -133,6 +133,48 @@ class CharTimingTest(unittest.TestCase):
             for previous, current in zip(chars, chars[1:]):
                 self.assertLessEqual(previous["endMs"], current["startMs"])
 
+    def test_gen_then_align_split_backfills_real_timings(self):
+        # Simulates the two-venv flow: generate (mock TTS, placeholder timings)
+        # then align (injected aligner standing in for qwen-asr) rewrites chars[].
+        from transformer.audio import align_audio_manifest, read_audio_manifest
+
+        story = build_story(STORY_DRAFTS[0])
+        with tempfile.TemporaryDirectory() as raw_dir:
+            story_dir = Path(raw_dir)
+
+            # gen-only: audio + placeholder (even) timings, schema-valid already.
+            gen_manifest = generate_audio_manifest(story, story_dir, use_mock=True, align=False)
+            self.assertTrue(gen_manifest)
+            for entry in gen_manifest:
+                self.assertEqual(len(entry["text"]), len(entry["chars"]))
+
+            class StubAligner:
+                def __init__(self):
+                    self.calls = []
+
+                def align(self, text, audio_path, duration_ms):
+                    self.calls.append((text, Path(audio_path).name, duration_ms))
+                    # Distinctive timings so we can prove a real align pass ran.
+                    return [
+                        {"c": ch, "startMs": min(i, duration_ms), "endMs": min(i + 1, duration_ms)}
+                        for i, ch in enumerate(text)
+                    ]
+
+            stub = StubAligner()
+            aligned = align_audio_manifest(story_dir, aligner=stub)
+
+            # Every available sentence was aligned and rewritten on disk.
+            self.assertEqual(len(gen_manifest), len(stub.calls))
+            on_disk = read_audio_manifest(story_dir / "audio.json")
+            self.assertEqual(len(on_disk), len(aligned))
+            for entry in on_disk:
+                chars = entry["chars"]
+                self.assertEqual(len(entry["text"]), len(chars))
+                self.assertEqual([c for c in entry["text"]], [cell["c"] for cell in chars])
+                # stub's signature timing: chars[i] -> startMs=i, endMs=i+1 (clamped)
+                self.assertEqual(0, chars[0]["startMs"])
+                self.assertEqual(2, chars[1]["endMs"])
+
 
 if __name__ == "__main__":
     unittest.main()

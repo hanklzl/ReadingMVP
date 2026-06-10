@@ -4,25 +4,76 @@
 # when generating real audio with the open-source Qwen3 stack. Mock generation
 # (LMC_TTS_PROVIDER=mock) and `python -m validator` do NOT need any of this.
 #
-# Install on the machine that runs the batch audio job:
-#   pip install -r requirements.txt -r requirements-qwen.txt
-#
 # Models (downloaded lazily by from_pretrained / configurable via env):
 #   - TTS:     Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice  (LMC_TTS_MODEL; warm storyteller
 #              speaker "Serena" via LMC_TTS_VOICE — see README speaker list)
 #   - Aligner: Qwen/Qwen3-ForcedAligner-0.6B         (LMC_TTS_ALIGNER_MODEL)
+#   - ASR (QA): Qwen/Qwen3-ASR-0.6B (transcription check; not used by the manifest)
 #
-# PLATFORM CONSTRAINT (verified 2026-06): torch ships NO wheel for Intel macOS
-# (macosx x86_64) past 2.2.2, and 2.2.2 only covers CPython 3.8-3.12. There is no
-# torch wheel for CPython 3.13/3.14 on Intel macOS from PyPI, the PyTorch CPU
-# index, or nightly. To run this stack on Intel macOS you must use Python 3.12
-# (torch==2.2.2). On Apple Silicon / Linux any of 3.10-3.13 works.
+# PLATFORM CONSTRAINT (verified 2026-06 on Intel macOS x86_64, Python 3.12.13):
+#   * torch ships NO wheel for Intel macOS past 2.2.2; 2.2.2 covers CPython 3.8-3.12
+#     only -> use python@3.12 + torch==2.2.2 (brew install python@3.12).
+#   * torch 2.2.2 was built against numpy 1.x -> pin numpy<2 (else "_ARRAY_API not
+#     found" / "compiled using NumPy 1.x cannot be run in NumPy 2.x").
+#   * librosa pulls numba, which pulls llvmlite. The newest llvmlite/numba drop
+#     Intel-mac wheels and try (and fail) to build llvmlite from source. Pin
+#     numba==0.60.0 + llvmlite==0.43.0 (last with cp312 x86_64 wheels, numpy<2.1).
+#   * `sox` (python pkg) warns "SoX could not be found" if the SoX *binary* is
+#     absent; harmless for Qwen3TTSModel.generate_custom_voice / ForcedAligner.align.
+#     Install the binary with `brew install sox` if you want the warning gone.
+#   * qwen-asr lists `vllm` in requires_dist but pip does NOT install it on this
+#     platform (no Intel-mac/CPU wheel; it's effectively optional) — fine, the
+#     ForcedAligner + ASR transcribe paths do not import vllm.
 #
-# NOTE: qwen-tts pins transformers==4.57.3 and qwen-asr pins transformers==4.57.6;
-# they cannot share one env unmodified. Run TTS and the forced-aligner in separate
-# venvs, or relax one pin, when installing both.
+# HARD PIN CLASH -> USE TWO VENVS:
+#   qwen-tts pins transformers==4.57.3, qwen-asr pins transformers==4.57.6 (both
+#   exact ==, differing only in patch). They CANNOT share one environment. Run TTS
+#   generation in one venv and forced-alignment/ASR in another.
+#
+# ---------------------------------------------------------------------------
+# DUAL-VENV SETUP (Intel macOS; verified). Run from the `pipeline/` directory.
+# ---------------------------------------------------------------------------
+#   brew install python@3.12      # /usr/local/bin/python3.12
+#
+#   # (1) TTS generation venv:
+#   /usr/local/bin/python3.12 -m venv .venv312-tts
+#   .venv312-tts/bin/python -m pip install -U pip
+#   .venv312-tts/bin/python -m pip install \
+#       torch==2.2.2 torchaudio "numpy<2" numba==0.60.0 llvmlite==0.43.0 \
+#       soundfile "qwen-tts>=0.1.1"   # qwen-tts brings transformers==4.57.3
+#
+#   # (2) Forced-aligner + ASR venv:
+#   /usr/local/bin/python3.12 -m venv .venv312-asr
+#   .venv312-asr/bin/python -m pip install -U pip
+#   .venv312-asr/bin/python -m pip install \
+#       torch==2.2.2 torchaudio "numpy<2" numba==0.60.0 llvmlite==0.43.0 \
+#       soundfile "qwen-asr==0.0.6"   # qwen-asr brings transformers==4.57.6
+#
+# On Apple Silicon / Linux any of Python 3.10-3.13 works and you MAY try a single
+# venv, but the transformers== clash still applies — two venvs is the safe path.
+#
+# ---------------------------------------------------------------------------
+# TWO-PASS AUDIO WORKFLOW (gen in TTS venv, align in ASR venv):
+# ---------------------------------------------------------------------------
+#   # Pass 1 — synthesize wavs + audio.json (placeholder char timings), TTS venv:
+#   LMC_TTS_PROVIDER=qwen LMC_TTS_DEVICE=cpu LMC_TTS_VOICE=Serena \
+#     .venv312-tts/bin/python -m transformer --gen-only
+#
+#   # Pass 2 — backfill real per-character timings in place, ASR venv:
+#   LMC_TTS_DEVICE=cpu \
+#     .venv312-asr/bin/python -m transformer --align-only
+#
+#   # Then sync into app resources + validate (3.14/base venv is fine for these):
+#   .venv/bin/python -m transformer --ids <id> --sync-app-resources   # copy assets
+#   .venv/bin/python -m validator
+#
+# The pins below are the exact versions installed by the commands above.
 
-qwen-tts>=0.1.1          # Qwen3TTSModel local text-to-speech (pulls transformers/torch/torchaudio)
-qwen-asr>=0.0.6          # Qwen3ForcedAligner per-character timestamps (latest is 0.0.6, not 0.1.x)
-torch>=2.2.0             # CPU is fine; on Intel macOS pin torch==2.2.2 + Python 3.12 (see note above)
-soundfile>=0.12.1        # write generated waveforms to wav
+qwen-tts>=0.1.1          # TTS venv only; Qwen3TTSModel (brings transformers==4.57.3)
+qwen-asr==0.0.6          # ASR venv only; Qwen3ForcedAligner + Qwen3ASRModel (transformers==4.57.6)
+torch==2.2.2             # Intel-mac ceiling; both venvs
+torchaudio==2.2.2        # matches torch; both venvs
+numpy<2                  # torch 2.2.2 needs numpy 1.x; both venvs (resolves to 1.26.4)
+numba==0.60.0            # last cp312 x86_64 wheel; both venvs (pulled via librosa)
+llvmlite==0.43.0         # matches numba 0.60.0; both venvs
+soundfile>=0.12.1        # write generated waveforms to wav; both venvs

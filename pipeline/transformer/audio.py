@@ -587,7 +587,20 @@ def generate_audio_manifest(
     use_mock: bool = False,
     allow_missing_provider: bool = False,
     clear_existing: bool = True,
+    align: bool = True,
 ) -> list[dict[str, Any]]:
+    """Synthesize per-sentence audio and write ``audio.json``.
+
+    When ``align`` is True the active char aligner runs inline (mock/offline use
+    evenly divided timings; ``qwen`` uses the real forced aligner). When ``align``
+    is False the audio is generated but per-character timings are left as the
+    deterministic :func:`even_char_timings` placeholder, so the manifest is still
+    schema-valid and a later forced-alignment pass (:func:`align_audio_manifest`,
+    run in a separate venv) can backfill real timings. This split exists because
+    ``qwen-tts`` and ``qwen-asr`` pin conflicting ``transformers`` versions and
+    cannot share one environment on Intel macOS.
+    """
+
     paragraphs = story.get("paragraphs")
     if not isinstance(paragraphs, list):
         raise ValueError("story.paragraphs must be a list")
@@ -604,7 +617,11 @@ def generate_audio_manifest(
         use_mock=use_mock,
         allow_missing_provider=allow_missing_provider,
     )
-    char_aligner = build_char_aligner(provider=configured_provider, use_mock=use_mock)
+    if align:
+        char_aligner: CharAligner = build_char_aligner(provider=configured_provider, use_mock=use_mock)
+    else:
+        # gen-only: emit placeholder timings now, backfill real ones in the align pass.
+        char_aligner = NoOpCharAligner()
 
     entries: list[AudioSentence] = []
     for expected in build_sentence_plan(paragraphs):
@@ -649,6 +666,60 @@ def generate_audio_manifest(
         encoding="utf-8",
     )
     return manifest
+
+
+def align_audio_manifest(
+    story_dir: Path,
+    *,
+    aligner: CharAligner | None = None,
+) -> list[dict[str, Any]]:
+    """Backfill per-character timings into an existing ``audio.json``.
+
+    Reads the manifest written by :func:`generate_audio_manifest` (``align=False``)
+    plus its generated ``.wav`` files, runs the forced aligner over each available
+    sentence, and rewrites ``audio.json`` in place with the real ``chars[]``
+    timings. Sentences marked ``unavailable`` or with a missing wav are left as-is.
+
+    Intended to run in the ``qwen-asr`` venv (separate from the ``qwen-tts`` venv).
+    By default it builds :class:`Qwen3CharAligner` from the ``LMC_TTS_ALIGNER_MODEL``
+    / ``LMC_TTS_LANGUAGE`` / ``LMC_TTS_DEVICE`` env vars; pass ``aligner`` to inject
+    a custom one (e.g. in tests). Returns the rewritten sentence list.
+    """
+
+    manifest_path = story_dir / "audio.json"
+    if not manifest_path.exists():
+        raise FileNotFoundError(f"Missing audio manifest to align: {manifest_path}")
+
+    sentences = read_audio_manifest(manifest_path)
+
+    if aligner is None:
+        aligner = Qwen3CharAligner(
+            model_id=os.getenv("LMC_TTS_ALIGNER_MODEL", "Qwen/Qwen3-ForcedAligner-0.6B"),
+            language=os.getenv("LMC_TTS_LANGUAGE", "Chinese"),
+            device=os.getenv("LMC_TTS_DEVICE", "cpu"),
+        )
+
+    for entry in sentences:
+        if not isinstance(entry, dict) or entry.get("unavailable"):
+            continue
+        audio_rel = entry.get("audioPath")
+        text = entry.get("text")
+        duration_ms = entry.get("durationMs")
+        if not isinstance(audio_rel, str) or not isinstance(text, str):
+            continue
+        if not isinstance(duration_ms, int) or duration_ms < 0:
+            continue
+        audio_path = story_dir / audio_rel
+        if not audio_path.exists():
+            continue
+        entry["chars"] = aligner.align(text, audio_path, duration_ms)
+
+    payload = {"sentences": sentences}
+    manifest_path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    return sentences
 
 
 def _parse_timeout_seconds() -> int:
