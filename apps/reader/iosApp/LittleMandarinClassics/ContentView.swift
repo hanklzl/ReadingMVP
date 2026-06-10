@@ -244,6 +244,7 @@ final class ReaderViewModel: ObservableObject {
     @Published private(set) var loadingState: LMCLoadingState = .idle
     @Published private(set) var isSpeaking = false
     @Published private(set) var readingAudioStatus: LMCReadingAudioStatus = .idle
+    @Published private(set) var activeCharIndex: Int? = nil
     @Published private(set) var readingMode: LMCReadingPlaybackMode = .readAlong
     @Published private(set) var autoContinueEnabled = true
     @Published private(set) var playbackSpeed: LMCReadingPlaybackSpeed = .defaultSlow
@@ -265,6 +266,7 @@ final class ReaderViewModel: ObservableObject {
     private let storyPresentationUseCases = StoryPresentationUseCases()
     private let buildParentReportSummaryUseCase = BuildParentReportSummaryUseCase()
     private let readingSessionReducer = ReadingSessionReducer()
+    private let karaokeReducer = ReadAlongKaraokeReducer()
     private let quizSessionReducer = QuizSessionReducer(scoreQuizUseCase: ScoreQuizUseCase())
     private let buildSpeechTextUseCase = BuildSpeechTextUseCase()
     private let analytics = LMCUserDefaultsAnalyticsAdapter()
@@ -275,6 +277,14 @@ final class ReaderViewModel: ObservableObject {
     private var activeSentenceShouldAutoContinue = true
     private var generatedAudioPlayer: AVAudioPlayer?
     private var generatedAudioDelegate: LMCGeneratedAudioDelegate?
+
+    // Per-character ("karaoke") highlight state, driven by the shared reducer.
+    private let loadAudioManifestUseCase = LoadStoryAudioManifestUseCase(
+        resourceReader: IosStoryResourceReaderKt.defaultStoryResourceReader()
+    )
+    private var audioManifests: [String: StoryAudioManifest] = [:]
+    private var activeKaraokeTimeline = KaraokeTimeline.companion.Empty
+    private var karaokeTimer: Timer?
 
     private lazy var getStoryListUseCase = GetStoryListUseCase(repository: repository)
     private lazy var markStoryCompletedUseCase = MarkStoryCompletedUseCase(progressService: progressService)
@@ -319,6 +329,7 @@ final class ReaderViewModel: ObservableObject {
     func load() async {
         guard loadingState != .loading else { return }
         loadingState = .loading
+        registerKaraokeRangeListener()
         do {
             stories = try await getStoryListUseCase.invoke()
             try await refreshProgress()
@@ -551,6 +562,7 @@ final class ReaderViewModel: ObservableObject {
         speechTask?.cancel()
         readingAudioTask?.cancel()
         stopGeneratedAudio()
+        stopKaraoke()
         isSpeaking = false
         readingAudioStatus = .idle
         speechTask = Task { @MainActor in
@@ -868,6 +880,96 @@ final class ReaderViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Karaoke (per-character highlight)
+
+    private func registerKaraokeRangeListener() {
+        // System-TTS fallback path: native willSpeakRangeOfSpeechString reports the
+        // spoken UTF-16 range; map it to a code-point index via the shared reducer.
+        // TtsRangeListener is a Kotlin function type; its Int params bridge to
+        // KotlinInt, so the closure receives boxed integers.
+        ttsService.setRangeListener(listener: { [weak self] (utf16Start: KotlinInt, _: KotlinInt) in
+            let startOffset = utf16Start.int32Value
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                guard case .playing(_, .tts) = self.readingAudioStatus else { return }
+                let timeline = self.activeKaraokeTimeline
+                guard !timeline.isEmpty else { return }
+                let text = timeline.chars.map { $0.character }.joined()
+                if let index = self.karaokeReducer.charIndexForUtf16Range(
+                    text: text,
+                    utf16Start: startOffset
+                )?.intValue {
+                    self.activeCharIndex = index
+                }
+            }
+        })
+    }
+
+    @discardableResult
+    private func audioManifest(for story: Story) async -> StoryAudioManifest {
+        if let cached = audioManifests[story.id] {
+            return cached
+        }
+        let manifest = (try? await loadAudioManifestUseCase.invoke(storyId: story.id))
+            ?? StoryAudioManifest.companion.empty(storyId: story.id)
+        audioManifests[story.id] = manifest
+        return manifest
+    }
+
+    /// Warm the per-character timing manifest cache before playback so the
+    /// recorded-audio karaoke highlight is accurate from the first sentence.
+    func prepareReadingAudio(for story: Story) async {
+        await audioManifest(for: story)
+    }
+
+    private func beginKaraoke(story: Story, location: LMCSentenceLocation, source: LMCAudioSource) {
+        guard let sentence = story.lmcSentence(at: location) else {
+            stopKaraoke()
+            return
+        }
+        let segment = audioManifests[story.id]?.segmentFor(
+            paragraphIndex: Int32(location.paragraphIndex),
+            sentenceIndex: Int32(location.sentenceIndex)
+        )
+        let timeline: KaraokeTimeline
+        if source == .recorded, let segment {
+            timeline = karaokeReducer.timelineForSegment(segment: segment)
+        } else {
+            // TTS fallback (or missing manifest timings): only the per-character
+            // text is needed; native range callbacks drive the cursor.
+            timeline = karaokeReducer.timelineForText(text: sentence.text, durationMillis: 0)
+        }
+        activeKaraokeTimeline = timeline
+        activeCharIndex = timeline.isEmpty ? nil : 0
+        karaokeTimer?.invalidate()
+        karaokeTimer = nil
+
+        // Recorded path: poll the player position and resolve the active char.
+        if source == .recorded {
+            let timer = Timer.scheduledTimer(withTimeInterval: 0.06, repeats: true) { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    guard let self, let player = self.generatedAudioPlayer, player.isPlaying else { return }
+                    let positionMillis = Int64(player.currentTime * 1000)
+                    if let index = self.karaokeReducer.charIndexAt(
+                        timeline: self.activeKaraokeTimeline,
+                        positionMillis: positionMillis
+                    )?.intValue {
+                        self.activeCharIndex = index
+                    }
+                }
+            }
+            RunLoop.main.add(timer, forMode: .common)
+            karaokeTimer = timer
+        }
+    }
+
+    private func stopKaraoke() {
+        karaokeTimer?.invalidate()
+        karaokeTimer = nil
+        activeKaraokeTimeline = KaraokeTimeline.companion.Empty
+        activeCharIndex = nil
+    }
+
     private func playReadingSentence(story: Story, location: LMCSentenceLocation, shouldTrack: Bool) {
         guard let sentence = story.lmcSentence(at: location) else {
             stopSpeaking()
@@ -877,6 +979,8 @@ final class ReaderViewModel: ObservableObject {
         speechTask?.cancel()
         readingAudioTask?.cancel()
         stopGeneratedAudio()
+        karaokeTimer?.invalidate()
+        karaokeTimer = nil
 
         if let url = LMCSentenceAudioResolver.generatedAudioURL(storyId: story.id, location: location),
            playGeneratedSentenceAudio(url: url, story: story, location: location, shouldTrack: shouldTrack) {
@@ -912,6 +1016,7 @@ final class ReaderViewModel: ObservableObject {
             generatedAudioDelegate = delegate
             readingAudioStatus = .playing(location, .recorded)
             isSpeaking = true
+            beginKaraoke(story: story, location: location, source: .recorded)
             if shouldTrack {
                 trackParagraphAudioPlay(
                     story,
@@ -936,6 +1041,7 @@ final class ReaderViewModel: ObservableObject {
     ) {
         readingAudioStatus = .playing(location, .tts)
         isSpeaking = true
+        beginKaraoke(story: story, location: location, source: .tts)
         if shouldTrack {
             trackParagraphAudioPlay(
                 story,
@@ -968,12 +1074,14 @@ final class ReaderViewModel: ObservableObject {
             readingAudioStatus = .stopped(location)
             isSpeaking = false
             stopGeneratedAudio()
+            stopKaraoke()
             return
         }
         guard let nextLocation = story.lmcNextSentenceLocation(after: location) else {
             readingAudioStatus = .idle
             isSpeaking = false
             stopGeneratedAudio()
+            stopKaraoke()
             return
         }
         playReadingSentence(story: story, location: nextLocation, shouldTrack: true)
@@ -2534,6 +2642,7 @@ private struct ReadingScreen: View {
                                     showPinyin: showPinyin,
                                     isCurrentParagraph: index == paragraphIndex,
                                     activeSentenceIndex: activeSentenceLocation?.paragraphIndex == index ? activeSentenceLocation?.sentenceIndex : nil,
+                                    activeCharIndex: activeSentenceLocation?.paragraphIndex == index ? viewModel.activeCharIndex : nil,
                                     playSentence: { sentenceIndex in
                                         autoFollowReading = true
                                         viewModel.playTappedSentence(
@@ -2597,6 +2706,7 @@ private struct ReadingScreen: View {
         }
         .background(LMCColor.background.ignoresSafeArea())
         .task(id: story.id) {
+            await viewModel.prepareReadingAudio(for: story)
             paragraphIndex = await viewModel.savedReadingParagraphIndex(for: story)
         }
         .onChange(of: showPinyin) { enabled in
@@ -3739,17 +3849,20 @@ private struct ReadingParagraphView: View {
     let showPinyin: Bool
     let isCurrentParagraph: Bool
     let activeSentenceIndex: Int?
+    let activeCharIndex: Int?
     let playSentence: (Int) -> Void
     let playSentenceOnly: (Int) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: LMCSpace.s3) {
             ForEach(paragraph.lmcSentenceSegments) { sentence in
+                let isActiveSentence = activeSentenceIndex == sentence.index
                 ReadingSentenceView(
                     sentence: sentence,
                     size: size,
                     showPinyin: showPinyin,
-                    isActive: activeSentenceIndex == sentence.index,
+                    isActive: isActiveSentence,
+                    activeCharIndex: isActiveSentence ? activeCharIndex : nil,
                     playSentence: { playSentence(sentence.index) },
                     playSentenceOnly: { playSentenceOnly(sentence.index) }
                 )
@@ -3774,6 +3887,7 @@ private struct ReadingSentenceView: View {
     let size: LMCReadingSize
     let showPinyin: Bool
     let isActive: Bool
+    var activeCharIndex: Int? = nil
     let playSentence: () -> Void
     let playSentenceOnly: () -> Void
 
@@ -3801,7 +3915,7 @@ private struct ReadingSentenceView: View {
     @ViewBuilder
     private var sentenceContent: some View {
         if showPinyin {
-            LMCRubyTextFlow(cells: sentence.cells, size: size)
+            LMCRubyTextFlow(cells: sentence.cells, size: size, activeCharIndex: activeCharIndex)
                 .padding(.horizontal, LMCSpace.s2)
                 .padding(.vertical, LMCSpace.s1)
                 .background(sentenceBackground)
@@ -3809,9 +3923,7 @@ private struct ReadingSentenceView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .frame(maxWidth: .infinity, alignment: .leading)
         } else {
-            Text(sentence.text)
-                .font(size.hanziFont)
-                .foregroundStyle(LMCColor.textPrimary)
+            karaokeHanziText
                 .lineSpacing(size.hanziLineSpacing)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, LMCSpace.s3)
@@ -3821,6 +3933,26 @@ private struct ReadingSentenceView: View {
                 .overlay(sentenceBorder)
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
+    }
+
+    // Sentence hanzi without ruby; highlights the active code point if any.
+    private var karaokeHanziText: Text {
+        guard let activeCharIndex else {
+            return Text(sentence.text)
+                .font(size.hanziFont)
+                .foregroundColor(LMCColor.textPrimary)
+        }
+        let codePoints = Array(sentence.text.unicodeScalars).map { String($0) }
+        var result = Text("")
+        for (index, scalar) in codePoints.enumerated() {
+            let run = Text(scalar).font(size.hanziFont)
+            if index == activeCharIndex {
+                result = result + run.foregroundColor(LMCColor.primary).fontWeight(.bold)
+            } else {
+                result = result + run.foregroundColor(LMCColor.textPrimary)
+            }
+        }
+        return result
     }
 
     private var sentenceBackground: Color {
@@ -4098,11 +4230,14 @@ private extension Character {
 private struct LMCRubyTextFlow: View {
     let cells: [LMCRubyCellData]
     let size: LMCReadingSize
+    var activeCharIndex: Int? = nil
 
     var body: some View {
         LMCRubyFlowLayout(horizontalSpacing: LMCSpace.s1, verticalSpacing: LMCSpace.s2) {
-            ForEach(Array(cells.enumerated()), id: \.offset) { _, cell in
-                LMCRubyCellView(cell: cell, size: size)
+            ForEach(Array(cells.enumerated()), id: \.offset) { index, cell in
+                // Ruby cells are 1:1 with sentence code points, so the cell index
+                // matches the karaoke character index from shared.
+                LMCRubyCellView(cell: cell, size: size, isActiveChar: activeCharIndex == index)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -4112,12 +4247,14 @@ private struct LMCRubyTextFlow: View {
 private struct LMCRubyCellView: View {
     let cell: LMCRubyCellData
     let size: LMCReadingSize
+    var isActiveChar: Bool = false
 
     var body: some View {
         VStack(spacing: 0) {
             Text(cell.pinyin.isEmpty ? " " : cell.pinyin)
                 .font(size.pinyinFont)
-                .foregroundStyle(LMCColor.textSecondary)
+                .fontWeight(isActiveChar ? .bold : nil)
+                .foregroundStyle(isActiveChar ? LMCColor.onPrimaryContainer : LMCColor.textSecondary)
                 .lineLimit(1)
                 .multilineTextAlignment(.center)
                 .opacity(cell.pinyin.isEmpty ? 0 : 1)
@@ -4125,12 +4262,18 @@ private struct LMCRubyCellView: View {
 
             Text(cell.character)
                 .font(size.hanziFont)
-                .foregroundStyle(LMCColor.textPrimary)
+                .fontWeight(isActiveChar ? .bold : nil)
+                .foregroundStyle(isActiveChar ? LMCColor.onPrimaryContainer : LMCColor.textPrimary)
                 .lineLimit(1)
                 .multilineTextAlignment(.center)
                 .frame(height: size.hanziLineHeight, alignment: .top)
         }
         .fixedSize(horizontal: true, vertical: true)
+        .padding(.horizontal, isActiveChar ? 2 : 0)
+        .background(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(isActiveChar ? LMCColor.primaryContainer : Color.clear)
+        )
     }
 }
 

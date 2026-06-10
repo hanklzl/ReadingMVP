@@ -91,6 +91,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -112,8 +113,11 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -158,6 +162,8 @@ import com.littlemandarin.classics.shared.presentation.ReaderAnalyticsEvents
 import com.littlemandarin.classics.shared.presentation.ReaderLanguage
 import com.littlemandarin.classics.shared.presentation.ReaderSettings
 import com.littlemandarin.classics.shared.presentation.ReaderSettingsService
+import com.littlemandarin.classics.shared.presentation.KaraokeTimeline
+import com.littlemandarin.classics.shared.presentation.ReadAlongKaraokeReducer
 import com.littlemandarin.classics.shared.presentation.ReadingSessionReducer
 import com.littlemandarin.classics.shared.presentation.ReadingAudioSource
 import com.littlemandarin.classics.shared.presentation.ReadingPlaybackStatus
@@ -205,10 +211,12 @@ import com.littlemandarin.classics.shared.service.createAiService
 import com.littlemandarin.classics.shared.service.createAudioService
 import com.littlemandarin.classics.shared.service.createTtsService
 import com.littlemandarin.classics.shared.story.DefaultStoryRepository
+import com.littlemandarin.classics.shared.story.LoadStoryAudioManifestUseCase
 import com.littlemandarin.classics.shared.story.Paragraph
 import com.littlemandarin.classics.shared.story.PinyinCell
 import com.littlemandarin.classics.shared.story.Question
 import com.littlemandarin.classics.shared.story.Story
+import com.littlemandarin.classics.shared.story.StoryAudioManifest
 import com.littlemandarin.classics.shared.story.Vocab
 import com.littlemandarin.classics.shared.usecase.GetStoryListUseCase
 import java.io.IOException
@@ -1507,6 +1515,14 @@ private fun ReadingScreen(
     onVocabulary: () -> Unit,
 ) {
     val readingSessionReducer = remember { ReadingSessionReducer() }
+    val karaokeReducer = remember { ReadAlongKaraokeReducer() }
+    val loadAudioManifestUseCase = remember { LoadStoryAudioManifestUseCase() }
+    var audioManifest by remember(story.id) {
+        mutableStateOf(StoryAudioManifest.empty(story.id))
+    }
+    // Active character ("karaoke") highlight, keyed to the playing sentence.
+    var activeCharIndex by remember(story.id) { mutableStateOf<Int?>(null) }
+    var activeKaraokeTimeline by remember(story.id) { mutableStateOf(KaraokeTimeline.Empty) }
     var readingState by remember(story.id, initialParagraphIndex) {
         mutableStateOf(
             readingSessionReducer.initialState(
@@ -1514,6 +1530,10 @@ private fun ReadingScreen(
                 savedParagraphIndex = initialParagraphIndex,
             ),
         )
+    }
+
+    LaunchedEffect(story.id) {
+        audioManifest = loadAudioManifestUseCase(story.id)
     }
     val scope = rememberCoroutineScope()
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -1590,6 +1610,52 @@ private fun ReadingScreen(
         }
     }
 
+    // Karaoke highlight driver for the recorded-audio path: poll the player
+    // position and resolve the active character from the manifest timings.
+    LaunchedEffect(
+        playbackState.status,
+        playbackState.paragraphIndex,
+        playbackState.sentenceIndex,
+        playbackState.audioSource,
+    ) {
+        if (
+            playbackState.status == SentencePlaybackStatus.Playing &&
+            playbackState.audioSource == ReadingAudioSource.Recorded &&
+            !activeKaraokeTimeline.isEmpty
+        ) {
+            while (true) {
+                val positionMillis = audioService.currentPositionMillis()
+                if (positionMillis != null) {
+                    activeCharIndex = karaokeReducer.charIndexAt(activeKaraokeTimeline, positionMillis)
+                }
+                withFrameMillis { }
+            }
+        }
+    }
+
+    // Karaoke highlight driver for the system-TTS fallback path: native range
+    // callbacks (onRangeStart) report the spoken UTF-16 range per word/char.
+    DisposableEffect(ttsService) {
+        ttsService.setRangeListener { utf16Start, _ ->
+            val timeline = activeKaraokeTimeline
+            if (
+                playbackState.audioSource == ReadingAudioSource.Tts &&
+                !timeline.isEmpty
+            ) {
+                val sentenceText = timeline.chars.joinToString(separator = "") { it.character }
+                karaokeReducer.charIndexForUtf16Range(sentenceText, utf16Start)?.let { index ->
+                    activeCharIndex = index
+                }
+            }
+        }
+        onDispose { ttsService.setRangeListener(null) }
+    }
+
+    fun clearKaraokeHighlight() {
+        activeCharIndex = null
+        activeKaraokeTimeline = KaraokeTimeline.Empty
+    }
+
     fun stopAudioTransport() {
         playbackJob?.cancel()
         playbackJob = null
@@ -1601,6 +1667,7 @@ private fun ReadingScreen(
 
     fun stopSentencePlayback() {
         stopAudioTransport()
+        clearKaraokeHighlight()
         readingState = readingSessionReducer.stop(readingState)
         playbackState = SentencePlaybackUiState(
             paragraphIndex = paragraphIndex,
@@ -1668,6 +1735,16 @@ private fun ReadingScreen(
                     autoContinue = readingState.autoContinue,
                     playbackSpeed = speed,
                 )
+                // Reset the karaoke highlight for the newly active sentence.
+                activeKaraokeTimeline = karaokeTimelineFor(
+                    audioManifest = audioManifest,
+                    hasGeneratedAudio = hasGeneratedAudio,
+                    paragraphIndex = activeTarget.paragraphIndex,
+                    sentenceIndex = activeTarget.sentenceIndex,
+                    sentenceText = sentence.text,
+                    karaokeReducer = karaokeReducer,
+                )
+                activeCharIndex = if (activeKaraokeTimeline.isEmpty) null else 0
                 analytics.track(
                     ReaderAnalyticsEvents.paragraphAudioPlay(
                         storyId = story.id,
@@ -1720,6 +1797,7 @@ private fun ReadingScreen(
                     paragraphIndex = playbackState.paragraphIndex,
                     sentenceCountInParagraph = playbackState.sentenceCountInParagraph,
                 )
+                clearKaraokeHighlight()
             }
             playbackJob = null
         }
@@ -2028,14 +2106,17 @@ private fun ReadingScreen(
                             items = sentenceSegments,
                             key = { index, _ -> "paragraph-$paragraphIndex-sentence-$index" },
                         ) { sentenceIndex, sentence ->
+                            val sentenceHighlighted =
+                                playbackState.status != SentencePlaybackStatus.Stopped &&
+                                    playbackState.paragraphIndex == paragraphIndex &&
+                                    playbackState.sentenceIndex == sentenceIndex
                             SentenceTextBlock(
                                 paragraph = paragraph,
                                 sentence = sentence,
                                 showPinyin = settings.showPinyinByDefault,
                                 readingType = readingType,
-                                isHighlighted = playbackState.status != SentencePlaybackStatus.Stopped &&
-                                    playbackState.paragraphIndex == paragraphIndex &&
-                                    playbackState.sentenceIndex == sentenceIndex,
+                                isHighlighted = sentenceHighlighted,
+                                activeCharIndex = if (sentenceHighlighted) activeCharIndex else null,
                                 sentenceIndex = sentenceIndex,
                                 sentenceCount = sentenceSegments.size,
                                 onSentenceClick = { playSentenceFromTap(sentenceIndex) },
@@ -2216,6 +2297,25 @@ private fun estimatedSentencePlaybackMillis(
 ): Long {
     val baseMillis = (text.length.coerceAtLeast(4) * 320L).coerceIn(1_400L, 12_000L)
     return (baseMillis.toDouble() / speed.multiplier.coerceAtLeast(0.5)).toLong().coerceIn(1_400L, 12_000L)
+}
+
+private fun karaokeTimelineFor(
+    audioManifest: StoryAudioManifest,
+    hasGeneratedAudio: Boolean,
+    paragraphIndex: Int,
+    sentenceIndex: Int,
+    sentenceText: String,
+    karaokeReducer: ReadAlongKaraokeReducer,
+): KaraokeTimeline {
+    if (hasGeneratedAudio) {
+        val segment = audioManifest.segmentFor(paragraphIndex, sentenceIndex)
+        if (segment != null) {
+            return karaokeReducer.timelineForSegment(segment)
+        }
+    }
+    // System-TTS fallback (or missing manifest timings): the timeline only needs
+    // the per-character text; native onRangeStart callbacks drive the cursor.
+    return karaokeReducer.timelineForText(sentenceText, durationMillis = 0L)
 }
 
 private fun Paragraph.cellsFor(sentence: SentenceSegment): List<PinyinCell> {
@@ -3641,6 +3741,7 @@ private fun SentenceTextBlock(
     showPinyin: Boolean,
     readingType: ReadingTypeStyles,
     isHighlighted: Boolean,
+    activeCharIndex: Int?,
     sentenceIndex: Int,
     sentenceCount: Int,
     onSentenceClick: () -> Unit,
@@ -3685,16 +3786,14 @@ private fun SentenceTextBlock(
                     cells = sentenceCells,
                     readingType = readingType,
                     isHighlighted = isHighlighted,
+                    activeCharIndex = activeCharIndex,
                 )
             } else {
-                Text(
+                KaraokeHanziText(
                     text = sentence.text,
                     style = readingType.hanzi,
-                    color = if (isHighlighted) {
-                        MaterialTheme.colorScheme.onSecondaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
+                    isHighlighted = isHighlighted,
+                    activeCharIndex = activeCharIndex,
                 )
             }
         }
@@ -3731,6 +3830,7 @@ private fun RubyFlowText(
     cells: List<PinyinCell>,
     readingType: ReadingTypeStyles,
     isHighlighted: Boolean,
+    activeCharIndex: Int? = null,
 ) {
     FlowRow(
         modifier = Modifier
@@ -3741,12 +3841,15 @@ private fun RubyFlowText(
         horizontalArrangement = Arrangement.Start,
         verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
     ) {
-        cells.forEach { cell ->
+        cells.forEachIndexed { index, cell ->
             RubyCell(
                 hanzi = cell.c,
                 pinyin = cell.p,
                 readingType = readingType,
                 isHighlighted = isHighlighted,
+                // cells are 1:1 with the sentence code points, so the cell index
+                // matches the karaoke character index from shared.
+                isActiveChar = isHighlighted && activeCharIndex == index,
             )
         }
     }
@@ -3758,23 +3861,36 @@ private fun RubyCell(
     pinyin: String,
     readingType: ReadingTypeStyles,
     isHighlighted: Boolean,
+    isActiveChar: Boolean = false,
 ) {
+    val activeCharColor = MaterialTheme.colorScheme.onPrimaryContainer
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = if (isActiveChar) {
+            Modifier
+                .background(
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    shape = RoundedCornerShape(LmcSpacing.RadiusSm),
+                )
+                .padding(horizontal = LmcSpacing.Space1)
+        } else {
+            Modifier
+        },
     ) {
         val hasPinyin = pinyin.isNotBlank()
         Text(
             text = if (hasPinyin) pinyin else " ",
             style = readingType.pinyin,
             color = if (hasPinyin) {
-                if (isHighlighted) {
-                    MaterialTheme.colorScheme.onSecondaryContainer
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
+                when {
+                    isActiveChar -> activeCharColor
+                    isHighlighted -> MaterialTheme.colorScheme.onSecondaryContainer
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
                 }
             } else {
                 Color.Transparent
             },
+            fontWeight = if (isActiveChar) FontWeight.Bold else null,
             maxLines = 1,
             softWrap = false,
             textAlign = TextAlign.Center,
@@ -3782,16 +3898,63 @@ private fun RubyCell(
         Text(
             text = hanzi,
             style = readingType.hanzi,
-            color = if (isHighlighted) {
-                MaterialTheme.colorScheme.onSecondaryContainer
-            } else {
-                MaterialTheme.colorScheme.onSurface
+            color = when {
+                isActiveChar -> activeCharColor
+                isHighlighted -> MaterialTheme.colorScheme.onSecondaryContainer
+                else -> MaterialTheme.colorScheme.onSurface
             },
+            fontWeight = if (isActiveChar) FontWeight.Bold else null,
             maxLines = 1,
             softWrap = false,
             textAlign = TextAlign.Center,
         )
     }
+}
+
+/**
+ * Sentence hanzi without ruby, with optional per-character karaoke highlight.
+ * [activeCharIndex] is a Unicode code-point index into [text].
+ */
+@Composable
+private fun KaraokeHanziText(
+    text: String,
+    style: TextStyle,
+    isHighlighted: Boolean,
+    activeCharIndex: Int?,
+) {
+    val baseColor = if (isHighlighted) {
+        MaterialTheme.colorScheme.onSecondaryContainer
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+    val activeColor = MaterialTheme.colorScheme.primary
+
+    if (activeCharIndex == null) {
+        Text(text = text, style = style, color = baseColor)
+        return
+    }
+
+    val annotated = buildAnnotatedString {
+        var codePointIndex = 0
+        var offset = 0
+        while (offset < text.length) {
+            val isSurrogatePair = text[offset].isHighSurrogate() &&
+                offset + 1 < text.length &&
+                text[offset + 1].isLowSurrogate()
+            val charLength = if (isSurrogatePair) 2 else 1
+            val chunk = text.substring(offset, offset + charLength)
+            if (codePointIndex == activeCharIndex) {
+                withStyle(SpanStyle(color = activeColor, fontWeight = FontWeight.Bold)) {
+                    append(chunk)
+                }
+            } else {
+                append(chunk)
+            }
+            offset += charLength
+            codePointIndex += 1
+        }
+    }
+    Text(text = annotated, style = style, color = baseColor)
 }
 
 @Composable

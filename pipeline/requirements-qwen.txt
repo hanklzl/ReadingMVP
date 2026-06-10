@@ -1,0 +1,17 @@
+# Optional local TTS + forced-alignment dependencies for LMC_TTS_PROVIDER=qwen.
+#
+# These pull large model weights (several GB) on first use and are ONLY required
+# when generating real audio with the open-source Qwen3 stack. Mock generation
+# (LMC_TTS_PROVIDER=mock) and `python -m validator` do NOT need any of this.
+#
+# Install on the machine that runs the batch audio job:
+#   pip install -r requirements.txt -r requirements-qwen.txt
+#
+# Models (downloaded lazily by from_pretrained / configurable via env):
+#   - TTS:     Qwen/Qwen3-TTS-12Hz-0.6B-Base   (LMC_TTS_MODEL)
+#   - Aligner: Qwen/Qwen3-ForcedAligner-0.6B   (LMC_TTS_ALIGNER_MODEL)
+
+qwen-tts>=0.1.0          # Qwen3TTSModel local text-to-speech
+qwen-asr>=0.1.0          # Qwen3ForcedAligner per-character timestamps
+torch>=2.2.0             # CPU build is fine; the providers default to device_map="cpu"
+soundfile>=0.12.1        # write generated waveforms to wav

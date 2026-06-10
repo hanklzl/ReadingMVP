@@ -5,112 +5,1999 @@
       "sentIndex": 0,
       "text": "虎牢关前，许多人马排成队伍。",
       "audioPath": "audio/p1_s1.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "虎",
+          "startMs": 0,
+          "endMs": 107
+        },
+        {
+          "c": "牢",
+          "startMs": 107,
+          "endMs": 214
+        },
+        {
+          "c": "关",
+          "startMs": 214,
+          "endMs": 321
+        },
+        {
+          "c": "前",
+          "startMs": 321,
+          "endMs": 429
+        },
+        {
+          "c": "，",
+          "startMs": 429,
+          "endMs": 536
+        },
+        {
+          "c": "许",
+          "startMs": 536,
+          "endMs": 643
+        },
+        {
+          "c": "多",
+          "startMs": 643,
+          "endMs": 750
+        },
+        {
+          "c": "人",
+          "startMs": 750,
+          "endMs": 857
+        },
+        {
+          "c": "马",
+          "startMs": 857,
+          "endMs": 964
+        },
+        {
+          "c": "排",
+          "startMs": 964,
+          "endMs": 1071
+        },
+        {
+          "c": "成",
+          "startMs": 1071,
+          "endMs": 1179
+        },
+        {
+          "c": "队",
+          "startMs": 1179,
+          "endMs": 1286
+        },
+        {
+          "c": "伍",
+          "startMs": 1286,
+          "endMs": 1393
+        },
+        {
+          "c": "。",
+          "startMs": 1393,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 0,
       "sentIndex": 1,
       "text": "吕布骑着高马来到关口，声音洪亮，大家都觉得他的气势很强，一时不知怎样应对。",
       "audioPath": "audio/p1_s2.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "吕",
+          "startMs": 0,
+          "endMs": 41
+        },
+        {
+          "c": "布",
+          "startMs": 41,
+          "endMs": 81
+        },
+        {
+          "c": "骑",
+          "startMs": 81,
+          "endMs": 122
+        },
+        {
+          "c": "着",
+          "startMs": 122,
+          "endMs": 162
+        },
+        {
+          "c": "高",
+          "startMs": 162,
+          "endMs": 203
+        },
+        {
+          "c": "马",
+          "startMs": 203,
+          "endMs": 243
+        },
+        {
+          "c": "来",
+          "startMs": 243,
+          "endMs": 284
+        },
+        {
+          "c": "到",
+          "startMs": 284,
+          "endMs": 324
+        },
+        {
+          "c": "关",
+          "startMs": 324,
+          "endMs": 365
+        },
+        {
+          "c": "口",
+          "startMs": 365,
+          "endMs": 405
+        },
+        {
+          "c": "，",
+          "startMs": 405,
+          "endMs": 446
+        },
+        {
+          "c": "声",
+          "startMs": 446,
+          "endMs": 486
+        },
+        {
+          "c": "音",
+          "startMs": 486,
+          "endMs": 527
+        },
+        {
+          "c": "洪",
+          "startMs": 527,
+          "endMs": 568
+        },
+        {
+          "c": "亮",
+          "startMs": 568,
+          "endMs": 608
+        },
+        {
+          "c": "，",
+          "startMs": 608,
+          "endMs": 649
+        },
+        {
+          "c": "大",
+          "startMs": 649,
+          "endMs": 689
+        },
+        {
+          "c": "家",
+          "startMs": 689,
+          "endMs": 730
+        },
+        {
+          "c": "都",
+          "startMs": 730,
+          "endMs": 770
+        },
+        {
+          "c": "觉",
+          "startMs": 770,
+          "endMs": 811
+        },
+        {
+          "c": "得",
+          "startMs": 811,
+          "endMs": 851
+        },
+        {
+          "c": "他",
+          "startMs": 851,
+          "endMs": 892
+        },
+        {
+          "c": "的",
+          "startMs": 892,
+          "endMs": 932
+        },
+        {
+          "c": "气",
+          "startMs": 932,
+          "endMs": 973
+        },
+        {
+          "c": "势",
+          "startMs": 973,
+          "endMs": 1014
+        },
+        {
+          "c": "很",
+          "startMs": 1014,
+          "endMs": 1054
+        },
+        {
+          "c": "强",
+          "startMs": 1054,
+          "endMs": 1095
+        },
+        {
+          "c": "，",
+          "startMs": 1095,
+          "endMs": 1135
+        },
+        {
+          "c": "一",
+          "startMs": 1135,
+          "endMs": 1176
+        },
+        {
+          "c": "时",
+          "startMs": 1176,
+          "endMs": 1216
+        },
+        {
+          "c": "不",
+          "startMs": 1216,
+          "endMs": 1257
+        },
+        {
+          "c": "知",
+          "startMs": 1257,
+          "endMs": 1297
+        },
+        {
+          "c": "怎",
+          "startMs": 1297,
+          "endMs": 1338
+        },
+        {
+          "c": "样",
+          "startMs": 1338,
+          "endMs": 1378
+        },
+        {
+          "c": "应",
+          "startMs": 1378,
+          "endMs": 1419
+        },
+        {
+          "c": "对",
+          "startMs": 1419,
+          "endMs": 1459
+        },
+        {
+          "c": "。",
+          "startMs": 1459,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 0,
       "sentIndex": 2,
       "text": "风把旗子吹得呼呼响，年轻的人更需要一个稳稳的榜样。",
       "audioPath": "audio/p1_s3.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "风",
+          "startMs": 0,
+          "endMs": 60
+        },
+        {
+          "c": "把",
+          "startMs": 60,
+          "endMs": 120
+        },
+        {
+          "c": "旗",
+          "startMs": 120,
+          "endMs": 180
+        },
+        {
+          "c": "子",
+          "startMs": 180,
+          "endMs": 240
+        },
+        {
+          "c": "吹",
+          "startMs": 240,
+          "endMs": 300
+        },
+        {
+          "c": "得",
+          "startMs": 300,
+          "endMs": 360
+        },
+        {
+          "c": "呼",
+          "startMs": 360,
+          "endMs": 420
+        },
+        {
+          "c": "呼",
+          "startMs": 420,
+          "endMs": 480
+        },
+        {
+          "c": "响",
+          "startMs": 480,
+          "endMs": 540
+        },
+        {
+          "c": "，",
+          "startMs": 540,
+          "endMs": 600
+        },
+        {
+          "c": "年",
+          "startMs": 600,
+          "endMs": 660
+        },
+        {
+          "c": "轻",
+          "startMs": 660,
+          "endMs": 720
+        },
+        {
+          "c": "的",
+          "startMs": 720,
+          "endMs": 780
+        },
+        {
+          "c": "人",
+          "startMs": 780,
+          "endMs": 840
+        },
+        {
+          "c": "更",
+          "startMs": 840,
+          "endMs": 900
+        },
+        {
+          "c": "需",
+          "startMs": 900,
+          "endMs": 960
+        },
+        {
+          "c": "要",
+          "startMs": 960,
+          "endMs": 1020
+        },
+        {
+          "c": "一",
+          "startMs": 1020,
+          "endMs": 1080
+        },
+        {
+          "c": "个",
+          "startMs": 1080,
+          "endMs": 1140
+        },
+        {
+          "c": "稳",
+          "startMs": 1140,
+          "endMs": 1200
+        },
+        {
+          "c": "稳",
+          "startMs": 1200,
+          "endMs": 1260
+        },
+        {
+          "c": "的",
+          "startMs": 1260,
+          "endMs": 1320
+        },
+        {
+          "c": "榜",
+          "startMs": 1320,
+          "endMs": 1380
+        },
+        {
+          "c": "样",
+          "startMs": 1380,
+          "endMs": 1440
+        },
+        {
+          "c": "。",
+          "startMs": 1440,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 1,
       "sentIndex": 0,
       "text": "张飞先稳住队形，上前大声提醒同伴不要慌。",
       "audioPath": "audio/p2_s1.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "张",
+          "startMs": 0,
+          "endMs": 75
+        },
+        {
+          "c": "飞",
+          "startMs": 75,
+          "endMs": 150
+        },
+        {
+          "c": "先",
+          "startMs": 150,
+          "endMs": 225
+        },
+        {
+          "c": "稳",
+          "startMs": 225,
+          "endMs": 300
+        },
+        {
+          "c": "住",
+          "startMs": 300,
+          "endMs": 375
+        },
+        {
+          "c": "队",
+          "startMs": 375,
+          "endMs": 450
+        },
+        {
+          "c": "形",
+          "startMs": 450,
+          "endMs": 525
+        },
+        {
+          "c": "，",
+          "startMs": 525,
+          "endMs": 600
+        },
+        {
+          "c": "上",
+          "startMs": 600,
+          "endMs": 675
+        },
+        {
+          "c": "前",
+          "startMs": 675,
+          "endMs": 750
+        },
+        {
+          "c": "大",
+          "startMs": 750,
+          "endMs": 825
+        },
+        {
+          "c": "声",
+          "startMs": 825,
+          "endMs": 900
+        },
+        {
+          "c": "提",
+          "startMs": 900,
+          "endMs": 975
+        },
+        {
+          "c": "醒",
+          "startMs": 975,
+          "endMs": 1050
+        },
+        {
+          "c": "同",
+          "startMs": 1050,
+          "endMs": 1125
+        },
+        {
+          "c": "伴",
+          "startMs": 1125,
+          "endMs": 1200
+        },
+        {
+          "c": "不",
+          "startMs": 1200,
+          "endMs": 1275
+        },
+        {
+          "c": "要",
+          "startMs": 1275,
+          "endMs": 1350
+        },
+        {
+          "c": "慌",
+          "startMs": 1350,
+          "endMs": 1425
+        },
+        {
+          "c": "。",
+          "startMs": 1425,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 1,
       "sentIndex": 1,
       "text": "关羽看见机会，立刻从旁边配合。",
       "audioPath": "audio/p2_s2.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "关",
+          "startMs": 0,
+          "endMs": 100
+        },
+        {
+          "c": "羽",
+          "startMs": 100,
+          "endMs": 200
+        },
+        {
+          "c": "看",
+          "startMs": 200,
+          "endMs": 300
+        },
+        {
+          "c": "见",
+          "startMs": 300,
+          "endMs": 400
+        },
+        {
+          "c": "机",
+          "startMs": 400,
+          "endMs": 500
+        },
+        {
+          "c": "会",
+          "startMs": 500,
+          "endMs": 600
+        },
+        {
+          "c": "，",
+          "startMs": 600,
+          "endMs": 700
+        },
+        {
+          "c": "立",
+          "startMs": 700,
+          "endMs": 800
+        },
+        {
+          "c": "刻",
+          "startMs": 800,
+          "endMs": 900
+        },
+        {
+          "c": "从",
+          "startMs": 900,
+          "endMs": 1000
+        },
+        {
+          "c": "旁",
+          "startMs": 1000,
+          "endMs": 1100
+        },
+        {
+          "c": "边",
+          "startMs": 1100,
+          "endMs": 1200
+        },
+        {
+          "c": "配",
+          "startMs": 1200,
+          "endMs": 1300
+        },
+        {
+          "c": "合",
+          "startMs": 1300,
+          "endMs": 1400
+        },
+        {
+          "c": "。",
+          "startMs": 1400,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 1,
       "sentIndex": 2,
       "text": "刘备也赶来，帮助两位兄弟照看前后。",
       "audioPath": "audio/p2_s3.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "刘",
+          "startMs": 0,
+          "endMs": 88
+        },
+        {
+          "c": "备",
+          "startMs": 88,
+          "endMs": 176
+        },
+        {
+          "c": "也",
+          "startMs": 176,
+          "endMs": 265
+        },
+        {
+          "c": "赶",
+          "startMs": 265,
+          "endMs": 353
+        },
+        {
+          "c": "来",
+          "startMs": 353,
+          "endMs": 441
+        },
+        {
+          "c": "，",
+          "startMs": 441,
+          "endMs": 529
+        },
+        {
+          "c": "帮",
+          "startMs": 529,
+          "endMs": 618
+        },
+        {
+          "c": "助",
+          "startMs": 618,
+          "endMs": 706
+        },
+        {
+          "c": "两",
+          "startMs": 706,
+          "endMs": 794
+        },
+        {
+          "c": "位",
+          "startMs": 794,
+          "endMs": 882
+        },
+        {
+          "c": "兄",
+          "startMs": 882,
+          "endMs": 971
+        },
+        {
+          "c": "弟",
+          "startMs": 971,
+          "endMs": 1059
+        },
+        {
+          "c": "照",
+          "startMs": 1059,
+          "endMs": 1147
+        },
+        {
+          "c": "看",
+          "startMs": 1147,
+          "endMs": 1235
+        },
+        {
+          "c": "前",
+          "startMs": 1235,
+          "endMs": 1324
+        },
+        {
+          "c": "后",
+          "startMs": 1324,
+          "endMs": 1412
+        },
+        {
+          "c": "。",
+          "startMs": 1412,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 1,
       "sentIndex": 3,
       "text": "他们没有急着表现自己，而是先让身边的人放心。",
       "audioPath": "audio/p2_s4.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "他",
+          "startMs": 0,
+          "endMs": 68
+        },
+        {
+          "c": "们",
+          "startMs": 68,
+          "endMs": 136
+        },
+        {
+          "c": "没",
+          "startMs": 136,
+          "endMs": 205
+        },
+        {
+          "c": "有",
+          "startMs": 205,
+          "endMs": 273
+        },
+        {
+          "c": "急",
+          "startMs": 273,
+          "endMs": 341
+        },
+        {
+          "c": "着",
+          "startMs": 341,
+          "endMs": 409
+        },
+        {
+          "c": "表",
+          "startMs": 409,
+          "endMs": 477
+        },
+        {
+          "c": "现",
+          "startMs": 477,
+          "endMs": 545
+        },
+        {
+          "c": "自",
+          "startMs": 545,
+          "endMs": 614
+        },
+        {
+          "c": "己",
+          "startMs": 614,
+          "endMs": 682
+        },
+        {
+          "c": "，",
+          "startMs": 682,
+          "endMs": 750
+        },
+        {
+          "c": "而",
+          "startMs": 750,
+          "endMs": 818
+        },
+        {
+          "c": "是",
+          "startMs": 818,
+          "endMs": 886
+        },
+        {
+          "c": "先",
+          "startMs": 886,
+          "endMs": 955
+        },
+        {
+          "c": "让",
+          "startMs": 955,
+          "endMs": 1023
+        },
+        {
+          "c": "身",
+          "startMs": 1023,
+          "endMs": 1091
+        },
+        {
+          "c": "边",
+          "startMs": 1091,
+          "endMs": 1159
+        },
+        {
+          "c": "的",
+          "startMs": 1159,
+          "endMs": 1227
+        },
+        {
+          "c": "人",
+          "startMs": 1227,
+          "endMs": 1295
+        },
+        {
+          "c": "放",
+          "startMs": 1295,
+          "endMs": 1364
+        },
+        {
+          "c": "心",
+          "startMs": 1364,
+          "endMs": 1432
+        },
+        {
+          "c": "。",
+          "startMs": 1432,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 2,
       "sentIndex": 0,
       "text": "三个人没有争谁最厉害，而是看着彼此的位置。",
       "audioPath": "audio/p3_s1.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "三",
+          "startMs": 0,
+          "endMs": 71
+        },
+        {
+          "c": "个",
+          "startMs": 71,
+          "endMs": 143
+        },
+        {
+          "c": "人",
+          "startMs": 143,
+          "endMs": 214
+        },
+        {
+          "c": "没",
+          "startMs": 214,
+          "endMs": 286
+        },
+        {
+          "c": "有",
+          "startMs": 286,
+          "endMs": 357
+        },
+        {
+          "c": "争",
+          "startMs": 357,
+          "endMs": 429
+        },
+        {
+          "c": "谁",
+          "startMs": 429,
+          "endMs": 500
+        },
+        {
+          "c": "最",
+          "startMs": 500,
+          "endMs": 571
+        },
+        {
+          "c": "厉",
+          "startMs": 571,
+          "endMs": 643
+        },
+        {
+          "c": "害",
+          "startMs": 643,
+          "endMs": 714
+        },
+        {
+          "c": "，",
+          "startMs": 714,
+          "endMs": 786
+        },
+        {
+          "c": "而",
+          "startMs": 786,
+          "endMs": 857
+        },
+        {
+          "c": "是",
+          "startMs": 857,
+          "endMs": 929
+        },
+        {
+          "c": "看",
+          "startMs": 929,
+          "endMs": 1000
+        },
+        {
+          "c": "着",
+          "startMs": 1000,
+          "endMs": 1071
+        },
+        {
+          "c": "彼",
+          "startMs": 1071,
+          "endMs": 1143
+        },
+        {
+          "c": "此",
+          "startMs": 1143,
+          "endMs": 1214
+        },
+        {
+          "c": "的",
+          "startMs": 1214,
+          "endMs": 1286
+        },
+        {
+          "c": "位",
+          "startMs": 1286,
+          "endMs": 1357
+        },
+        {
+          "c": "置",
+          "startMs": 1357,
+          "endMs": 1429
+        },
+        {
+          "c": "。",
+          "startMs": 1429,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 2,
       "sentIndex": 1,
       "text": "张飞负责牵住局面，关羽负责相助，刘备负责补上空处，队伍慢慢安定下来。",
       "audioPath": "audio/p3_s2.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "张",
+          "startMs": 0,
+          "endMs": 44
+        },
+        {
+          "c": "飞",
+          "startMs": 44,
+          "endMs": 88
+        },
+        {
+          "c": "负",
+          "startMs": 88,
+          "endMs": 132
+        },
+        {
+          "c": "责",
+          "startMs": 132,
+          "endMs": 176
+        },
+        {
+          "c": "牵",
+          "startMs": 176,
+          "endMs": 221
+        },
+        {
+          "c": "住",
+          "startMs": 221,
+          "endMs": 265
+        },
+        {
+          "c": "局",
+          "startMs": 265,
+          "endMs": 309
+        },
+        {
+          "c": "面",
+          "startMs": 309,
+          "endMs": 353
+        },
+        {
+          "c": "，",
+          "startMs": 353,
+          "endMs": 397
+        },
+        {
+          "c": "关",
+          "startMs": 397,
+          "endMs": 441
+        },
+        {
+          "c": "羽",
+          "startMs": 441,
+          "endMs": 485
+        },
+        {
+          "c": "负",
+          "startMs": 485,
+          "endMs": 529
+        },
+        {
+          "c": "责",
+          "startMs": 529,
+          "endMs": 574
+        },
+        {
+          "c": "相",
+          "startMs": 574,
+          "endMs": 618
+        },
+        {
+          "c": "助",
+          "startMs": 618,
+          "endMs": 662
+        },
+        {
+          "c": "，",
+          "startMs": 662,
+          "endMs": 706
+        },
+        {
+          "c": "刘",
+          "startMs": 706,
+          "endMs": 750
+        },
+        {
+          "c": "备",
+          "startMs": 750,
+          "endMs": 794
+        },
+        {
+          "c": "负",
+          "startMs": 794,
+          "endMs": 838
+        },
+        {
+          "c": "责",
+          "startMs": 838,
+          "endMs": 882
+        },
+        {
+          "c": "补",
+          "startMs": 882,
+          "endMs": 926
+        },
+        {
+          "c": "上",
+          "startMs": 926,
+          "endMs": 971
+        },
+        {
+          "c": "空",
+          "startMs": 971,
+          "endMs": 1015
+        },
+        {
+          "c": "处",
+          "startMs": 1015,
+          "endMs": 1059
+        },
+        {
+          "c": "，",
+          "startMs": 1059,
+          "endMs": 1103
+        },
+        {
+          "c": "队",
+          "startMs": 1103,
+          "endMs": 1147
+        },
+        {
+          "c": "伍",
+          "startMs": 1147,
+          "endMs": 1191
+        },
+        {
+          "c": "慢",
+          "startMs": 1191,
+          "endMs": 1235
+        },
+        {
+          "c": "慢",
+          "startMs": 1235,
+          "endMs": 1279
+        },
+        {
+          "c": "安",
+          "startMs": 1279,
+          "endMs": 1324
+        },
+        {
+          "c": "定",
+          "startMs": 1324,
+          "endMs": 1368
+        },
+        {
+          "c": "下",
+          "startMs": 1368,
+          "endMs": 1412
+        },
+        {
+          "c": "来",
+          "startMs": 1412,
+          "endMs": 1456
+        },
+        {
+          "c": "。",
+          "startMs": 1456,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 2,
       "sentIndex": 2,
       "text": "有人看见他们互相点头，也跟着站稳脚步。",
       "audioPath": "audio/p3_s3.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "有",
+          "startMs": 0,
+          "endMs": 79
+        },
+        {
+          "c": "人",
+          "startMs": 79,
+          "endMs": 158
+        },
+        {
+          "c": "看",
+          "startMs": 158,
+          "endMs": 237
+        },
+        {
+          "c": "见",
+          "startMs": 237,
+          "endMs": 316
+        },
+        {
+          "c": "他",
+          "startMs": 316,
+          "endMs": 395
+        },
+        {
+          "c": "们",
+          "startMs": 395,
+          "endMs": 474
+        },
+        {
+          "c": "互",
+          "startMs": 474,
+          "endMs": 553
+        },
+        {
+          "c": "相",
+          "startMs": 553,
+          "endMs": 632
+        },
+        {
+          "c": "点",
+          "startMs": 632,
+          "endMs": 711
+        },
+        {
+          "c": "头",
+          "startMs": 711,
+          "endMs": 789
+        },
+        {
+          "c": "，",
+          "startMs": 789,
+          "endMs": 868
+        },
+        {
+          "c": "也",
+          "startMs": 868,
+          "endMs": 947
+        },
+        {
+          "c": "跟",
+          "startMs": 947,
+          "endMs": 1026
+        },
+        {
+          "c": "着",
+          "startMs": 1026,
+          "endMs": 1105
+        },
+        {
+          "c": "站",
+          "startMs": 1105,
+          "endMs": 1184
+        },
+        {
+          "c": "稳",
+          "startMs": 1184,
+          "endMs": 1263
+        },
+        {
+          "c": "脚",
+          "startMs": 1263,
+          "endMs": 1342
+        },
+        {
+          "c": "步",
+          "startMs": 1342,
+          "endMs": 1421
+        },
+        {
+          "c": "。",
+          "startMs": 1421,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 3,
       "sentIndex": 0,
       "text": "吕布见三人齐心，难以占到上风，便转身退回关内。",
       "audioPath": "audio/p4_s1.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "吕",
+          "startMs": 0,
+          "endMs": 65
+        },
+        {
+          "c": "布",
+          "startMs": 65,
+          "endMs": 130
+        },
+        {
+          "c": "见",
+          "startMs": 130,
+          "endMs": 196
+        },
+        {
+          "c": "三",
+          "startMs": 196,
+          "endMs": 261
+        },
+        {
+          "c": "人",
+          "startMs": 261,
+          "endMs": 326
+        },
+        {
+          "c": "齐",
+          "startMs": 326,
+          "endMs": 391
+        },
+        {
+          "c": "心",
+          "startMs": 391,
+          "endMs": 457
+        },
+        {
+          "c": "，",
+          "startMs": 457,
+          "endMs": 522
+        },
+        {
+          "c": "难",
+          "startMs": 522,
+          "endMs": 587
+        },
+        {
+          "c": "以",
+          "startMs": 587,
+          "endMs": 652
+        },
+        {
+          "c": "占",
+          "startMs": 652,
+          "endMs": 717
+        },
+        {
+          "c": "到",
+          "startMs": 717,
+          "endMs": 783
+        },
+        {
+          "c": "上",
+          "startMs": 783,
+          "endMs": 848
+        },
+        {
+          "c": "风",
+          "startMs": 848,
+          "endMs": 913
+        },
+        {
+          "c": "，",
+          "startMs": 913,
+          "endMs": 978
+        },
+        {
+          "c": "便",
+          "startMs": 978,
+          "endMs": 1043
+        },
+        {
+          "c": "转",
+          "startMs": 1043,
+          "endMs": 1109
+        },
+        {
+          "c": "身",
+          "startMs": 1109,
+          "endMs": 1174
+        },
+        {
+          "c": "退",
+          "startMs": 1174,
+          "endMs": 1239
+        },
+        {
+          "c": "回",
+          "startMs": 1239,
+          "endMs": 1304
+        },
+        {
+          "c": "关",
+          "startMs": 1304,
+          "endMs": 1370
+        },
+        {
+          "c": "内",
+          "startMs": 1370,
+          "endMs": 1435
+        },
+        {
+          "c": "。",
+          "startMs": 1435,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 3,
       "sentIndex": 1,
       "text": "关前的人们这才松了一口气，也看见了合作的力量。",
       "audioPath": "audio/p4_s2.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "关",
+          "startMs": 0,
+          "endMs": 65
+        },
+        {
+          "c": "前",
+          "startMs": 65,
+          "endMs": 130
+        },
+        {
+          "c": "的",
+          "startMs": 130,
+          "endMs": 196
+        },
+        {
+          "c": "人",
+          "startMs": 196,
+          "endMs": 261
+        },
+        {
+          "c": "们",
+          "startMs": 261,
+          "endMs": 326
+        },
+        {
+          "c": "这",
+          "startMs": 326,
+          "endMs": 391
+        },
+        {
+          "c": "才",
+          "startMs": 391,
+          "endMs": 457
+        },
+        {
+          "c": "松",
+          "startMs": 457,
+          "endMs": 522
+        },
+        {
+          "c": "了",
+          "startMs": 522,
+          "endMs": 587
+        },
+        {
+          "c": "一",
+          "startMs": 587,
+          "endMs": 652
+        },
+        {
+          "c": "口",
+          "startMs": 652,
+          "endMs": 717
+        },
+        {
+          "c": "气",
+          "startMs": 717,
+          "endMs": 783
+        },
+        {
+          "c": "，",
+          "startMs": 783,
+          "endMs": 848
+        },
+        {
+          "c": "也",
+          "startMs": 848,
+          "endMs": 913
+        },
+        {
+          "c": "看",
+          "startMs": 913,
+          "endMs": 978
+        },
+        {
+          "c": "见",
+          "startMs": 978,
+          "endMs": 1043
+        },
+        {
+          "c": "了",
+          "startMs": 1043,
+          "endMs": 1109
+        },
+        {
+          "c": "合",
+          "startMs": 1109,
+          "endMs": 1174
+        },
+        {
+          "c": "作",
+          "startMs": 1174,
+          "endMs": 1239
+        },
+        {
+          "c": "的",
+          "startMs": 1239,
+          "endMs": 1304
+        },
+        {
+          "c": "力",
+          "startMs": 1304,
+          "endMs": 1370
+        },
+        {
+          "c": "量",
+          "startMs": 1370,
+          "endMs": 1435
+        },
+        {
+          "c": "。",
+          "startMs": 1435,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 3,
       "sentIndex": 2,
       "text": "原来遇到强大的对手时，整齐的心比响亮的话更有用。",
       "audioPath": "audio/p4_s3.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "原",
+          "startMs": 0,
+          "endMs": 62
+        },
+        {
+          "c": "来",
+          "startMs": 62,
+          "endMs": 125
+        },
+        {
+          "c": "遇",
+          "startMs": 125,
+          "endMs": 188
+        },
+        {
+          "c": "到",
+          "startMs": 188,
+          "endMs": 250
+        },
+        {
+          "c": "强",
+          "startMs": 250,
+          "endMs": 312
+        },
+        {
+          "c": "大",
+          "startMs": 312,
+          "endMs": 375
+        },
+        {
+          "c": "的",
+          "startMs": 375,
+          "endMs": 438
+        },
+        {
+          "c": "对",
+          "startMs": 438,
+          "endMs": 500
+        },
+        {
+          "c": "手",
+          "startMs": 500,
+          "endMs": 562
+        },
+        {
+          "c": "时",
+          "startMs": 562,
+          "endMs": 625
+        },
+        {
+          "c": "，",
+          "startMs": 625,
+          "endMs": 688
+        },
+        {
+          "c": "整",
+          "startMs": 688,
+          "endMs": 750
+        },
+        {
+          "c": "齐",
+          "startMs": 750,
+          "endMs": 812
+        },
+        {
+          "c": "的",
+          "startMs": 812,
+          "endMs": 875
+        },
+        {
+          "c": "心",
+          "startMs": 875,
+          "endMs": 938
+        },
+        {
+          "c": "比",
+          "startMs": 938,
+          "endMs": 1000
+        },
+        {
+          "c": "响",
+          "startMs": 1000,
+          "endMs": 1062
+        },
+        {
+          "c": "亮",
+          "startMs": 1062,
+          "endMs": 1125
+        },
+        {
+          "c": "的",
+          "startMs": 1125,
+          "endMs": 1188
+        },
+        {
+          "c": "话",
+          "startMs": 1188,
+          "endMs": 1250
+        },
+        {
+          "c": "更",
+          "startMs": 1250,
+          "endMs": 1312
+        },
+        {
+          "c": "有",
+          "startMs": 1312,
+          "endMs": 1375
+        },
+        {
+          "c": "用",
+          "startMs": 1375,
+          "endMs": 1438
+        },
+        {
+          "c": "。",
+          "startMs": 1438,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 4,
       "sentIndex": 0,
       "text": "这一回没有人靠吵闹取胜。",
       "audioPath": "audio/p5_s1.wav",
-      "durationMs": 1490
+      "durationMs": 1490,
+      "chars": [
+        {
+          "c": "这",
+          "startMs": 0,
+          "endMs": 124
+        },
+        {
+          "c": "一",
+          "startMs": 124,
+          "endMs": 248
+        },
+        {
+          "c": "回",
+          "startMs": 248,
+          "endMs": 372
+        },
+        {
+          "c": "没",
+          "startMs": 372,
+          "endMs": 497
+        },
+        {
+          "c": "有",
+          "startMs": 497,
+          "endMs": 621
+        },
+        {
+          "c": "人",
+          "startMs": 621,
+          "endMs": 745
+        },
+        {
+          "c": "靠",
+          "startMs": 745,
+          "endMs": 869
+        },
+        {
+          "c": "吵",
+          "startMs": 869,
+          "endMs": 993
+        },
+        {
+          "c": "闹",
+          "startMs": 993,
+          "endMs": 1118
+        },
+        {
+          "c": "取",
+          "startMs": 1118,
+          "endMs": 1242
+        },
+        {
+          "c": "胜",
+          "startMs": 1242,
+          "endMs": 1366
+        },
+        {
+          "c": "。",
+          "startMs": 1366,
+          "endMs": 1490
+        }
+      ]
     },
     {
       "paraIndex": 4,
       "sentIndex": 1,
       "text": "刘备、关羽、张飞用勇敢、配合和信任告诉大家：真正强大的队伍，心要站在一起。",
       "audioPath": "audio/p5_s2.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "刘",
+          "startMs": 0,
+          "endMs": 41
+        },
+        {
+          "c": "备",
+          "startMs": 41,
+          "endMs": 81
+        },
+        {
+          "c": "、",
+          "startMs": 81,
+          "endMs": 122
+        },
+        {
+          "c": "关",
+          "startMs": 122,
+          "endMs": 162
+        },
+        {
+          "c": "羽",
+          "startMs": 162,
+          "endMs": 203
+        },
+        {
+          "c": "、",
+          "startMs": 203,
+          "endMs": 243
+        },
+        {
+          "c": "张",
+          "startMs": 243,
+          "endMs": 284
+        },
+        {
+          "c": "飞",
+          "startMs": 284,
+          "endMs": 324
+        },
+        {
+          "c": "用",
+          "startMs": 324,
+          "endMs": 365
+        },
+        {
+          "c": "勇",
+          "startMs": 365,
+          "endMs": 405
+        },
+        {
+          "c": "敢",
+          "startMs": 405,
+          "endMs": 446
+        },
+        {
+          "c": "、",
+          "startMs": 446,
+          "endMs": 486
+        },
+        {
+          "c": "配",
+          "startMs": 486,
+          "endMs": 527
+        },
+        {
+          "c": "合",
+          "startMs": 527,
+          "endMs": 568
+        },
+        {
+          "c": "和",
+          "startMs": 568,
+          "endMs": 608
+        },
+        {
+          "c": "信",
+          "startMs": 608,
+          "endMs": 649
+        },
+        {
+          "c": "任",
+          "startMs": 649,
+          "endMs": 689
+        },
+        {
+          "c": "告",
+          "startMs": 689,
+          "endMs": 730
+        },
+        {
+          "c": "诉",
+          "startMs": 730,
+          "endMs": 770
+        },
+        {
+          "c": "大",
+          "startMs": 770,
+          "endMs": 811
+        },
+        {
+          "c": "家",
+          "startMs": 811,
+          "endMs": 851
+        },
+        {
+          "c": "：",
+          "startMs": 851,
+          "endMs": 892
+        },
+        {
+          "c": "真",
+          "startMs": 892,
+          "endMs": 932
+        },
+        {
+          "c": "正",
+          "startMs": 932,
+          "endMs": 973
+        },
+        {
+          "c": "强",
+          "startMs": 973,
+          "endMs": 1014
+        },
+        {
+          "c": "大",
+          "startMs": 1014,
+          "endMs": 1054
+        },
+        {
+          "c": "的",
+          "startMs": 1054,
+          "endMs": 1095
+        },
+        {
+          "c": "队",
+          "startMs": 1095,
+          "endMs": 1135
+        },
+        {
+          "c": "伍",
+          "startMs": 1135,
+          "endMs": 1176
+        },
+        {
+          "c": "，",
+          "startMs": 1176,
+          "endMs": 1216
+        },
+        {
+          "c": "心",
+          "startMs": 1216,
+          "endMs": 1257
+        },
+        {
+          "c": "要",
+          "startMs": 1257,
+          "endMs": 1297
+        },
+        {
+          "c": "站",
+          "startMs": 1297,
+          "endMs": 1338
+        },
+        {
+          "c": "在",
+          "startMs": 1338,
+          "endMs": 1378
+        },
+        {
+          "c": "一",
+          "startMs": 1378,
+          "endMs": 1419
+        },
+        {
+          "c": "起",
+          "startMs": 1419,
+          "endMs": 1459
+        },
+        {
+          "c": "。",
+          "startMs": 1459,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 4,
       "sentIndex": 2,
       "text": "每个人做好自己的位置，朋友之间互相补足，困难就会小一些。",
       "audioPath": "audio/p5_s3.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "每",
+          "startMs": 0,
+          "endMs": 54
+        },
+        {
+          "c": "个",
+          "startMs": 54,
+          "endMs": 107
+        },
+        {
+          "c": "人",
+          "startMs": 107,
+          "endMs": 161
+        },
+        {
+          "c": "做",
+          "startMs": 161,
+          "endMs": 214
+        },
+        {
+          "c": "好",
+          "startMs": 214,
+          "endMs": 268
+        },
+        {
+          "c": "自",
+          "startMs": 268,
+          "endMs": 321
+        },
+        {
+          "c": "己",
+          "startMs": 321,
+          "endMs": 375
+        },
+        {
+          "c": "的",
+          "startMs": 375,
+          "endMs": 429
+        },
+        {
+          "c": "位",
+          "startMs": 429,
+          "endMs": 482
+        },
+        {
+          "c": "置",
+          "startMs": 482,
+          "endMs": 536
+        },
+        {
+          "c": "，",
+          "startMs": 536,
+          "endMs": 589
+        },
+        {
+          "c": "朋",
+          "startMs": 589,
+          "endMs": 643
+        },
+        {
+          "c": "友",
+          "startMs": 643,
+          "endMs": 696
+        },
+        {
+          "c": "之",
+          "startMs": 696,
+          "endMs": 750
+        },
+        {
+          "c": "间",
+          "startMs": 750,
+          "endMs": 804
+        },
+        {
+          "c": "互",
+          "startMs": 804,
+          "endMs": 857
+        },
+        {
+          "c": "相",
+          "startMs": 857,
+          "endMs": 911
+        },
+        {
+          "c": "补",
+          "startMs": 911,
+          "endMs": 964
+        },
+        {
+          "c": "足",
+          "startMs": 964,
+          "endMs": 1018
+        },
+        {
+          "c": "，",
+          "startMs": 1018,
+          "endMs": 1071
+        },
+        {
+          "c": "困",
+          "startMs": 1071,
+          "endMs": 1125
+        },
+        {
+          "c": "难",
+          "startMs": 1125,
+          "endMs": 1179
+        },
+        {
+          "c": "就",
+          "startMs": 1179,
+          "endMs": 1232
+        },
+        {
+          "c": "会",
+          "startMs": 1232,
+          "endMs": 1286
+        },
+        {
+          "c": "小",
+          "startMs": 1286,
+          "endMs": 1339
+        },
+        {
+          "c": "一",
+          "startMs": 1339,
+          "endMs": 1393
+        },
+        {
+          "c": "些",
+          "startMs": 1393,
+          "endMs": 1446
+        },
+        {
+          "c": "。",
+          "startMs": 1446,
+          "endMs": 1500
+        }
+      ]
     }
   ]
 }

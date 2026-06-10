@@ -263,6 +263,17 @@ def validate_audio_manifest(story: dict[str, Any], path: Path | None) -> list[st
                 "durationMs must be an integer >= 0"
             )
 
+        errors.extend(
+            validate_char_timings(
+                story_name=path.parent.name,
+                para_index=expected["paraIndex"],
+                sent_index=expected["sentIndex"],
+                text=expected_text,
+                duration_ms=duration_ms if isinstance(duration_ms, int) else None,
+                chars=entry.get("chars"),
+            )
+        )
+
     expected_keys = {(item["paraIndex"], item["sentIndex"]) for item in expected_plan}
     for extra_key, entry in sorted(actual_by_key.items(), key=lambda item: item[0]):
         key = extra_key
@@ -271,6 +282,74 @@ def validate_audio_manifest(story: dict[str, Any], path: Path | None) -> list[st
                 f"{path.parent.name} has extra audio entry paraIndex={key[0]}, sentIndex={key[1]}, "
                 f"text {entry.get('text', '')!r}"
             )
+
+    return errors
+
+
+def validate_char_timings(
+    *,
+    story_name: str,
+    para_index: int,
+    sent_index: int,
+    text: str,
+    duration_ms: int | None,
+    chars: Any,
+) -> list[str]:
+    """Validate the per-character karaoke timings for one available sentence.
+
+    Contract (see docs/design/tts-read-along-interaction.md §7.2):
+    - ``chars`` is required and 1:1 with the Unicode characters of ``text``
+      (non-hanzi characters keep placeholder slots).
+    - each ``chars[i].c`` equals ``text[i]``.
+    - startMs/endMs are integers, ``0 <= startMs <= endMs`` and monotonic across
+      characters (``endMs[i] <= startMs[i+1]``), all within ``[0, durationMs]``.
+    """
+
+    prefix = f"{story_name} paraIndex={para_index}, sentIndex={sent_index}"
+    text_chars = list(text)
+
+    if chars is None:
+        return [f"{prefix} missing chars timing array"]
+    if not isinstance(chars, list):
+        return [f"{prefix} chars must be a list"]
+    if len(chars) != len(text_chars):
+        return [
+            f"{prefix} chars length must equal sentence text length, "
+            f"got {len(chars)} for {len(text_chars)} characters"
+        ]
+
+    errors: list[str] = []
+    previous_end = 0
+    for index, expected_char in enumerate(text_chars):
+        cell = chars[index]
+        if not isinstance(cell, dict):
+            errors.append(f"{prefix} chars[{index}] must be an object")
+            continue
+
+        actual_char = cell.get("c")
+        if actual_char != expected_char:
+            errors.append(
+                f"{prefix} chars[{index}] c must equal text character "
+                f"'{expected_char}', got '{actual_char}'"
+            )
+
+        start_ms = cell.get("startMs")
+        end_ms = cell.get("endMs")
+        if not isinstance(start_ms, int) or start_ms < 0:
+            errors.append(f"{prefix} chars[{index}] startMs must be an integer >= 0")
+            continue
+        if not isinstance(end_ms, int) or end_ms < start_ms:
+            errors.append(f"{prefix} chars[{index}] endMs must be an integer >= startMs")
+            continue
+        if start_ms < previous_end:
+            errors.append(
+                f"{prefix} chars[{index}] startMs {start_ms} must not precede previous endMs {previous_end}"
+            )
+        if duration_ms is not None and end_ms > duration_ms:
+            errors.append(
+                f"{prefix} chars[{index}] endMs {end_ms} must not exceed durationMs {duration_ms}"
+            )
+        previous_end = end_ms
 
     return errors
 

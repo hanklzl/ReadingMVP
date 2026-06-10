@@ -35,6 +35,20 @@ data class StoryAudioSegment(
     val resourcePath: String,
     val durationMillis: Long? = null,
     val unavailable: Boolean = false,
+    /**
+     * Per-character karaoke timings, 1:1 with the Unicode characters of [text]
+     * (non-hanzi characters keep placeholder slots). Empty when the manifest was
+     * generated before word-level alignment was added.
+     */
+    val chars: List<StoryAudioCharTiming> = emptyList(),
+)
+
+/** One character's start/end offset (ms, relative to the sentence clip start). */
+@Serializable
+data class StoryAudioCharTiming(
+    val c: String,
+    val startMillis: Long,
+    val endMillis: Long,
 )
 
 object StoryAudioJson {
@@ -83,6 +97,13 @@ object StoryAudioJson {
                         audioPath = segment.resourcePath,
                         durationMs = segment.durationMillis,
                         unavailable = segment.unavailable,
+                        chars = segment.chars.map { timing ->
+                            StoryAudioCharPayload(
+                                c = timing.c,
+                                startMs = timing.startMillis,
+                                endMs = timing.endMillis,
+                            )
+                        },
                     )
                 },
             ),
@@ -104,6 +125,7 @@ private data class StoryAudioSentencePayload(
     val audioPath: String? = null,
     val durationMs: Long? = null,
     val unavailable: Boolean = false,
+    val chars: List<StoryAudioCharPayload> = emptyList(),
 ) {
     fun toDomainSegment(storyId: String): StoryAudioSegment? {
         if (unavailable) return null
@@ -115,6 +137,13 @@ private data class StoryAudioSentencePayload(
             resourcePath = path.toAppResourcePath(storyId),
             durationMillis = durationMs,
             unavailable = false,
+            chars = chars.map { timing ->
+                StoryAudioCharTiming(
+                    c = timing.c,
+                    startMillis = timing.startMs,
+                    endMillis = timing.endMs,
+                )
+            },
         )
     }
 
@@ -125,6 +154,13 @@ private data class StoryAudioSentencePayload(
             "stories/$storyId/$this"
         }
 }
+
+@Serializable
+private data class StoryAudioCharPayload(
+    val c: String,
+    val startMs: Long,
+    val endMs: Long,
+)
 
 class LoadStoryAudioManifestUseCase(
     private val resourceReader: StoryResourceReader = defaultStoryResourceReader(),

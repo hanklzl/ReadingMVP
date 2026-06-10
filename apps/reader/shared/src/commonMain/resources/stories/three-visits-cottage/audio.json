@@ -5,126 +5,2062 @@
       "sentIndex": 0,
       "text": "刘备听说隆中有位诸葛亮，读书多，主意好，心里十分敬佩。",
       "audioPath": "audio/p1_s1.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "刘",
+          "startMs": 0,
+          "endMs": 56
+        },
+        {
+          "c": "备",
+          "startMs": 56,
+          "endMs": 111
+        },
+        {
+          "c": "听",
+          "startMs": 111,
+          "endMs": 167
+        },
+        {
+          "c": "说",
+          "startMs": 167,
+          "endMs": 222
+        },
+        {
+          "c": "隆",
+          "startMs": 222,
+          "endMs": 278
+        },
+        {
+          "c": "中",
+          "startMs": 278,
+          "endMs": 333
+        },
+        {
+          "c": "有",
+          "startMs": 333,
+          "endMs": 389
+        },
+        {
+          "c": "位",
+          "startMs": 389,
+          "endMs": 444
+        },
+        {
+          "c": "诸",
+          "startMs": 444,
+          "endMs": 500
+        },
+        {
+          "c": "葛",
+          "startMs": 500,
+          "endMs": 556
+        },
+        {
+          "c": "亮",
+          "startMs": 556,
+          "endMs": 611
+        },
+        {
+          "c": "，",
+          "startMs": 611,
+          "endMs": 667
+        },
+        {
+          "c": "读",
+          "startMs": 667,
+          "endMs": 722
+        },
+        {
+          "c": "书",
+          "startMs": 722,
+          "endMs": 778
+        },
+        {
+          "c": "多",
+          "startMs": 778,
+          "endMs": 833
+        },
+        {
+          "c": "，",
+          "startMs": 833,
+          "endMs": 889
+        },
+        {
+          "c": "主",
+          "startMs": 889,
+          "endMs": 944
+        },
+        {
+          "c": "意",
+          "startMs": 944,
+          "endMs": 1000
+        },
+        {
+          "c": "好",
+          "startMs": 1000,
+          "endMs": 1056
+        },
+        {
+          "c": "，",
+          "startMs": 1056,
+          "endMs": 1111
+        },
+        {
+          "c": "心",
+          "startMs": 1111,
+          "endMs": 1167
+        },
+        {
+          "c": "里",
+          "startMs": 1167,
+          "endMs": 1222
+        },
+        {
+          "c": "十",
+          "startMs": 1222,
+          "endMs": 1278
+        },
+        {
+          "c": "分",
+          "startMs": 1278,
+          "endMs": 1333
+        },
+        {
+          "c": "敬",
+          "startMs": 1333,
+          "endMs": 1389
+        },
+        {
+          "c": "佩",
+          "startMs": 1389,
+          "endMs": 1444
+        },
+        {
+          "c": "。",
+          "startMs": 1444,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 0,
       "sentIndex": 1,
       "text": "他想请诸葛亮一起帮助百姓，便带着关羽、张飞去拜访。",
       "audioPath": "audio/p1_s2.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "他",
+          "startMs": 0,
+          "endMs": 60
+        },
+        {
+          "c": "想",
+          "startMs": 60,
+          "endMs": 120
+        },
+        {
+          "c": "请",
+          "startMs": 120,
+          "endMs": 180
+        },
+        {
+          "c": "诸",
+          "startMs": 180,
+          "endMs": 240
+        },
+        {
+          "c": "葛",
+          "startMs": 240,
+          "endMs": 300
+        },
+        {
+          "c": "亮",
+          "startMs": 300,
+          "endMs": 360
+        },
+        {
+          "c": "一",
+          "startMs": 360,
+          "endMs": 420
+        },
+        {
+          "c": "起",
+          "startMs": 420,
+          "endMs": 480
+        },
+        {
+          "c": "帮",
+          "startMs": 480,
+          "endMs": 540
+        },
+        {
+          "c": "助",
+          "startMs": 540,
+          "endMs": 600
+        },
+        {
+          "c": "百",
+          "startMs": 600,
+          "endMs": 660
+        },
+        {
+          "c": "姓",
+          "startMs": 660,
+          "endMs": 720
+        },
+        {
+          "c": "，",
+          "startMs": 720,
+          "endMs": 780
+        },
+        {
+          "c": "便",
+          "startMs": 780,
+          "endMs": 840
+        },
+        {
+          "c": "带",
+          "startMs": 840,
+          "endMs": 900
+        },
+        {
+          "c": "着",
+          "startMs": 900,
+          "endMs": 960
+        },
+        {
+          "c": "关",
+          "startMs": 960,
+          "endMs": 1020
+        },
+        {
+          "c": "羽",
+          "startMs": 1020,
+          "endMs": 1080
+        },
+        {
+          "c": "、",
+          "startMs": 1080,
+          "endMs": 1140
+        },
+        {
+          "c": "张",
+          "startMs": 1140,
+          "endMs": 1200
+        },
+        {
+          "c": "飞",
+          "startMs": 1200,
+          "endMs": 1260
+        },
+        {
+          "c": "去",
+          "startMs": 1260,
+          "endMs": 1320
+        },
+        {
+          "c": "拜",
+          "startMs": 1320,
+          "endMs": 1380
+        },
+        {
+          "c": "访",
+          "startMs": 1380,
+          "endMs": 1440
+        },
+        {
+          "c": "。",
+          "startMs": 1440,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 0,
       "sentIndex": 2,
       "text": "山路弯弯，草木安静，刘备一路上都在想怎样把来意说清楚。",
       "audioPath": "audio/p1_s3.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "山",
+          "startMs": 0,
+          "endMs": 56
+        },
+        {
+          "c": "路",
+          "startMs": 56,
+          "endMs": 111
+        },
+        {
+          "c": "弯",
+          "startMs": 111,
+          "endMs": 167
+        },
+        {
+          "c": "弯",
+          "startMs": 167,
+          "endMs": 222
+        },
+        {
+          "c": "，",
+          "startMs": 222,
+          "endMs": 278
+        },
+        {
+          "c": "草",
+          "startMs": 278,
+          "endMs": 333
+        },
+        {
+          "c": "木",
+          "startMs": 333,
+          "endMs": 389
+        },
+        {
+          "c": "安",
+          "startMs": 389,
+          "endMs": 444
+        },
+        {
+          "c": "静",
+          "startMs": 444,
+          "endMs": 500
+        },
+        {
+          "c": "，",
+          "startMs": 500,
+          "endMs": 556
+        },
+        {
+          "c": "刘",
+          "startMs": 556,
+          "endMs": 611
+        },
+        {
+          "c": "备",
+          "startMs": 611,
+          "endMs": 667
+        },
+        {
+          "c": "一",
+          "startMs": 667,
+          "endMs": 722
+        },
+        {
+          "c": "路",
+          "startMs": 722,
+          "endMs": 778
+        },
+        {
+          "c": "上",
+          "startMs": 778,
+          "endMs": 833
+        },
+        {
+          "c": "都",
+          "startMs": 833,
+          "endMs": 889
+        },
+        {
+          "c": "在",
+          "startMs": 889,
+          "endMs": 944
+        },
+        {
+          "c": "想",
+          "startMs": 944,
+          "endMs": 1000
+        },
+        {
+          "c": "怎",
+          "startMs": 1000,
+          "endMs": 1056
+        },
+        {
+          "c": "样",
+          "startMs": 1056,
+          "endMs": 1111
+        },
+        {
+          "c": "把",
+          "startMs": 1111,
+          "endMs": 1167
+        },
+        {
+          "c": "来",
+          "startMs": 1167,
+          "endMs": 1222
+        },
+        {
+          "c": "意",
+          "startMs": 1222,
+          "endMs": 1278
+        },
+        {
+          "c": "说",
+          "startMs": 1278,
+          "endMs": 1333
+        },
+        {
+          "c": "清",
+          "startMs": 1333,
+          "endMs": 1389
+        },
+        {
+          "c": "楚",
+          "startMs": 1389,
+          "endMs": 1444
+        },
+        {
+          "c": "。",
+          "startMs": 1444,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 1,
       "sentIndex": 0,
       "text": "第一次到茅庐，诸葛亮不在家。",
       "audioPath": "audio/p2_s1.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "第",
+          "startMs": 0,
+          "endMs": 107
+        },
+        {
+          "c": "一",
+          "startMs": 107,
+          "endMs": 214
+        },
+        {
+          "c": "次",
+          "startMs": 214,
+          "endMs": 321
+        },
+        {
+          "c": "到",
+          "startMs": 321,
+          "endMs": 429
+        },
+        {
+          "c": "茅",
+          "startMs": 429,
+          "endMs": 536
+        },
+        {
+          "c": "庐",
+          "startMs": 536,
+          "endMs": 643
+        },
+        {
+          "c": "，",
+          "startMs": 643,
+          "endMs": 750
+        },
+        {
+          "c": "诸",
+          "startMs": 750,
+          "endMs": 857
+        },
+        {
+          "c": "葛",
+          "startMs": 857,
+          "endMs": 964
+        },
+        {
+          "c": "亮",
+          "startMs": 964,
+          "endMs": 1071
+        },
+        {
+          "c": "不",
+          "startMs": 1071,
+          "endMs": 1179
+        },
+        {
+          "c": "在",
+          "startMs": 1179,
+          "endMs": 1286
+        },
+        {
+          "c": "家",
+          "startMs": 1286,
+          "endMs": 1393
+        },
+        {
+          "c": "。",
+          "startMs": 1393,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 1,
       "sentIndex": 1,
       "text": "刘备没有生气，只留下问候。",
       "audioPath": "audio/p2_s2.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "刘",
+          "startMs": 0,
+          "endMs": 115
+        },
+        {
+          "c": "备",
+          "startMs": 115,
+          "endMs": 231
+        },
+        {
+          "c": "没",
+          "startMs": 231,
+          "endMs": 346
+        },
+        {
+          "c": "有",
+          "startMs": 346,
+          "endMs": 462
+        },
+        {
+          "c": "生",
+          "startMs": 462,
+          "endMs": 577
+        },
+        {
+          "c": "气",
+          "startMs": 577,
+          "endMs": 692
+        },
+        {
+          "c": "，",
+          "startMs": 692,
+          "endMs": 808
+        },
+        {
+          "c": "只",
+          "startMs": 808,
+          "endMs": 923
+        },
+        {
+          "c": "留",
+          "startMs": 923,
+          "endMs": 1038
+        },
+        {
+          "c": "下",
+          "startMs": 1038,
+          "endMs": 1154
+        },
+        {
+          "c": "问",
+          "startMs": 1154,
+          "endMs": 1269
+        },
+        {
+          "c": "候",
+          "startMs": 1269,
+          "endMs": 1385
+        },
+        {
+          "c": "。",
+          "startMs": 1385,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 1,
       "sentIndex": 2,
       "text": "第二次再去，还是没有见到。",
       "audioPath": "audio/p2_s3.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "第",
+          "startMs": 0,
+          "endMs": 115
+        },
+        {
+          "c": "二",
+          "startMs": 115,
+          "endMs": 231
+        },
+        {
+          "c": "次",
+          "startMs": 231,
+          "endMs": 346
+        },
+        {
+          "c": "再",
+          "startMs": 346,
+          "endMs": 462
+        },
+        {
+          "c": "去",
+          "startMs": 462,
+          "endMs": 577
+        },
+        {
+          "c": "，",
+          "startMs": 577,
+          "endMs": 692
+        },
+        {
+          "c": "还",
+          "startMs": 692,
+          "endMs": 808
+        },
+        {
+          "c": "是",
+          "startMs": 808,
+          "endMs": 923
+        },
+        {
+          "c": "没",
+          "startMs": 923,
+          "endMs": 1038
+        },
+        {
+          "c": "有",
+          "startMs": 1038,
+          "endMs": 1154
+        },
+        {
+          "c": "见",
+          "startMs": 1154,
+          "endMs": 1269
+        },
+        {
+          "c": "到",
+          "startMs": 1269,
+          "endMs": 1385
+        },
+        {
+          "c": "。",
+          "startMs": 1385,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 1,
       "sentIndex": 3,
       "text": "张飞有些着急，刘备却说，请教贤人要有耐心。",
       "audioPath": "audio/p2_s4.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "张",
+          "startMs": 0,
+          "endMs": 71
+        },
+        {
+          "c": "飞",
+          "startMs": 71,
+          "endMs": 143
+        },
+        {
+          "c": "有",
+          "startMs": 143,
+          "endMs": 214
+        },
+        {
+          "c": "些",
+          "startMs": 214,
+          "endMs": 286
+        },
+        {
+          "c": "着",
+          "startMs": 286,
+          "endMs": 357
+        },
+        {
+          "c": "急",
+          "startMs": 357,
+          "endMs": 429
+        },
+        {
+          "c": "，",
+          "startMs": 429,
+          "endMs": 500
+        },
+        {
+          "c": "刘",
+          "startMs": 500,
+          "endMs": 571
+        },
+        {
+          "c": "备",
+          "startMs": 571,
+          "endMs": 643
+        },
+        {
+          "c": "却",
+          "startMs": 643,
+          "endMs": 714
+        },
+        {
+          "c": "说",
+          "startMs": 714,
+          "endMs": 786
+        },
+        {
+          "c": "，",
+          "startMs": 786,
+          "endMs": 857
+        },
+        {
+          "c": "请",
+          "startMs": 857,
+          "endMs": 929
+        },
+        {
+          "c": "教",
+          "startMs": 929,
+          "endMs": 1000
+        },
+        {
+          "c": "贤",
+          "startMs": 1000,
+          "endMs": 1071
+        },
+        {
+          "c": "人",
+          "startMs": 1071,
+          "endMs": 1143
+        },
+        {
+          "c": "要",
+          "startMs": 1143,
+          "endMs": 1214
+        },
+        {
+          "c": "有",
+          "startMs": 1214,
+          "endMs": 1286
+        },
+        {
+          "c": "耐",
+          "startMs": 1286,
+          "endMs": 1357
+        },
+        {
+          "c": "心",
+          "startMs": 1357,
+          "endMs": 1429
+        },
+        {
+          "c": "。",
+          "startMs": 1429,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 1,
       "sentIndex": 4,
       "text": "关羽也点点头，提醒大家说话要轻，脚步要稳。",
       "audioPath": "audio/p2_s5.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "关",
+          "startMs": 0,
+          "endMs": 71
+        },
+        {
+          "c": "羽",
+          "startMs": 71,
+          "endMs": 143
+        },
+        {
+          "c": "也",
+          "startMs": 143,
+          "endMs": 214
+        },
+        {
+          "c": "点",
+          "startMs": 214,
+          "endMs": 286
+        },
+        {
+          "c": "点",
+          "startMs": 286,
+          "endMs": 357
+        },
+        {
+          "c": "头",
+          "startMs": 357,
+          "endMs": 429
+        },
+        {
+          "c": "，",
+          "startMs": 429,
+          "endMs": 500
+        },
+        {
+          "c": "提",
+          "startMs": 500,
+          "endMs": 571
+        },
+        {
+          "c": "醒",
+          "startMs": 571,
+          "endMs": 643
+        },
+        {
+          "c": "大",
+          "startMs": 643,
+          "endMs": 714
+        },
+        {
+          "c": "家",
+          "startMs": 714,
+          "endMs": 786
+        },
+        {
+          "c": "说",
+          "startMs": 786,
+          "endMs": 857
+        },
+        {
+          "c": "话",
+          "startMs": 857,
+          "endMs": 929
+        },
+        {
+          "c": "要",
+          "startMs": 929,
+          "endMs": 1000
+        },
+        {
+          "c": "轻",
+          "startMs": 1000,
+          "endMs": 1071
+        },
+        {
+          "c": "，",
+          "startMs": 1071,
+          "endMs": 1143
+        },
+        {
+          "c": "脚",
+          "startMs": 1143,
+          "endMs": 1214
+        },
+        {
+          "c": "步",
+          "startMs": 1214,
+          "endMs": 1286
+        },
+        {
+          "c": "要",
+          "startMs": 1286,
+          "endMs": 1357
+        },
+        {
+          "c": "稳",
+          "startMs": 1357,
+          "endMs": 1429
+        },
+        {
+          "c": "。",
+          "startMs": 1429,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 2,
       "sentIndex": 0,
       "text": "第三次，三人又来到茅庐。",
       "audioPath": "audio/p3_s1.wav",
-      "durationMs": 1490
+      "durationMs": 1490,
+      "chars": [
+        {
+          "c": "第",
+          "startMs": 0,
+          "endMs": 124
+        },
+        {
+          "c": "三",
+          "startMs": 124,
+          "endMs": 248
+        },
+        {
+          "c": "次",
+          "startMs": 248,
+          "endMs": 372
+        },
+        {
+          "c": "，",
+          "startMs": 372,
+          "endMs": 497
+        },
+        {
+          "c": "三",
+          "startMs": 497,
+          "endMs": 621
+        },
+        {
+          "c": "人",
+          "startMs": 621,
+          "endMs": 745
+        },
+        {
+          "c": "又",
+          "startMs": 745,
+          "endMs": 869
+        },
+        {
+          "c": "来",
+          "startMs": 869,
+          "endMs": 993
+        },
+        {
+          "c": "到",
+          "startMs": 993,
+          "endMs": 1118
+        },
+        {
+          "c": "茅",
+          "startMs": 1118,
+          "endMs": 1242
+        },
+        {
+          "c": "庐",
+          "startMs": 1242,
+          "endMs": 1366
+        },
+        {
+          "c": "。",
+          "startMs": 1366,
+          "endMs": 1490
+        }
+      ]
     },
     {
       "paraIndex": 2,
       "sentIndex": 1,
       "text": "刘备先在门外等候，怕打扰主人休息。",
       "audioPath": "audio/p3_s2.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "刘",
+          "startMs": 0,
+          "endMs": 88
+        },
+        {
+          "c": "备",
+          "startMs": 88,
+          "endMs": 176
+        },
+        {
+          "c": "先",
+          "startMs": 176,
+          "endMs": 265
+        },
+        {
+          "c": "在",
+          "startMs": 265,
+          "endMs": 353
+        },
+        {
+          "c": "门",
+          "startMs": 353,
+          "endMs": 441
+        },
+        {
+          "c": "外",
+          "startMs": 441,
+          "endMs": 529
+        },
+        {
+          "c": "等",
+          "startMs": 529,
+          "endMs": 618
+        },
+        {
+          "c": "候",
+          "startMs": 618,
+          "endMs": 706
+        },
+        {
+          "c": "，",
+          "startMs": 706,
+          "endMs": 794
+        },
+        {
+          "c": "怕",
+          "startMs": 794,
+          "endMs": 882
+        },
+        {
+          "c": "打",
+          "startMs": 882,
+          "endMs": 971
+        },
+        {
+          "c": "扰",
+          "startMs": 971,
+          "endMs": 1059
+        },
+        {
+          "c": "主",
+          "startMs": 1059,
+          "endMs": 1147
+        },
+        {
+          "c": "人",
+          "startMs": 1147,
+          "endMs": 1235
+        },
+        {
+          "c": "休",
+          "startMs": 1235,
+          "endMs": 1324
+        },
+        {
+          "c": "息",
+          "startMs": 1324,
+          "endMs": 1412
+        },
+        {
+          "c": "。",
+          "startMs": 1412,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 2,
       "sentIndex": 2,
       "text": "等诸葛亮醒来，他才恭恭敬敬地说明来意。",
       "audioPath": "audio/p3_s3.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "等",
+          "startMs": 0,
+          "endMs": 79
+        },
+        {
+          "c": "诸",
+          "startMs": 79,
+          "endMs": 158
+        },
+        {
+          "c": "葛",
+          "startMs": 158,
+          "endMs": 237
+        },
+        {
+          "c": "亮",
+          "startMs": 237,
+          "endMs": 316
+        },
+        {
+          "c": "醒",
+          "startMs": 316,
+          "endMs": 395
+        },
+        {
+          "c": "来",
+          "startMs": 395,
+          "endMs": 474
+        },
+        {
+          "c": "，",
+          "startMs": 474,
+          "endMs": 553
+        },
+        {
+          "c": "他",
+          "startMs": 553,
+          "endMs": 632
+        },
+        {
+          "c": "才",
+          "startMs": 632,
+          "endMs": 711
+        },
+        {
+          "c": "恭",
+          "startMs": 711,
+          "endMs": 789
+        },
+        {
+          "c": "恭",
+          "startMs": 789,
+          "endMs": 868
+        },
+        {
+          "c": "敬",
+          "startMs": 868,
+          "endMs": 947
+        },
+        {
+          "c": "敬",
+          "startMs": 947,
+          "endMs": 1026
+        },
+        {
+          "c": "地",
+          "startMs": 1026,
+          "endMs": 1105
+        },
+        {
+          "c": "说",
+          "startMs": 1105,
+          "endMs": 1184
+        },
+        {
+          "c": "明",
+          "startMs": 1184,
+          "endMs": 1263
+        },
+        {
+          "c": "来",
+          "startMs": 1263,
+          "endMs": 1342
+        },
+        {
+          "c": "意",
+          "startMs": 1342,
+          "endMs": 1421
+        },
+        {
+          "c": "。",
+          "startMs": 1421,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 2,
       "sentIndex": 3,
       "text": "他没有催促，也没有摆架子，只把心里的愿望认真讲出来。",
       "audioPath": "audio/p3_s4.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "他",
+          "startMs": 0,
+          "endMs": 58
+        },
+        {
+          "c": "没",
+          "startMs": 58,
+          "endMs": 115
+        },
+        {
+          "c": "有",
+          "startMs": 115,
+          "endMs": 173
+        },
+        {
+          "c": "催",
+          "startMs": 173,
+          "endMs": 231
+        },
+        {
+          "c": "促",
+          "startMs": 231,
+          "endMs": 288
+        },
+        {
+          "c": "，",
+          "startMs": 288,
+          "endMs": 346
+        },
+        {
+          "c": "也",
+          "startMs": 346,
+          "endMs": 404
+        },
+        {
+          "c": "没",
+          "startMs": 404,
+          "endMs": 462
+        },
+        {
+          "c": "有",
+          "startMs": 462,
+          "endMs": 519
+        },
+        {
+          "c": "摆",
+          "startMs": 519,
+          "endMs": 577
+        },
+        {
+          "c": "架",
+          "startMs": 577,
+          "endMs": 635
+        },
+        {
+          "c": "子",
+          "startMs": 635,
+          "endMs": 692
+        },
+        {
+          "c": "，",
+          "startMs": 692,
+          "endMs": 750
+        },
+        {
+          "c": "只",
+          "startMs": 750,
+          "endMs": 808
+        },
+        {
+          "c": "把",
+          "startMs": 808,
+          "endMs": 865
+        },
+        {
+          "c": "心",
+          "startMs": 865,
+          "endMs": 923
+        },
+        {
+          "c": "里",
+          "startMs": 923,
+          "endMs": 981
+        },
+        {
+          "c": "的",
+          "startMs": 981,
+          "endMs": 1038
+        },
+        {
+          "c": "愿",
+          "startMs": 1038,
+          "endMs": 1096
+        },
+        {
+          "c": "望",
+          "startMs": 1096,
+          "endMs": 1154
+        },
+        {
+          "c": "认",
+          "startMs": 1154,
+          "endMs": 1212
+        },
+        {
+          "c": "真",
+          "startMs": 1212,
+          "endMs": 1269
+        },
+        {
+          "c": "讲",
+          "startMs": 1269,
+          "endMs": 1327
+        },
+        {
+          "c": "出",
+          "startMs": 1327,
+          "endMs": 1385
+        },
+        {
+          "c": "来",
+          "startMs": 1385,
+          "endMs": 1442
+        },
+        {
+          "c": "。",
+          "startMs": 1442,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 3,
       "sentIndex": 0,
       "text": "诸葛亮看见刘备这样尊重别人，也愿意认真交谈。",
       "audioPath": "audio/p4_s1.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "诸",
+          "startMs": 0,
+          "endMs": 68
+        },
+        {
+          "c": "葛",
+          "startMs": 68,
+          "endMs": 136
+        },
+        {
+          "c": "亮",
+          "startMs": 136,
+          "endMs": 205
+        },
+        {
+          "c": "看",
+          "startMs": 205,
+          "endMs": 273
+        },
+        {
+          "c": "见",
+          "startMs": 273,
+          "endMs": 341
+        },
+        {
+          "c": "刘",
+          "startMs": 341,
+          "endMs": 409
+        },
+        {
+          "c": "备",
+          "startMs": 409,
+          "endMs": 477
+        },
+        {
+          "c": "这",
+          "startMs": 477,
+          "endMs": 545
+        },
+        {
+          "c": "样",
+          "startMs": 545,
+          "endMs": 614
+        },
+        {
+          "c": "尊",
+          "startMs": 614,
+          "endMs": 682
+        },
+        {
+          "c": "重",
+          "startMs": 682,
+          "endMs": 750
+        },
+        {
+          "c": "别",
+          "startMs": 750,
+          "endMs": 818
+        },
+        {
+          "c": "人",
+          "startMs": 818,
+          "endMs": 886
+        },
+        {
+          "c": "，",
+          "startMs": 886,
+          "endMs": 955
+        },
+        {
+          "c": "也",
+          "startMs": 955,
+          "endMs": 1023
+        },
+        {
+          "c": "愿",
+          "startMs": 1023,
+          "endMs": 1091
+        },
+        {
+          "c": "意",
+          "startMs": 1091,
+          "endMs": 1159
+        },
+        {
+          "c": "认",
+          "startMs": 1159,
+          "endMs": 1227
+        },
+        {
+          "c": "真",
+          "startMs": 1227,
+          "endMs": 1295
+        },
+        {
+          "c": "交",
+          "startMs": 1295,
+          "endMs": 1364
+        },
+        {
+          "c": "谈",
+          "startMs": 1364,
+          "endMs": 1432
+        },
+        {
+          "c": "。",
+          "startMs": 1432,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 3,
       "sentIndex": 1,
       "text": "他们谈到天下百姓，谈到怎样让更多人过安稳日子，越谈越投合。",
       "audioPath": "audio/p4_s2.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "他",
+          "startMs": 0,
+          "endMs": 52
+        },
+        {
+          "c": "们",
+          "startMs": 52,
+          "endMs": 103
+        },
+        {
+          "c": "谈",
+          "startMs": 103,
+          "endMs": 155
+        },
+        {
+          "c": "到",
+          "startMs": 155,
+          "endMs": 207
+        },
+        {
+          "c": "天",
+          "startMs": 207,
+          "endMs": 259
+        },
+        {
+          "c": "下",
+          "startMs": 259,
+          "endMs": 310
+        },
+        {
+          "c": "百",
+          "startMs": 310,
+          "endMs": 362
+        },
+        {
+          "c": "姓",
+          "startMs": 362,
+          "endMs": 414
+        },
+        {
+          "c": "，",
+          "startMs": 414,
+          "endMs": 466
+        },
+        {
+          "c": "谈",
+          "startMs": 466,
+          "endMs": 517
+        },
+        {
+          "c": "到",
+          "startMs": 517,
+          "endMs": 569
+        },
+        {
+          "c": "怎",
+          "startMs": 569,
+          "endMs": 621
+        },
+        {
+          "c": "样",
+          "startMs": 621,
+          "endMs": 672
+        },
+        {
+          "c": "让",
+          "startMs": 672,
+          "endMs": 724
+        },
+        {
+          "c": "更",
+          "startMs": 724,
+          "endMs": 776
+        },
+        {
+          "c": "多",
+          "startMs": 776,
+          "endMs": 828
+        },
+        {
+          "c": "人",
+          "startMs": 828,
+          "endMs": 879
+        },
+        {
+          "c": "过",
+          "startMs": 879,
+          "endMs": 931
+        },
+        {
+          "c": "安",
+          "startMs": 931,
+          "endMs": 983
+        },
+        {
+          "c": "稳",
+          "startMs": 983,
+          "endMs": 1034
+        },
+        {
+          "c": "日",
+          "startMs": 1034,
+          "endMs": 1086
+        },
+        {
+          "c": "子",
+          "startMs": 1086,
+          "endMs": 1138
+        },
+        {
+          "c": "，",
+          "startMs": 1138,
+          "endMs": 1190
+        },
+        {
+          "c": "越",
+          "startMs": 1190,
+          "endMs": 1241
+        },
+        {
+          "c": "谈",
+          "startMs": 1241,
+          "endMs": 1293
+        },
+        {
+          "c": "越",
+          "startMs": 1293,
+          "endMs": 1345
+        },
+        {
+          "c": "投",
+          "startMs": 1345,
+          "endMs": 1397
+        },
+        {
+          "c": "合",
+          "startMs": 1397,
+          "endMs": 1448
+        },
+        {
+          "c": "。",
+          "startMs": 1448,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 3,
       "sentIndex": 2,
       "text": "屋外风吹竹叶，屋里的人却越说越明白。",
       "audioPath": "audio/p4_s3.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "屋",
+          "startMs": 0,
+          "endMs": 83
+        },
+        {
+          "c": "外",
+          "startMs": 83,
+          "endMs": 167
+        },
+        {
+          "c": "风",
+          "startMs": 167,
+          "endMs": 250
+        },
+        {
+          "c": "吹",
+          "startMs": 250,
+          "endMs": 333
+        },
+        {
+          "c": "竹",
+          "startMs": 333,
+          "endMs": 417
+        },
+        {
+          "c": "叶",
+          "startMs": 417,
+          "endMs": 500
+        },
+        {
+          "c": "，",
+          "startMs": 500,
+          "endMs": 583
+        },
+        {
+          "c": "屋",
+          "startMs": 583,
+          "endMs": 667
+        },
+        {
+          "c": "里",
+          "startMs": 667,
+          "endMs": 750
+        },
+        {
+          "c": "的",
+          "startMs": 750,
+          "endMs": 833
+        },
+        {
+          "c": "人",
+          "startMs": 833,
+          "endMs": 917
+        },
+        {
+          "c": "却",
+          "startMs": 917,
+          "endMs": 1000
+        },
+        {
+          "c": "越",
+          "startMs": 1000,
+          "endMs": 1083
+        },
+        {
+          "c": "说",
+          "startMs": 1083,
+          "endMs": 1167
+        },
+        {
+          "c": "越",
+          "startMs": 1167,
+          "endMs": 1250
+        },
+        {
+          "c": "明",
+          "startMs": 1250,
+          "endMs": 1333
+        },
+        {
+          "c": "白",
+          "startMs": 1333,
+          "endMs": 1417
+        },
+        {
+          "c": "。",
+          "startMs": 1417,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 4,
       "sentIndex": 0,
       "text": "后来，诸葛亮决定帮助刘备。",
       "audioPath": "audio/p5_s1.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "后",
+          "startMs": 0,
+          "endMs": 115
+        },
+        {
+          "c": "来",
+          "startMs": 115,
+          "endMs": 231
+        },
+        {
+          "c": "，",
+          "startMs": 231,
+          "endMs": 346
+        },
+        {
+          "c": "诸",
+          "startMs": 346,
+          "endMs": 462
+        },
+        {
+          "c": "葛",
+          "startMs": 462,
+          "endMs": 577
+        },
+        {
+          "c": "亮",
+          "startMs": 577,
+          "endMs": 692
+        },
+        {
+          "c": "决",
+          "startMs": 692,
+          "endMs": 808
+        },
+        {
+          "c": "定",
+          "startMs": 808,
+          "endMs": 923
+        },
+        {
+          "c": "帮",
+          "startMs": 923,
+          "endMs": 1038
+        },
+        {
+          "c": "助",
+          "startMs": 1038,
+          "endMs": 1154
+        },
+        {
+          "c": "刘",
+          "startMs": 1154,
+          "endMs": 1269
+        },
+        {
+          "c": "备",
+          "startMs": 1269,
+          "endMs": 1385
+        },
+        {
+          "c": "。",
+          "startMs": 1385,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 4,
       "sentIndex": 1,
       "text": "三顾茅庐的故事告诉我们，真诚不是一句话，而是一次又一次有礼貌地坚持。",
       "audioPath": "audio/p5_s2.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "三",
+          "startMs": 0,
+          "endMs": 44
+        },
+        {
+          "c": "顾",
+          "startMs": 44,
+          "endMs": 88
+        },
+        {
+          "c": "茅",
+          "startMs": 88,
+          "endMs": 132
+        },
+        {
+          "c": "庐",
+          "startMs": 132,
+          "endMs": 176
+        },
+        {
+          "c": "的",
+          "startMs": 176,
+          "endMs": 221
+        },
+        {
+          "c": "故",
+          "startMs": 221,
+          "endMs": 265
+        },
+        {
+          "c": "事",
+          "startMs": 265,
+          "endMs": 309
+        },
+        {
+          "c": "告",
+          "startMs": 309,
+          "endMs": 353
+        },
+        {
+          "c": "诉",
+          "startMs": 353,
+          "endMs": 397
+        },
+        {
+          "c": "我",
+          "startMs": 397,
+          "endMs": 441
+        },
+        {
+          "c": "们",
+          "startMs": 441,
+          "endMs": 485
+        },
+        {
+          "c": "，",
+          "startMs": 485,
+          "endMs": 529
+        },
+        {
+          "c": "真",
+          "startMs": 529,
+          "endMs": 574
+        },
+        {
+          "c": "诚",
+          "startMs": 574,
+          "endMs": 618
+        },
+        {
+          "c": "不",
+          "startMs": 618,
+          "endMs": 662
+        },
+        {
+          "c": "是",
+          "startMs": 662,
+          "endMs": 706
+        },
+        {
+          "c": "一",
+          "startMs": 706,
+          "endMs": 750
+        },
+        {
+          "c": "句",
+          "startMs": 750,
+          "endMs": 794
+        },
+        {
+          "c": "话",
+          "startMs": 794,
+          "endMs": 838
+        },
+        {
+          "c": "，",
+          "startMs": 838,
+          "endMs": 882
+        },
+        {
+          "c": "而",
+          "startMs": 882,
+          "endMs": 926
+        },
+        {
+          "c": "是",
+          "startMs": 926,
+          "endMs": 971
+        },
+        {
+          "c": "一",
+          "startMs": 971,
+          "endMs": 1015
+        },
+        {
+          "c": "次",
+          "startMs": 1015,
+          "endMs": 1059
+        },
+        {
+          "c": "又",
+          "startMs": 1059,
+          "endMs": 1103
+        },
+        {
+          "c": "一",
+          "startMs": 1103,
+          "endMs": 1147
+        },
+        {
+          "c": "次",
+          "startMs": 1147,
+          "endMs": 1191
+        },
+        {
+          "c": "有",
+          "startMs": 1191,
+          "endMs": 1235
+        },
+        {
+          "c": "礼",
+          "startMs": 1235,
+          "endMs": 1279
+        },
+        {
+          "c": "貌",
+          "startMs": 1279,
+          "endMs": 1324
+        },
+        {
+          "c": "地",
+          "startMs": 1324,
+          "endMs": 1368
+        },
+        {
+          "c": "坚",
+          "startMs": 1368,
+          "endMs": 1412
+        },
+        {
+          "c": "持",
+          "startMs": 1412,
+          "endMs": 1456
+        },
+        {
+          "c": "。",
+          "startMs": 1456,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 4,
       "sentIndex": 2,
       "text": "想请别人帮助时，先学会尊重别人，也学会把目标说得清清楚楚。",
       "audioPath": "audio/p5_s3.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "想",
+          "startMs": 0,
+          "endMs": 52
+        },
+        {
+          "c": "请",
+          "startMs": 52,
+          "endMs": 103
+        },
+        {
+          "c": "别",
+          "startMs": 103,
+          "endMs": 155
+        },
+        {
+          "c": "人",
+          "startMs": 155,
+          "endMs": 207
+        },
+        {
+          "c": "帮",
+          "startMs": 207,
+          "endMs": 259
+        },
+        {
+          "c": "助",
+          "startMs": 259,
+          "endMs": 310
+        },
+        {
+          "c": "时",
+          "startMs": 310,
+          "endMs": 362
+        },
+        {
+          "c": "，",
+          "startMs": 362,
+          "endMs": 414
+        },
+        {
+          "c": "先",
+          "startMs": 414,
+          "endMs": 466
+        },
+        {
+          "c": "学",
+          "startMs": 466,
+          "endMs": 517
+        },
+        {
+          "c": "会",
+          "startMs": 517,
+          "endMs": 569
+        },
+        {
+          "c": "尊",
+          "startMs": 569,
+          "endMs": 621
+        },
+        {
+          "c": "重",
+          "startMs": 621,
+          "endMs": 672
+        },
+        {
+          "c": "别",
+          "startMs": 672,
+          "endMs": 724
+        },
+        {
+          "c": "人",
+          "startMs": 724,
+          "endMs": 776
+        },
+        {
+          "c": "，",
+          "startMs": 776,
+          "endMs": 828
+        },
+        {
+          "c": "也",
+          "startMs": 828,
+          "endMs": 879
+        },
+        {
+          "c": "学",
+          "startMs": 879,
+          "endMs": 931
+        },
+        {
+          "c": "会",
+          "startMs": 931,
+          "endMs": 983
+        },
+        {
+          "c": "把",
+          "startMs": 983,
+          "endMs": 1034
+        },
+        {
+          "c": "目",
+          "startMs": 1034,
+          "endMs": 1086
+        },
+        {
+          "c": "标",
+          "startMs": 1086,
+          "endMs": 1138
+        },
+        {
+          "c": "说",
+          "startMs": 1138,
+          "endMs": 1190
+        },
+        {
+          "c": "得",
+          "startMs": 1190,
+          "endMs": 1241
+        },
+        {
+          "c": "清",
+          "startMs": 1241,
+          "endMs": 1293
+        },
+        {
+          "c": "清",
+          "startMs": 1293,
+          "endMs": 1345
+        },
+        {
+          "c": "楚",
+          "startMs": 1345,
+          "endMs": 1397
+        },
+        {
+          "c": "楚",
+          "startMs": 1397,
+          "endMs": 1448
+        },
+        {
+          "c": "。",
+          "startMs": 1448,
+          "endMs": 1500
+        }
+      ]
     }
   ]
 }

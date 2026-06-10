@@ -5,112 +5,1889 @@
       "sentIndex": 0,
       "text": "有一回，诸葛亮身边的人很少，却听说司马懿带着队伍来到城外。",
       "audioPath": "audio/p1_s1.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "有",
+          "startMs": 0,
+          "endMs": 52
+        },
+        {
+          "c": "一",
+          "startMs": 52,
+          "endMs": 103
+        },
+        {
+          "c": "回",
+          "startMs": 103,
+          "endMs": 155
+        },
+        {
+          "c": "，",
+          "startMs": 155,
+          "endMs": 207
+        },
+        {
+          "c": "诸",
+          "startMs": 207,
+          "endMs": 259
+        },
+        {
+          "c": "葛",
+          "startMs": 259,
+          "endMs": 310
+        },
+        {
+          "c": "亮",
+          "startMs": 310,
+          "endMs": 362
+        },
+        {
+          "c": "身",
+          "startMs": 362,
+          "endMs": 414
+        },
+        {
+          "c": "边",
+          "startMs": 414,
+          "endMs": 466
+        },
+        {
+          "c": "的",
+          "startMs": 466,
+          "endMs": 517
+        },
+        {
+          "c": "人",
+          "startMs": 517,
+          "endMs": 569
+        },
+        {
+          "c": "很",
+          "startMs": 569,
+          "endMs": 621
+        },
+        {
+          "c": "少",
+          "startMs": 621,
+          "endMs": 672
+        },
+        {
+          "c": "，",
+          "startMs": 672,
+          "endMs": 724
+        },
+        {
+          "c": "却",
+          "startMs": 724,
+          "endMs": 776
+        },
+        {
+          "c": "听",
+          "startMs": 776,
+          "endMs": 828
+        },
+        {
+          "c": "说",
+          "startMs": 828,
+          "endMs": 879
+        },
+        {
+          "c": "司",
+          "startMs": 879,
+          "endMs": 931
+        },
+        {
+          "c": "马",
+          "startMs": 931,
+          "endMs": 983
+        },
+        {
+          "c": "懿",
+          "startMs": 983,
+          "endMs": 1034
+        },
+        {
+          "c": "带",
+          "startMs": 1034,
+          "endMs": 1086
+        },
+        {
+          "c": "着",
+          "startMs": 1086,
+          "endMs": 1138
+        },
+        {
+          "c": "队",
+          "startMs": 1138,
+          "endMs": 1190
+        },
+        {
+          "c": "伍",
+          "startMs": 1190,
+          "endMs": 1241
+        },
+        {
+          "c": "来",
+          "startMs": 1241,
+          "endMs": 1293
+        },
+        {
+          "c": "到",
+          "startMs": 1293,
+          "endMs": 1345
+        },
+        {
+          "c": "城",
+          "startMs": 1345,
+          "endMs": 1397
+        },
+        {
+          "c": "外",
+          "startMs": 1397,
+          "endMs": 1448
+        },
+        {
+          "c": "。",
+          "startMs": 1448,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 0,
       "sentIndex": 1,
       "text": "城里的人紧张起来，不知道该怎样办。",
       "audioPath": "audio/p1_s2.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "城",
+          "startMs": 0,
+          "endMs": 88
+        },
+        {
+          "c": "里",
+          "startMs": 88,
+          "endMs": 176
+        },
+        {
+          "c": "的",
+          "startMs": 176,
+          "endMs": 265
+        },
+        {
+          "c": "人",
+          "startMs": 265,
+          "endMs": 353
+        },
+        {
+          "c": "紧",
+          "startMs": 353,
+          "endMs": 441
+        },
+        {
+          "c": "张",
+          "startMs": 441,
+          "endMs": 529
+        },
+        {
+          "c": "起",
+          "startMs": 529,
+          "endMs": 618
+        },
+        {
+          "c": "来",
+          "startMs": 618,
+          "endMs": 706
+        },
+        {
+          "c": "，",
+          "startMs": 706,
+          "endMs": 794
+        },
+        {
+          "c": "不",
+          "startMs": 794,
+          "endMs": 882
+        },
+        {
+          "c": "知",
+          "startMs": 882,
+          "endMs": 971
+        },
+        {
+          "c": "道",
+          "startMs": 971,
+          "endMs": 1059
+        },
+        {
+          "c": "该",
+          "startMs": 1059,
+          "endMs": 1147
+        },
+        {
+          "c": "怎",
+          "startMs": 1147,
+          "endMs": 1235
+        },
+        {
+          "c": "样",
+          "startMs": 1235,
+          "endMs": 1324
+        },
+        {
+          "c": "办",
+          "startMs": 1324,
+          "endMs": 1412
+        },
+        {
+          "c": "。",
+          "startMs": 1412,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 0,
       "sentIndex": 2,
       "text": "有人想关门，有人想躲起来，大家都看着诸葛亮。",
       "audioPath": "audio/p1_s3.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "有",
+          "startMs": 0,
+          "endMs": 68
+        },
+        {
+          "c": "人",
+          "startMs": 68,
+          "endMs": 136
+        },
+        {
+          "c": "想",
+          "startMs": 136,
+          "endMs": 205
+        },
+        {
+          "c": "关",
+          "startMs": 205,
+          "endMs": 273
+        },
+        {
+          "c": "门",
+          "startMs": 273,
+          "endMs": 341
+        },
+        {
+          "c": "，",
+          "startMs": 341,
+          "endMs": 409
+        },
+        {
+          "c": "有",
+          "startMs": 409,
+          "endMs": 477
+        },
+        {
+          "c": "人",
+          "startMs": 477,
+          "endMs": 545
+        },
+        {
+          "c": "想",
+          "startMs": 545,
+          "endMs": 614
+        },
+        {
+          "c": "躲",
+          "startMs": 614,
+          "endMs": 682
+        },
+        {
+          "c": "起",
+          "startMs": 682,
+          "endMs": 750
+        },
+        {
+          "c": "来",
+          "startMs": 750,
+          "endMs": 818
+        },
+        {
+          "c": "，",
+          "startMs": 818,
+          "endMs": 886
+        },
+        {
+          "c": "大",
+          "startMs": 886,
+          "endMs": 955
+        },
+        {
+          "c": "家",
+          "startMs": 955,
+          "endMs": 1023
+        },
+        {
+          "c": "都",
+          "startMs": 1023,
+          "endMs": 1091
+        },
+        {
+          "c": "看",
+          "startMs": 1091,
+          "endMs": 1159
+        },
+        {
+          "c": "着",
+          "startMs": 1159,
+          "endMs": 1227
+        },
+        {
+          "c": "诸",
+          "startMs": 1227,
+          "endMs": 1295
+        },
+        {
+          "c": "葛",
+          "startMs": 1295,
+          "endMs": 1364
+        },
+        {
+          "c": "亮",
+          "startMs": 1364,
+          "endMs": 1432
+        },
+        {
+          "c": "。",
+          "startMs": 1432,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 1,
       "sentIndex": 0,
       "text": "诸葛亮先让大家安静。",
       "audioPath": "audio/p2_s1.wav",
-      "durationMs": 1300
+      "durationMs": 1300,
+      "chars": [
+        {
+          "c": "诸",
+          "startMs": 0,
+          "endMs": 130
+        },
+        {
+          "c": "葛",
+          "startMs": 130,
+          "endMs": 260
+        },
+        {
+          "c": "亮",
+          "startMs": 260,
+          "endMs": 390
+        },
+        {
+          "c": "先",
+          "startMs": 390,
+          "endMs": 520
+        },
+        {
+          "c": "让",
+          "startMs": 520,
+          "endMs": 650
+        },
+        {
+          "c": "大",
+          "startMs": 650,
+          "endMs": 780
+        },
+        {
+          "c": "家",
+          "startMs": 780,
+          "endMs": 910
+        },
+        {
+          "c": "安",
+          "startMs": 910,
+          "endMs": 1040
+        },
+        {
+          "c": "静",
+          "startMs": 1040,
+          "endMs": 1170
+        },
+        {
+          "c": "。",
+          "startMs": 1170,
+          "endMs": 1300
+        }
+      ]
     },
     {
       "paraIndex": 1,
       "sentIndex": 1,
       "text": "他打开城门，安排几个人在门口慢慢扫地，自己穿戴整齐，坐到城楼上弹琴。",
       "audioPath": "audio/p2_s2.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "他",
+          "startMs": 0,
+          "endMs": 44
+        },
+        {
+          "c": "打",
+          "startMs": 44,
+          "endMs": 88
+        },
+        {
+          "c": "开",
+          "startMs": 88,
+          "endMs": 132
+        },
+        {
+          "c": "城",
+          "startMs": 132,
+          "endMs": 176
+        },
+        {
+          "c": "门",
+          "startMs": 176,
+          "endMs": 221
+        },
+        {
+          "c": "，",
+          "startMs": 221,
+          "endMs": 265
+        },
+        {
+          "c": "安",
+          "startMs": 265,
+          "endMs": 309
+        },
+        {
+          "c": "排",
+          "startMs": 309,
+          "endMs": 353
+        },
+        {
+          "c": "几",
+          "startMs": 353,
+          "endMs": 397
+        },
+        {
+          "c": "个",
+          "startMs": 397,
+          "endMs": 441
+        },
+        {
+          "c": "人",
+          "startMs": 441,
+          "endMs": 485
+        },
+        {
+          "c": "在",
+          "startMs": 485,
+          "endMs": 529
+        },
+        {
+          "c": "门",
+          "startMs": 529,
+          "endMs": 574
+        },
+        {
+          "c": "口",
+          "startMs": 574,
+          "endMs": 618
+        },
+        {
+          "c": "慢",
+          "startMs": 618,
+          "endMs": 662
+        },
+        {
+          "c": "慢",
+          "startMs": 662,
+          "endMs": 706
+        },
+        {
+          "c": "扫",
+          "startMs": 706,
+          "endMs": 750
+        },
+        {
+          "c": "地",
+          "startMs": 750,
+          "endMs": 794
+        },
+        {
+          "c": "，",
+          "startMs": 794,
+          "endMs": 838
+        },
+        {
+          "c": "自",
+          "startMs": 838,
+          "endMs": 882
+        },
+        {
+          "c": "己",
+          "startMs": 882,
+          "endMs": 926
+        },
+        {
+          "c": "穿",
+          "startMs": 926,
+          "endMs": 971
+        },
+        {
+          "c": "戴",
+          "startMs": 971,
+          "endMs": 1015
+        },
+        {
+          "c": "整",
+          "startMs": 1015,
+          "endMs": 1059
+        },
+        {
+          "c": "齐",
+          "startMs": 1059,
+          "endMs": 1103
+        },
+        {
+          "c": "，",
+          "startMs": 1103,
+          "endMs": 1147
+        },
+        {
+          "c": "坐",
+          "startMs": 1147,
+          "endMs": 1191
+        },
+        {
+          "c": "到",
+          "startMs": 1191,
+          "endMs": 1235
+        },
+        {
+          "c": "城",
+          "startMs": 1235,
+          "endMs": 1279
+        },
+        {
+          "c": "楼",
+          "startMs": 1279,
+          "endMs": 1324
+        },
+        {
+          "c": "上",
+          "startMs": 1324,
+          "endMs": 1368
+        },
+        {
+          "c": "弹",
+          "startMs": 1368,
+          "endMs": 1412
+        },
+        {
+          "c": "琴",
+          "startMs": 1412,
+          "endMs": 1456
+        },
+        {
+          "c": "。",
+          "startMs": 1456,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 1,
       "sentIndex": 2,
       "text": "扫地的人也照着吩咐，一下一下地扫，不让手忙脚乱露出来。",
       "audioPath": "audio/p2_s3.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "扫",
+          "startMs": 0,
+          "endMs": 56
+        },
+        {
+          "c": "地",
+          "startMs": 56,
+          "endMs": 111
+        },
+        {
+          "c": "的",
+          "startMs": 111,
+          "endMs": 167
+        },
+        {
+          "c": "人",
+          "startMs": 167,
+          "endMs": 222
+        },
+        {
+          "c": "也",
+          "startMs": 222,
+          "endMs": 278
+        },
+        {
+          "c": "照",
+          "startMs": 278,
+          "endMs": 333
+        },
+        {
+          "c": "着",
+          "startMs": 333,
+          "endMs": 389
+        },
+        {
+          "c": "吩",
+          "startMs": 389,
+          "endMs": 444
+        },
+        {
+          "c": "咐",
+          "startMs": 444,
+          "endMs": 500
+        },
+        {
+          "c": "，",
+          "startMs": 500,
+          "endMs": 556
+        },
+        {
+          "c": "一",
+          "startMs": 556,
+          "endMs": 611
+        },
+        {
+          "c": "下",
+          "startMs": 611,
+          "endMs": 667
+        },
+        {
+          "c": "一",
+          "startMs": 667,
+          "endMs": 722
+        },
+        {
+          "c": "下",
+          "startMs": 722,
+          "endMs": 778
+        },
+        {
+          "c": "地",
+          "startMs": 778,
+          "endMs": 833
+        },
+        {
+          "c": "扫",
+          "startMs": 833,
+          "endMs": 889
+        },
+        {
+          "c": "，",
+          "startMs": 889,
+          "endMs": 944
+        },
+        {
+          "c": "不",
+          "startMs": 944,
+          "endMs": 1000
+        },
+        {
+          "c": "让",
+          "startMs": 1000,
+          "endMs": 1056
+        },
+        {
+          "c": "手",
+          "startMs": 1056,
+          "endMs": 1111
+        },
+        {
+          "c": "忙",
+          "startMs": 1111,
+          "endMs": 1167
+        },
+        {
+          "c": "脚",
+          "startMs": 1167,
+          "endMs": 1222
+        },
+        {
+          "c": "乱",
+          "startMs": 1222,
+          "endMs": 1278
+        },
+        {
+          "c": "露",
+          "startMs": 1278,
+          "endMs": 1333
+        },
+        {
+          "c": "出",
+          "startMs": 1333,
+          "endMs": 1389
+        },
+        {
+          "c": "来",
+          "startMs": 1389,
+          "endMs": 1444
+        },
+        {
+          "c": "。",
+          "startMs": 1444,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 2,
       "sentIndex": 0,
       "text": "琴声从城楼上传出去，清清稳稳。",
       "audioPath": "audio/p3_s1.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "琴",
+          "startMs": 0,
+          "endMs": 100
+        },
+        {
+          "c": "声",
+          "startMs": 100,
+          "endMs": 200
+        },
+        {
+          "c": "从",
+          "startMs": 200,
+          "endMs": 300
+        },
+        {
+          "c": "城",
+          "startMs": 300,
+          "endMs": 400
+        },
+        {
+          "c": "楼",
+          "startMs": 400,
+          "endMs": 500
+        },
+        {
+          "c": "上",
+          "startMs": 500,
+          "endMs": 600
+        },
+        {
+          "c": "传",
+          "startMs": 600,
+          "endMs": 700
+        },
+        {
+          "c": "出",
+          "startMs": 700,
+          "endMs": 800
+        },
+        {
+          "c": "去",
+          "startMs": 800,
+          "endMs": 900
+        },
+        {
+          "c": "，",
+          "startMs": 900,
+          "endMs": 1000
+        },
+        {
+          "c": "清",
+          "startMs": 1000,
+          "endMs": 1100
+        },
+        {
+          "c": "清",
+          "startMs": 1100,
+          "endMs": 1200
+        },
+        {
+          "c": "稳",
+          "startMs": 1200,
+          "endMs": 1300
+        },
+        {
+          "c": "稳",
+          "startMs": 1300,
+          "endMs": 1400
+        },
+        {
+          "c": "。",
+          "startMs": 1400,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 2,
       "sentIndex": 1,
       "text": "司马懿远远看见城门大开，又听见诸葛亮这样沉着，心里开始仔细判断。",
       "audioPath": "audio/p3_s2.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "司",
+          "startMs": 0,
+          "endMs": 47
+        },
+        {
+          "c": "马",
+          "startMs": 47,
+          "endMs": 94
+        },
+        {
+          "c": "懿",
+          "startMs": 94,
+          "endMs": 141
+        },
+        {
+          "c": "远",
+          "startMs": 141,
+          "endMs": 188
+        },
+        {
+          "c": "远",
+          "startMs": 188,
+          "endMs": 234
+        },
+        {
+          "c": "看",
+          "startMs": 234,
+          "endMs": 281
+        },
+        {
+          "c": "见",
+          "startMs": 281,
+          "endMs": 328
+        },
+        {
+          "c": "城",
+          "startMs": 328,
+          "endMs": 375
+        },
+        {
+          "c": "门",
+          "startMs": 375,
+          "endMs": 422
+        },
+        {
+          "c": "大",
+          "startMs": 422,
+          "endMs": 469
+        },
+        {
+          "c": "开",
+          "startMs": 469,
+          "endMs": 516
+        },
+        {
+          "c": "，",
+          "startMs": 516,
+          "endMs": 562
+        },
+        {
+          "c": "又",
+          "startMs": 562,
+          "endMs": 609
+        },
+        {
+          "c": "听",
+          "startMs": 609,
+          "endMs": 656
+        },
+        {
+          "c": "见",
+          "startMs": 656,
+          "endMs": 703
+        },
+        {
+          "c": "诸",
+          "startMs": 703,
+          "endMs": 750
+        },
+        {
+          "c": "葛",
+          "startMs": 750,
+          "endMs": 797
+        },
+        {
+          "c": "亮",
+          "startMs": 797,
+          "endMs": 844
+        },
+        {
+          "c": "这",
+          "startMs": 844,
+          "endMs": 891
+        },
+        {
+          "c": "样",
+          "startMs": 891,
+          "endMs": 938
+        },
+        {
+          "c": "沉",
+          "startMs": 938,
+          "endMs": 984
+        },
+        {
+          "c": "着",
+          "startMs": 984,
+          "endMs": 1031
+        },
+        {
+          "c": "，",
+          "startMs": 1031,
+          "endMs": 1078
+        },
+        {
+          "c": "心",
+          "startMs": 1078,
+          "endMs": 1125
+        },
+        {
+          "c": "里",
+          "startMs": 1125,
+          "endMs": 1172
+        },
+        {
+          "c": "开",
+          "startMs": 1172,
+          "endMs": 1219
+        },
+        {
+          "c": "始",
+          "startMs": 1219,
+          "endMs": 1266
+        },
+        {
+          "c": "仔",
+          "startMs": 1266,
+          "endMs": 1312
+        },
+        {
+          "c": "细",
+          "startMs": 1312,
+          "endMs": 1359
+        },
+        {
+          "c": "判",
+          "startMs": 1359,
+          "endMs": 1406
+        },
+        {
+          "c": "断",
+          "startMs": 1406,
+          "endMs": 1453
+        },
+        {
+          "c": "。",
+          "startMs": 1453,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 2,
       "sentIndex": 2,
       "text": "他知道诸葛亮平时谨慎，不会随便做奇怪的事。",
       "audioPath": "audio/p3_s3.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "他",
+          "startMs": 0,
+          "endMs": 71
+        },
+        {
+          "c": "知",
+          "startMs": 71,
+          "endMs": 143
+        },
+        {
+          "c": "道",
+          "startMs": 143,
+          "endMs": 214
+        },
+        {
+          "c": "诸",
+          "startMs": 214,
+          "endMs": 286
+        },
+        {
+          "c": "葛",
+          "startMs": 286,
+          "endMs": 357
+        },
+        {
+          "c": "亮",
+          "startMs": 357,
+          "endMs": 429
+        },
+        {
+          "c": "平",
+          "startMs": 429,
+          "endMs": 500
+        },
+        {
+          "c": "时",
+          "startMs": 500,
+          "endMs": 571
+        },
+        {
+          "c": "谨",
+          "startMs": 571,
+          "endMs": 643
+        },
+        {
+          "c": "慎",
+          "startMs": 643,
+          "endMs": 714
+        },
+        {
+          "c": "，",
+          "startMs": 714,
+          "endMs": 786
+        },
+        {
+          "c": "不",
+          "startMs": 786,
+          "endMs": 857
+        },
+        {
+          "c": "会",
+          "startMs": 857,
+          "endMs": 929
+        },
+        {
+          "c": "随",
+          "startMs": 929,
+          "endMs": 1000
+        },
+        {
+          "c": "便",
+          "startMs": 1000,
+          "endMs": 1071
+        },
+        {
+          "c": "做",
+          "startMs": 1071,
+          "endMs": 1143
+        },
+        {
+          "c": "奇",
+          "startMs": 1143,
+          "endMs": 1214
+        },
+        {
+          "c": "怪",
+          "startMs": 1214,
+          "endMs": 1286
+        },
+        {
+          "c": "的",
+          "startMs": 1286,
+          "endMs": 1357
+        },
+        {
+          "c": "事",
+          "startMs": 1357,
+          "endMs": 1429
+        },
+        {
+          "c": "。",
+          "startMs": 1429,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 3,
       "sentIndex": 0,
       "text": "他想，诸葛亮平日做事周全，现在如此安静，也许城中另有安排。",
       "audioPath": "audio/p4_s1.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "他",
+          "startMs": 0,
+          "endMs": 52
+        },
+        {
+          "c": "想",
+          "startMs": 52,
+          "endMs": 103
+        },
+        {
+          "c": "，",
+          "startMs": 103,
+          "endMs": 155
+        },
+        {
+          "c": "诸",
+          "startMs": 155,
+          "endMs": 207
+        },
+        {
+          "c": "葛",
+          "startMs": 207,
+          "endMs": 259
+        },
+        {
+          "c": "亮",
+          "startMs": 259,
+          "endMs": 310
+        },
+        {
+          "c": "平",
+          "startMs": 310,
+          "endMs": 362
+        },
+        {
+          "c": "日",
+          "startMs": 362,
+          "endMs": 414
+        },
+        {
+          "c": "做",
+          "startMs": 414,
+          "endMs": 466
+        },
+        {
+          "c": "事",
+          "startMs": 466,
+          "endMs": 517
+        },
+        {
+          "c": "周",
+          "startMs": 517,
+          "endMs": 569
+        },
+        {
+          "c": "全",
+          "startMs": 569,
+          "endMs": 621
+        },
+        {
+          "c": "，",
+          "startMs": 621,
+          "endMs": 672
+        },
+        {
+          "c": "现",
+          "startMs": 672,
+          "endMs": 724
+        },
+        {
+          "c": "在",
+          "startMs": 724,
+          "endMs": 776
+        },
+        {
+          "c": "如",
+          "startMs": 776,
+          "endMs": 828
+        },
+        {
+          "c": "此",
+          "startMs": 828,
+          "endMs": 879
+        },
+        {
+          "c": "安",
+          "startMs": 879,
+          "endMs": 931
+        },
+        {
+          "c": "静",
+          "startMs": 931,
+          "endMs": 983
+        },
+        {
+          "c": "，",
+          "startMs": 983,
+          "endMs": 1034
+        },
+        {
+          "c": "也",
+          "startMs": 1034,
+          "endMs": 1086
+        },
+        {
+          "c": "许",
+          "startMs": 1086,
+          "endMs": 1138
+        },
+        {
+          "c": "城",
+          "startMs": 1138,
+          "endMs": 1190
+        },
+        {
+          "c": "中",
+          "startMs": 1190,
+          "endMs": 1241
+        },
+        {
+          "c": "另",
+          "startMs": 1241,
+          "endMs": 1293
+        },
+        {
+          "c": "有",
+          "startMs": 1293,
+          "endMs": 1345
+        },
+        {
+          "c": "安",
+          "startMs": 1345,
+          "endMs": 1397
+        },
+        {
+          "c": "排",
+          "startMs": 1397,
+          "endMs": 1448
+        },
+        {
+          "c": "。",
+          "startMs": 1448,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 3,
       "sentIndex": 1,
       "text": "为了谨慎，他决定先带队退去，再观察情况。",
       "audioPath": "audio/p4_s2.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "为",
+          "startMs": 0,
+          "endMs": 75
+        },
+        {
+          "c": "了",
+          "startMs": 75,
+          "endMs": 150
+        },
+        {
+          "c": "谨",
+          "startMs": 150,
+          "endMs": 225
+        },
+        {
+          "c": "慎",
+          "startMs": 225,
+          "endMs": 300
+        },
+        {
+          "c": "，",
+          "startMs": 300,
+          "endMs": 375
+        },
+        {
+          "c": "他",
+          "startMs": 375,
+          "endMs": 450
+        },
+        {
+          "c": "决",
+          "startMs": 450,
+          "endMs": 525
+        },
+        {
+          "c": "定",
+          "startMs": 525,
+          "endMs": 600
+        },
+        {
+          "c": "先",
+          "startMs": 600,
+          "endMs": 675
+        },
+        {
+          "c": "带",
+          "startMs": 675,
+          "endMs": 750
+        },
+        {
+          "c": "队",
+          "startMs": 750,
+          "endMs": 825
+        },
+        {
+          "c": "退",
+          "startMs": 825,
+          "endMs": 900
+        },
+        {
+          "c": "去",
+          "startMs": 900,
+          "endMs": 975
+        },
+        {
+          "c": "，",
+          "startMs": 975,
+          "endMs": 1050
+        },
+        {
+          "c": "再",
+          "startMs": 1050,
+          "endMs": 1125
+        },
+        {
+          "c": "观",
+          "startMs": 1125,
+          "endMs": 1200
+        },
+        {
+          "c": "察",
+          "startMs": 1200,
+          "endMs": 1275
+        },
+        {
+          "c": "情",
+          "startMs": 1275,
+          "endMs": 1350
+        },
+        {
+          "c": "况",
+          "startMs": 1350,
+          "endMs": 1425
+        },
+        {
+          "c": "。",
+          "startMs": 1425,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 3,
       "sentIndex": 2,
       "text": "城里的人仍按诸葛亮的安排站好，没有大声欢呼。",
       "audioPath": "audio/p4_s3.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "城",
+          "startMs": 0,
+          "endMs": 68
+        },
+        {
+          "c": "里",
+          "startMs": 68,
+          "endMs": 136
+        },
+        {
+          "c": "的",
+          "startMs": 136,
+          "endMs": 205
+        },
+        {
+          "c": "人",
+          "startMs": 205,
+          "endMs": 273
+        },
+        {
+          "c": "仍",
+          "startMs": 273,
+          "endMs": 341
+        },
+        {
+          "c": "按",
+          "startMs": 341,
+          "endMs": 409
+        },
+        {
+          "c": "诸",
+          "startMs": 409,
+          "endMs": 477
+        },
+        {
+          "c": "葛",
+          "startMs": 477,
+          "endMs": 545
+        },
+        {
+          "c": "亮",
+          "startMs": 545,
+          "endMs": 614
+        },
+        {
+          "c": "的",
+          "startMs": 614,
+          "endMs": 682
+        },
+        {
+          "c": "安",
+          "startMs": 682,
+          "endMs": 750
+        },
+        {
+          "c": "排",
+          "startMs": 750,
+          "endMs": 818
+        },
+        {
+          "c": "站",
+          "startMs": 818,
+          "endMs": 886
+        },
+        {
+          "c": "好",
+          "startMs": 886,
+          "endMs": 955
+        },
+        {
+          "c": "，",
+          "startMs": 955,
+          "endMs": 1023
+        },
+        {
+          "c": "没",
+          "startMs": 1023,
+          "endMs": 1091
+        },
+        {
+          "c": "有",
+          "startMs": 1091,
+          "endMs": 1159
+        },
+        {
+          "c": "大",
+          "startMs": 1159,
+          "endMs": 1227
+        },
+        {
+          "c": "声",
+          "startMs": 1227,
+          "endMs": 1295
+        },
+        {
+          "c": "欢",
+          "startMs": 1295,
+          "endMs": 1364
+        },
+        {
+          "c": "呼",
+          "startMs": 1364,
+          "endMs": 1432
+        },
+        {
+          "c": "。",
+          "startMs": 1432,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 4,
       "sentIndex": 0,
       "text": "等城外安静下来，大家才松了一口气。",
       "audioPath": "audio/p5_s1.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "等",
+          "startMs": 0,
+          "endMs": 88
+        },
+        {
+          "c": "城",
+          "startMs": 88,
+          "endMs": 176
+        },
+        {
+          "c": "外",
+          "startMs": 176,
+          "endMs": 265
+        },
+        {
+          "c": "安",
+          "startMs": 265,
+          "endMs": 353
+        },
+        {
+          "c": "静",
+          "startMs": 353,
+          "endMs": 441
+        },
+        {
+          "c": "下",
+          "startMs": 441,
+          "endMs": 529
+        },
+        {
+          "c": "来",
+          "startMs": 529,
+          "endMs": 618
+        },
+        {
+          "c": "，",
+          "startMs": 618,
+          "endMs": 706
+        },
+        {
+          "c": "大",
+          "startMs": 706,
+          "endMs": 794
+        },
+        {
+          "c": "家",
+          "startMs": 794,
+          "endMs": 882
+        },
+        {
+          "c": "才",
+          "startMs": 882,
+          "endMs": 971
+        },
+        {
+          "c": "松",
+          "startMs": 971,
+          "endMs": 1059
+        },
+        {
+          "c": "了",
+          "startMs": 1059,
+          "endMs": 1147
+        },
+        {
+          "c": "一",
+          "startMs": 1147,
+          "endMs": 1235
+        },
+        {
+          "c": "口",
+          "startMs": 1235,
+          "endMs": 1324
+        },
+        {
+          "c": "气",
+          "startMs": 1324,
+          "endMs": 1412
+        },
+        {
+          "c": "。",
+          "startMs": 1412,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 4,
       "sentIndex": 1,
       "text": "诸葛亮告诉他们，越是紧张，越要让心稳住。",
       "audioPath": "audio/p5_s2.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "诸",
+          "startMs": 0,
+          "endMs": 75
+        },
+        {
+          "c": "葛",
+          "startMs": 75,
+          "endMs": 150
+        },
+        {
+          "c": "亮",
+          "startMs": 150,
+          "endMs": 225
+        },
+        {
+          "c": "告",
+          "startMs": 225,
+          "endMs": 300
+        },
+        {
+          "c": "诉",
+          "startMs": 300,
+          "endMs": 375
+        },
+        {
+          "c": "他",
+          "startMs": 375,
+          "endMs": 450
+        },
+        {
+          "c": "们",
+          "startMs": 450,
+          "endMs": 525
+        },
+        {
+          "c": "，",
+          "startMs": 525,
+          "endMs": 600
+        },
+        {
+          "c": "越",
+          "startMs": 600,
+          "endMs": 675
+        },
+        {
+          "c": "是",
+          "startMs": 675,
+          "endMs": 750
+        },
+        {
+          "c": "紧",
+          "startMs": 750,
+          "endMs": 825
+        },
+        {
+          "c": "张",
+          "startMs": 825,
+          "endMs": 900
+        },
+        {
+          "c": "，",
+          "startMs": 900,
+          "endMs": 975
+        },
+        {
+          "c": "越",
+          "startMs": 975,
+          "endMs": 1050
+        },
+        {
+          "c": "要",
+          "startMs": 1050,
+          "endMs": 1125
+        },
+        {
+          "c": "让",
+          "startMs": 1125,
+          "endMs": 1200
+        },
+        {
+          "c": "心",
+          "startMs": 1200,
+          "endMs": 1275
+        },
+        {
+          "c": "稳",
+          "startMs": 1275,
+          "endMs": 1350
+        },
+        {
+          "c": "住",
+          "startMs": 1350,
+          "endMs": 1425
+        },
+        {
+          "c": "。",
+          "startMs": 1425,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 4,
       "sentIndex": 2,
       "text": "空城计靠的正是沉着和判断。",
       "audioPath": "audio/p5_s3.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "空",
+          "startMs": 0,
+          "endMs": 115
+        },
+        {
+          "c": "城",
+          "startMs": 115,
+          "endMs": 231
+        },
+        {
+          "c": "计",
+          "startMs": 231,
+          "endMs": 346
+        },
+        {
+          "c": "靠",
+          "startMs": 346,
+          "endMs": 462
+        },
+        {
+          "c": "的",
+          "startMs": 462,
+          "endMs": 577
+        },
+        {
+          "c": "正",
+          "startMs": 577,
+          "endMs": 692
+        },
+        {
+          "c": "是",
+          "startMs": 692,
+          "endMs": 808
+        },
+        {
+          "c": "沉",
+          "startMs": 808,
+          "endMs": 923
+        },
+        {
+          "c": "着",
+          "startMs": 923,
+          "endMs": 1038
+        },
+        {
+          "c": "和",
+          "startMs": 1038,
+          "endMs": 1154
+        },
+        {
+          "c": "判",
+          "startMs": 1154,
+          "endMs": 1269
+        },
+        {
+          "c": "断",
+          "startMs": 1269,
+          "endMs": 1385
+        },
+        {
+          "c": "。",
+          "startMs": 1385,
+          "endMs": 1500
+        }
+      ]
     },
     {
       "paraIndex": 4,
       "sentIndex": 3,
       "text": "遇到难题时，先稳住自己，才有机会想出办法。",
       "audioPath": "audio/p5_s4.wav",
-      "durationMs": 1500
+      "durationMs": 1500,
+      "chars": [
+        {
+          "c": "遇",
+          "startMs": 0,
+          "endMs": 71
+        },
+        {
+          "c": "到",
+          "startMs": 71,
+          "endMs": 143
+        },
+        {
+          "c": "难",
+          "startMs": 143,
+          "endMs": 214
+        },
+        {
+          "c": "题",
+          "startMs": 214,
+          "endMs": 286
+        },
+        {
+          "c": "时",
+          "startMs": 286,
+          "endMs": 357
+        },
+        {
+          "c": "，",
+          "startMs": 357,
+          "endMs": 429
+        },
+        {
+          "c": "先",
+          "startMs": 429,
+          "endMs": 500
+        },
+        {
+          "c": "稳",
+          "startMs": 500,
+          "endMs": 571
+        },
+        {
+          "c": "住",
+          "startMs": 571,
+          "endMs": 643
+        },
+        {
+          "c": "自",
+          "startMs": 643,
+          "endMs": 714
+        },
+        {
+          "c": "己",
+          "startMs": 714,
+          "endMs": 786
+        },
+        {
+          "c": "，",
+          "startMs": 786,
+          "endMs": 857
+        },
+        {
+          "c": "才",
+          "startMs": 857,
+          "endMs": 929
+        },
+        {
+          "c": "有",
+          "startMs": 929,
+          "endMs": 1000
+        },
+        {
+          "c": "机",
+          "startMs": 1000,
+          "endMs": 1071
+        },
+        {
+          "c": "会",
+          "startMs": 1071,
+          "endMs": 1143
+        },
+        {
+          "c": "想",
+          "startMs": 1143,
+          "endMs": 1214
+        },
+        {
+          "c": "出",
+          "startMs": 1214,
+          "endMs": 1286
+        },
+        {
+          "c": "办",
+          "startMs": 1286,
+          "endMs": 1357
+        },
+        {
+          "c": "法",
+          "startMs": 1357,
+          "endMs": 1429
+        },
+        {
+          "c": "。",
+          "startMs": 1429,
+          "endMs": 1500
+        }
+      ]
     }
   ]
 }

@@ -118,6 +118,12 @@ private class AndroidAudioService(
         }
     }
 
+    override fun currentPositionMillis(): Long? = synchronized(lock) {
+        runCatching {
+            mediaPlayer?.takeIf { it.isPlaying }?.currentPosition?.toLong()
+        }.getOrNull()
+    }
+
     private fun resolveAudioFile(resourcePath: String): File {
         val directFile = File(resourcePath)
         if (directFile.exists()) return directFile

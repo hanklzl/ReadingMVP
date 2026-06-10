@@ -44,6 +44,37 @@ class StoryAudioManifestTest {
     }
 
     @Test
+    fun decodesPerCharacterKaraokeTimings() {
+        val manifest = StoryAudioJson.decodeManifest(
+            """
+            {
+              "sentences": [
+                {
+                  "paraIndex": 0,
+                  "sentIndex": 0,
+                  "text": "好，吗",
+                  "audioPath": "audio/p1_s1.wav",
+                  "durationMs": 1000,
+                  "chars": [
+                    { "c": "好", "startMs": 0, "endMs": 400 },
+                    { "c": "，", "startMs": 400, "endMs": 600 },
+                    { "c": "吗", "startMs": 600, "endMs": 1000 }
+                  ]
+                }
+              ]
+            }
+            """.trimIndent(),
+            storyId = "sample",
+        )
+
+        val segment = manifest.segmentFor(paragraphIndex = 0, sentenceIndex = 0)
+        assertEquals(3, segment?.chars?.size)
+        assertEquals("好", segment?.chars?.first()?.c)
+        assertEquals(0L, segment?.chars?.first()?.startMillis)
+        assertEquals(1000L, segment?.chars?.last()?.endMillis)
+    }
+
+    @Test
     fun loadAudioManifestReturnsEmptyWhenSidecarIsMissing() = runTest {
         val reader = MapStoryResourceReader(
             resources = mapOf(

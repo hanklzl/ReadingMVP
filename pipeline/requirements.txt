@@ -3,3 +3,9 @@ jsonschema>=4.23.0
 pypinyin>=0.51.0
 requests>=2.32.3
 pytest>=8.3.0
+
+# Optional local TTS + forced-alignment stack (LMC_TTS_PROVIDER=qwen).
+# Heavy (~GBs of model weights); NOT needed for mock generation or validation.
+# Install only when generating real audio:
+#   pip install -r requirements-qwen.txt
+# See requirements-qwen.txt for the pinned versions.

@@ -24,6 +24,14 @@ interface AudioService {
     suspend fun pause()
 
     suspend fun stop()
+
+    /**
+     * Current playback position of the active clip in milliseconds, or `null`
+     * when nothing is playing / unsupported. Used by the karaoke highlight to
+     * resolve the active character from the manifest timings. Polling-friendly:
+     * implementations should return quickly and never throw.
+     */
+    fun currentPositionMillis(): Long? = null
 }
 
 object NoOpAudioService : AudioService {
@@ -32,6 +40,8 @@ object NoOpAudioService : AudioService {
     override suspend fun pause() = Unit
 
     override suspend fun stop() = Unit
+
+    override fun currentPositionMillis(): Long? = null
 }
 
 fun sentenceAudioResourcePath(

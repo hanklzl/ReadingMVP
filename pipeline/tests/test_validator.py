@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 
 from validator.validate import count_hanzi, validate_story_file
-from transformer.audio import build_sentence_plan
+from transformer.audio import build_sentence_plan, even_char_timings
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -97,6 +97,7 @@ class ValidatorTest(unittest.TestCase):
             if key in unavailable:
                 entry["unavailable"] = True
             else:
+                entry["chars"] = even_char_timings(expected["text"], 500)
                 self.write_wav(audio_path)
 
             entries.append(entry)
@@ -216,6 +217,51 @@ class ValidatorTest(unittest.TestCase):
 
         self.assertFalse(result.passed)
         self.assertIn("missing audio file", "\n".join(result.errors))
+
+    def test_audio_manifest_fails_when_chars_missing(self):
+        story = build_story()
+        story_path = self.write_story(story)
+
+        manifest_path = story_path.parent / "audio.json"
+        payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+        del payload["sentences"][0]["chars"]
+        manifest_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+        result = validate_story_file(story_path, SCHEMA_PATH)
+
+        self.assertFalse(result.passed)
+        self.assertIn("missing chars timing array", "\n".join(result.errors))
+
+    def test_audio_manifest_fails_when_chars_misaligned_with_text(self):
+        story = build_story()
+        story_path = self.write_story(story)
+
+        manifest_path = story_path.parent / "audio.json"
+        payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+        payload["sentences"][0]["chars"][0]["c"] = "错"
+        manifest_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+        result = validate_story_file(story_path, SCHEMA_PATH)
+
+        self.assertFalse(result.passed)
+        self.assertIn("chars[0] c must equal text character", "\n".join(result.errors))
+
+    def test_audio_manifest_fails_when_chars_timings_not_monotonic(self):
+        story = build_story()
+        story_path = self.write_story(story)
+
+        manifest_path = story_path.parent / "audio.json"
+        payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+        # Make the second char start before the first char ends.
+        payload["sentences"][0]["chars"][0]["endMs"] = 400
+        payload["sentences"][0]["chars"][1]["startMs"] = 10
+        payload["sentences"][0]["chars"][1]["endMs"] = 420
+        manifest_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+        result = validate_story_file(story_path, SCHEMA_PATH)
+
+        self.assertFalse(result.passed)
+        self.assertIn("must not precede previous endMs", "\n".join(result.errors))
 
 
 if __name__ == "__main__":
