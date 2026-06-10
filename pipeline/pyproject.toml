@@ -16,9 +16,12 @@ test = [
 ]
 # Local open-source TTS + forced alignment (LMC_TTS_PROVIDER=qwen).
 # Heavy model weights; only needed for real audio generation, not mock/validation.
+# NOTE: latest qwen-asr is 0.0.6 (no 0.1.x). On Intel macOS torch ships no wheel
+# past 2.2.2 (CPython 3.8-3.12 only) -> use Python 3.12 + torch==2.2.2 there.
+# See requirements-qwen.txt for the full platform note and transformers pin clash.
 qwen = [
-    "qwen-tts>=0.1.0",
-    "qwen-asr>=0.1.0",
+    "qwen-tts>=0.1.1",
+    "qwen-asr>=0.0.6",
     "torch>=2.2.0",
     "soundfile>=0.12.1",
 ]

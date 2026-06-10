@@ -364,9 +364,10 @@ class QwenAudioProvider:
     """Local Qwen3-TTS provider (open-source, CPU-capable).
 
     Wraps the ``qwen-tts`` package's ``Qwen3TTSModel`` (model id
-    ``Qwen/Qwen3-TTS-12Hz-0.6B-Base`` by default). The model id, voice/speaker,
-    reference audio (for voice cloning) and language are all read from config /
-    env so nothing is hard-coded. ``torch``/``qwen-tts`` are imported lazily so
+    ``Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice`` by default, speaker ``Serena``). The
+    model id, voice/speaker, reference audio (for voice cloning) and language are
+    all read from config / env so nothing is hard-coded. ``torch``/``qwen-tts``
+    are imported lazily so
     this module still loads (and the mock path still runs) when the heavyweight
     dependencies are absent.
 
@@ -562,8 +563,13 @@ def build_audio_provider(
 
     if configured == "qwen":
         return QwenAudioProvider(
-            model_id=os.getenv("LMC_TTS_MODEL", "Qwen/Qwen3-TTS-12Hz-0.6B-Base"),
-            voice=os.getenv("LMC_TTS_VOICE") or None,
+            # Default to the CustomVoice 1.7B checkpoint (preset speakers, no ref
+            # audio needed). "Serena" is the warm, gentle young-female Mandarin
+            # speaker best suited to telling stories to young children. Override
+            # via LMC_TTS_MODEL / LMC_TTS_VOICE; set LMC_TTS_REF_AUDIO to switch
+            # to a *-Base voice-clone checkpoint instead.
+            model_id=os.getenv("LMC_TTS_MODEL", "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice"),
+            voice=os.getenv("LMC_TTS_VOICE") or "Serena",
             language=os.getenv("LMC_TTS_LANGUAGE", "Chinese"),
             ref_audio=os.getenv("LMC_TTS_REF_AUDIO") or None,
             ref_text=os.getenv("LMC_TTS_REF_TEXT") or None,
