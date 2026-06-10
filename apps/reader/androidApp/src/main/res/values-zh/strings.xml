@@ -59,6 +59,8 @@
     <string name="action_open_parent_report">打开家长报告</string>
     <string name="action_open_privacy">打开隐私说明</string>
     <string name="action_play_audio">播放朗读</string>
+    <string name="action_pause_audio">暂停朗读</string>
+    <string name="action_resume_audio">继续朗读</string>
     <string name="action_stop_audio">停止朗读</string>
     <string name="action_text_size_decrease">减小字号</string>
     <string name="action_text_size_default">默认字号</string>
@@ -147,6 +149,13 @@
     <string name="reading_text_size_large">大</string>
     <string name="reading_audio">朗读</string>
     <string name="reading_read_all">朗读全文</string>
+    <string name="reading_next_sentence">下一句</string>
+    <string name="reading_sentence_progress">第 %1$d / %2$d 句</string>
+    <string name="reading_audio_playing">播放中</string>
+    <string name="reading_audio_paused">已暂停</string>
+    <string name="reading_audio_stopped">已停止</string>
+    <string name="reading_audio_source_generated">录制音频</string>
+    <string name="reading_audio_source_tts">系统朗读</string>
     <string name="reading_progress_count">%1$d / %2$d</string>
     <string name="reading_progress_accessibility">第 %1$d 页，共 %2$d 页</string>
     <string name="reading_saved_progress">阅读进度已保存。</string>

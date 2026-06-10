@@ -47,13 +47,15 @@ object ReaderAnalyticsEvents {
         storyId: String,
         paragraphIndex: Int,
         audioSource: String = "tts",
+        sentenceIndex: Int? = null,
     ): AnalyticsEventPayload = payload(
         eventName = AnalyticsEventName.ParagraphAudioPlay,
-        properties = mapOf(
-            "story_id" to AnalyticsProperties.string(storyId),
-            "paragraph_index" to AnalyticsProperties.int(paragraphIndex),
-            "audio_source" to AnalyticsProperties.string(audioSource),
-        ),
+        properties = buildMap {
+            put("story_id", AnalyticsProperties.string(storyId))
+            put("paragraph_index", AnalyticsProperties.int(paragraphIndex))
+            put("audio_source", AnalyticsProperties.string(audioSource))
+            sentenceIndex?.let { put("sentence_index", AnalyticsProperties.int(it)) }
+        },
     )
 
     fun pinyinToggle(

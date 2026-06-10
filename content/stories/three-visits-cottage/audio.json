@@ -1,0 +1,130 @@
+{
+  "sentences": [
+    {
+      "paraIndex": 0,
+      "sentIndex": 0,
+      "text": "刘备听说隆中有位诸葛亮，读书多，主意好，心里十分敬佩。",
+      "audioPath": "audio/p1_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 0,
+      "sentIndex": 1,
+      "text": "他想请诸葛亮一起帮助百姓，便带着关羽、张飞去拜访。",
+      "audioPath": "audio/p1_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 0,
+      "sentIndex": 2,
+      "text": "山路弯弯，草木安静，刘备一路上都在想怎样把来意说清楚。",
+      "audioPath": "audio/p1_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 0,
+      "text": "第一次到茅庐，诸葛亮不在家。",
+      "audioPath": "audio/p2_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 1,
+      "text": "刘备没有生气，只留下问候。",
+      "audioPath": "audio/p2_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 2,
+      "text": "第二次再去，还是没有见到。",
+      "audioPath": "audio/p2_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 3,
+      "text": "张飞有些着急，刘备却说，请教贤人要有耐心。",
+      "audioPath": "audio/p2_s4.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 4,
+      "text": "关羽也点点头，提醒大家说话要轻，脚步要稳。",
+      "audioPath": "audio/p2_s5.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 0,
+      "text": "第三次，三人又来到茅庐。",
+      "audioPath": "audio/p3_s1.wav",
+      "durationMs": 1490
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 1,
+      "text": "刘备先在门外等候，怕打扰主人休息。",
+      "audioPath": "audio/p3_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 2,
+      "text": "等诸葛亮醒来，他才恭恭敬敬地说明来意。",
+      "audioPath": "audio/p3_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 3,
+      "text": "他没有催促，也没有摆架子，只把心里的愿望认真讲出来。",
+      "audioPath": "audio/p3_s4.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 0,
+      "text": "诸葛亮看见刘备这样尊重别人，也愿意认真交谈。",
+      "audioPath": "audio/p4_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 1,
+      "text": "他们谈到天下百姓，谈到怎样让更多人过安稳日子，越谈越投合。",
+      "audioPath": "audio/p4_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 2,
+      "text": "屋外风吹竹叶，屋里的人却越说越明白。",
+      "audioPath": "audio/p4_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 0,
+      "text": "后来，诸葛亮决定帮助刘备。",
+      "audioPath": "audio/p5_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 1,
+      "text": "三顾茅庐的故事告诉我们，真诚不是一句话，而是一次又一次有礼貌地坚持。",
+      "audioPath": "audio/p5_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 2,
+      "text": "想请别人帮助时，先学会尊重别人，也学会把目标说得清清楚楚。",
+      "audioPath": "audio/p5_s3.wav",
+      "durationMs": 1500
+    }
+  ]
+}

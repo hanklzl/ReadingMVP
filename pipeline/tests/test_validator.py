@@ -1,9 +1,12 @@
 import json
+import struct
+import wave
 import tempfile
 import unittest
 from pathlib import Path
 
 from validator.validate import count_hanzi, validate_story_file
+from transformer.audio import build_sentence_plan
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -71,10 +74,49 @@ def build_story(**overrides):
 
 
 class ValidatorTest(unittest.TestCase):
+    def write_audio_manifest(self, story_dir: Path, story: dict, *, unavailable: set[tuple[int, int]] | None = None) -> None:
+        if unavailable is None:
+            unavailable = set()
+
+        audio_dir = story_dir / "audio"
+        audio_dir.mkdir(parents=True, exist_ok=True)
+
+        entries = []
+        for expected in build_sentence_plan(story.get("paragraphs", [])):
+            key = (expected["paraIndex"], expected["sentIndex"])
+            audio_path = story_dir / expected["audioPath"]
+
+            entry = {
+                "paraIndex": expected["paraIndex"],
+                "sentIndex": expected["sentIndex"],
+                "text": expected["text"],
+                "audioPath": expected["audioPath"],
+                "durationMs": 500,
+            }
+
+            if key in unavailable:
+                entry["unavailable"] = True
+            else:
+                self.write_wav(audio_path)
+
+            entries.append(entry)
+
+        (story_dir / "audio.json").write_text(json.dumps({"sentences": entries}, ensure_ascii=False) + "\n", encoding="utf-8")
+
+    def write_wav(self, path: Path) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with wave.open(str(path), "wb") as wav:
+            wav.setnchannels(1)
+            wav.setsampwidth(2)
+            wav.setframerate(22050)
+            wav.writeframes(b"\x00\x00" * 22050)
+
     def write_story(self, story):
         temp_dir = tempfile.TemporaryDirectory()
-        story_path = Path(temp_dir.name) / "story.json"
+        story_dir = Path(temp_dir.name)
+        story_path = story_dir / "story.json"
         story_path.write_text(json.dumps(story, ensure_ascii=False), encoding="utf-8")
+        self.write_audio_manifest(story_dir, story)
         self.addCleanup(temp_dir.cleanup)
         return story_path
 
@@ -145,6 +187,35 @@ class ValidatorTest(unittest.TestCase):
         self.assertFalse(result.passed)
         self.assertIn("paragraph 1 cell 1 hanzi '桃' must have non-empty pinyin", result.errors)
         self.assertIn("paragraph 1 cell 3 non-hanzi '，' must have empty pinyin", result.errors)
+
+    def test_audio_manifest_fails_when_entry_text_is_incorrect(self):
+        story = build_story()
+        story_path = self.write_story(story)
+
+        with open(story_path.parent / "audio.json", "r+", encoding="utf-8") as handle:
+            payload = json.loads(handle.read())
+            payload["sentences"][0]["text"] = "被改坏的句子"
+            handle.seek(0)
+            handle.truncate(0)
+            handle.write(json.dumps(payload, ensure_ascii=False, indent=2) + "\n")
+
+        result = validate_story_file(story_path, SCHEMA_PATH)
+
+        self.assertFalse(result.passed)
+        self.assertIn("text mismatch", result.errors[0] if result.errors else "")
+
+    def test_audio_manifest_fails_when_file_missing(self):
+        story = build_story()
+        story_path = self.write_story(story)
+
+        payload = json.loads((story_path.parent / "audio.json").read_text(encoding="utf-8"))
+        payload["sentences"][0]["audioPath"] = "audio/missing.wav"
+        (story_path.parent / "audio.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+        result = validate_story_file(story_path, SCHEMA_PATH)
+
+        self.assertFalse(result.passed)
+        self.assertIn("missing audio file", "\n".join(result.errors))
 
 
 if __name__ == "__main__":

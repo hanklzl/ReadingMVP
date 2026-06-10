@@ -1,0 +1,123 @@
+{
+  "sentences": [
+    {
+      "paraIndex": 0,
+      "sentIndex": 0,
+      "text": "长坂坡上，许多百姓正在赶路。",
+      "audioPath": "audio/p1_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 0,
+      "sentIndex": 1,
+      "text": "人多路窄，队伍一时被挤散。",
+      "audioPath": "audio/p1_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 0,
+      "sentIndex": 2,
+      "text": "刘备听说家人没有跟上，心里很着急。",
+      "audioPath": "audio/p1_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 0,
+      "sentIndex": 3,
+      "text": "他请大家先照看老人和孩子，不要因为担心就乱成一团。",
+      "audioPath": "audio/p1_s4.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 0,
+      "text": "赵云知道后，立刻让自己冷静下来。",
+      "audioPath": "audio/p2_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 1,
+      "text": "他没有乱跑，而是沿着来路仔细寻找，一边问人，一边注意孩子可能经过的地方。",
+      "audioPath": "audio/p2_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 2,
+      "text": "有人指给他一个方向，他就记在心里，再继续向前。",
+      "audioPath": "audio/p2_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 0,
+      "text": "路上声音很多，尘土也多。",
+      "audioPath": "audio/p3_s1.wav",
+      "durationMs": 1490
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 1,
+      "text": "赵云仍然记得自己的责任：先找到孩子，再把孩子平安送回。",
+      "audioPath": "audio/p3_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 2,
+      "text": "他把小主人护在怀里，慢慢穿过人群。",
+      "audioPath": "audio/p3_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 3,
+      "text": "遇到拥挤的地方，他就放慢脚步，先让旁人过去。",
+      "audioPath": "audio/p3_s4.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 0,
+      "text": "终于，赵云回到刘备身边，把孩子交给他。",
+      "audioPath": "audio/p4_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 1,
+      "text": "刘备看见孩子平安，十分感动，也感谢赵云一路守护。",
+      "audioPath": "audio/p4_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 2,
+      "text": "周围的人也安静下来，知道只要彼此照应，就能走过乱糟糟的时刻。",
+      "audioPath": "audio/p4_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 0,
+      "text": "长坂坡的故事告诉我们，勇敢不只是快和猛。",
+      "audioPath": "audio/p5_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 1,
+      "text": "真正的勇敢，是在大家慌乱时保持冷静，记住要守护的人。",
+      "audioPath": "audio/p5_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 2,
+      "text": "越是紧急，越要先想清楚下一步，这样才能把重要的人安全带回。",
+      "audioPath": "audio/p5_s3.wav",
+      "durationMs": 1500
+    }
+  ]
+}

@@ -9,6 +9,8 @@ from typing import Any, Iterable
 
 from jsonschema import Draft202012Validator
 
+from transformer.audio import build_sentence_plan, read_audio_manifest
+
 
 HANZI_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]")
 HANZI_CHAR_RE = re.compile(r"^[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]$")
@@ -24,6 +26,7 @@ class ValidationResult:
     paragraph_count: int
     vocab_count: int
     question_count: int
+    audio_entry_count: int
 
 
 def count_hanzi(text: str) -> int:
@@ -112,6 +115,9 @@ def validate_story(story: dict[str, Any], schema: dict[str, Any], path: Path | N
         if not str(story.get(key, "")).strip():
             errors.append(f"{key} must be non-empty")
 
+    audio_errors = validate_audio_manifest(story, path)
+    errors.extend(audio_errors)
+
     for index, item in enumerate(vocab, start=1):
         if not isinstance(item, dict):
             errors.append(f"vocab {index} must be an object")
@@ -142,7 +148,143 @@ def validate_story(story: dict[str, Any], schema: dict[str, Any], path: Path | N
         paragraph_count=len(paragraphs),
         vocab_count=len(vocab),
         question_count=len(questions),
+        audio_entry_count=count_audio_entries(path),
     )
+
+
+def validate_audio_manifest(story: dict[str, Any], path: Path | None) -> list[str]:
+    if path is None:
+        return ["audio manifest validation requires story path"]
+
+    manifest_path = path.parent / "audio.json"
+    if not manifest_path.exists():
+        return [f"{path.parent.name} missing audio.json"]
+
+    try:
+        actual_entries = read_audio_manifest(manifest_path)
+    except Exception as exc:
+        return [f"audio.json in {path.parent.name} is invalid: {exc}"]
+
+    expected_plan = build_sentence_plan(story.get("paragraphs", []) if isinstance(story.get("paragraphs"), list) else [])
+
+    if len(actual_entries) != len(expected_plan):
+        return [
+            f"{path.parent.name} audio entry count mismatch: expected {len(expected_plan)} "
+            f"but got {len(actual_entries)}"
+        ]
+
+    errors: list[str] = []
+    actual_by_key: dict[tuple[int, int], dict[str, Any]] = {}
+    for index, entry in enumerate(actual_entries):
+        if not isinstance(entry, dict):
+            errors.append(f"{path.parent.name} audio entry #{index} must be an object")
+            continue
+
+        para_index = entry.get("paraIndex")
+        sent_index = entry.get("sentIndex")
+
+        if not isinstance(para_index, int) or para_index < 0:
+            errors.append(f"{path.parent.name} audio entry #{index}: paraIndex must be an integer >= 0")
+            continue
+        if not isinstance(sent_index, int) or sent_index < 0:
+            errors.append(f"{path.parent.name} audio entry #{index}: sentIndex must be an integer >= 0")
+            continue
+
+        key = (para_index, sent_index)
+        if key in actual_by_key:
+            errors.append(
+                f"{path.parent.name} audio has duplicate entry for paraIndex={para_index}, sentIndex={sent_index}"
+            )
+            continue
+
+        actual_by_key[key] = entry
+
+    if errors:
+        return errors
+
+    for expected in expected_plan:
+        key = (expected["paraIndex"], expected["sentIndex"])
+        entry = actual_by_key.get(key)
+        if entry is None:
+            errors.append(
+                f"{path.parent.name} missing audio entry paraIndex={expected['paraIndex']}, sentIndex={expected['sentIndex']}"
+            )
+            continue
+
+        expected_text = expected["text"]
+        actual_text = str(entry.get("text", "")).strip()
+        if actual_text != expected_text:
+            errors.append(
+                f"{path.parent.name} paraIndex={expected['paraIndex']}, sentIndex={expected['sentIndex']} text mismatch: "
+                f"expected {expected_text!r}, got {actual_text!r}"
+            )
+
+        audio_path = entry.get("audioPath")
+        unavailable = entry.get("unavailable", False)
+        if unavailable is not False and unavailable is not True:
+            errors.append(
+                f"{path.parent.name} paraIndex={expected['paraIndex']}, sentIndex={expected['sentIndex']}: "
+                "unavailable must be true when present"
+            )
+
+        if unavailable:
+            continue
+
+        if not isinstance(audio_path, str):
+            errors.append(
+                f"{path.parent.name} paraIndex={expected['paraIndex']}, sentIndex={expected['sentIndex']} "
+                "missing audioPath"
+            )
+            continue
+
+        rel_path = Path(audio_path)
+        if rel_path.is_absolute() or ".." in rel_path.parts:
+            errors.append(
+                f"{path.parent.name} paraIndex={expected['paraIndex']}, sentIndex={expected['sentIndex']} has invalid audioPath {audio_path!r}"
+            )
+            continue
+
+        if rel_path.as_posix() != expected["audioPath"]:
+            errors.append(
+                f"{path.parent.name} paraIndex={expected['paraIndex']}, sentIndex={expected['sentIndex']} "
+                f"audioPath mismatch: expected {expected['audioPath']!r}, got {audio_path!r}"
+            )
+
+        audio_file = path.parent / rel_path
+        if not audio_file.exists() or not audio_file.is_file():
+            errors.append(
+                f"{path.parent.name} paraIndex={expected['paraIndex']}, sentIndex={expected['sentIndex']} missing audio file {audio_path!r}"
+            )
+
+        duration_ms = entry.get("durationMs")
+        if not isinstance(duration_ms, int) or duration_ms < 0:
+            errors.append(
+                f"{path.parent.name} paraIndex={expected['paraIndex']}, sentIndex={expected['sentIndex']} "
+                "durationMs must be an integer >= 0"
+            )
+
+    expected_keys = {(item["paraIndex"], item["sentIndex"]) for item in expected_plan}
+    for extra_key, entry in sorted(actual_by_key.items(), key=lambda item: item[0]):
+        key = extra_key
+        if key not in expected_keys:
+            errors.append(
+                f"{path.parent.name} has extra audio entry paraIndex={key[0]}, sentIndex={key[1]}, "
+                f"text {entry.get('text', '')!r}"
+            )
+
+    return errors
+
+
+def count_audio_entries(path: Path | None) -> int:
+    if path is None:
+        return 0
+    manifest_path = path.parent / "audio.json"
+    if not manifest_path.exists():
+        return 0
+    try:
+        return len(read_audio_manifest(manifest_path))
+    except Exception:
+        return 0
 
 
 def validate_story_file(story_path: Path, schema_path: Path) -> ValidationResult:

@@ -5,10 +5,13 @@ import json
 from pathlib import Path
 from typing import Any
 
+import shutil
+
 from pypinyin import Style, load_phrases_dict, pinyin
 
 from source_catalog import SOURCE_RECORDS, STORY_IDS
 from transformer.story_data import STORY_DRAFTS
+from transformer.audio import generate_audio_manifest
 
 
 SOURCE_NOTE_DEFAULT = "Based on public-domain 《三国演义》, rewritten for children."
@@ -171,7 +174,18 @@ def safety_review(story: dict[str, Any], source_exists: bool) -> str:
     )
 
 
-def generate_story(draft: dict[str, Any], stories_dir: Path, sources_dir: Path) -> Path:
+def generate_story(
+    draft: dict[str, Any],
+    stories_dir: Path,
+    sources_dir: Path,
+    *,
+    audio: bool = False,
+    audio_provider: str | None = None,
+    mock_audio: bool = False,
+    allow_missing_provider: bool = False,
+    sync_app_resources: bool = False,
+    app_stories_dir: Path | None = None,
+) -> Path:
     story = build_story(draft)
     story_dir = stories_dir / story["id"]
     story_dir.mkdir(parents=True, exist_ok=True)
@@ -182,6 +196,23 @@ def generate_story(draft: dict[str, Any], stories_dir: Path, sources_dir: Path) 
 
     source_exists = (sources_dir / story["id"] / "source.md").exists()
     (story_dir / "safety-review.md").write_text(safety_review(story, source_exists), encoding="utf-8")
+
+    if audio:
+        generate_audio_manifest(
+            story,
+            story_dir,
+            provider=audio_provider,
+            use_mock=mock_audio,
+            allow_missing_provider=allow_missing_provider,
+        )
+
+    if sync_app_resources and app_stories_dir is not None:
+        sync_audio_assets_to_resources(
+            story_id=story["id"],
+            stories_dir=stories_dir,
+            app_resources_dir=app_stories_dir,
+        )
+
     return story_path
 
 
@@ -194,8 +225,53 @@ def selected_drafts(ids: list[str] | None = None) -> list[dict[str, Any]]:
     return [drafts_by_id[story_id] for story_id in wanted]
 
 
-def generate_all(stories_dir: Path, sources_dir: Path, ids: list[str] | None = None) -> list[Path]:
-    return [generate_story(draft, stories_dir, sources_dir) for draft in selected_drafts(ids)]
+def generate_all(
+    stories_dir: Path,
+    sources_dir: Path,
+    ids: list[str] | None = None,
+    *,
+    audio: bool = False,
+    audio_provider: str | None = None,
+    mock_audio: bool = False,
+    allow_missing_provider: bool = False,
+    sync_app_resources: bool = False,
+    app_stories_dir: Path | None = None,
+) -> list[Path]:
+    return [
+        generate_story(
+            draft,
+            stories_dir,
+            sources_dir,
+            audio=audio,
+            audio_provider=audio_provider,
+            mock_audio=mock_audio,
+            allow_missing_provider=allow_missing_provider,
+            sync_app_resources=sync_app_resources,
+            app_stories_dir=app_stories_dir,
+        )
+        for draft in selected_drafts(ids)
+    ]
+
+
+def sync_audio_assets_to_resources(*, story_id: str, stories_dir: Path, app_resources_dir: Path) -> None:
+    source_story_dir = stories_dir / story_id
+    source_audio_json = source_story_dir / "audio.json"
+    source_audio_dir = source_story_dir / "audio"
+
+    if not source_audio_json.exists():
+        raise FileNotFoundError(f"Missing audio manifest for {story_id}: {source_audio_json}")
+
+    target_story_dir = app_resources_dir / story_id
+    target_story_dir.mkdir(parents=True, exist_ok=True)
+
+    target_audio_json = target_story_dir / "audio.json"
+    shutil.copy2(source_audio_json, target_audio_json)
+
+    if source_audio_dir.exists():
+        target_audio_dir = target_story_dir / "audio"
+        if target_audio_dir.exists():
+            shutil.rmtree(target_audio_dir)
+        shutil.copytree(source_audio_dir, target_audio_dir)
 
 
 def add_pinyin_cells_to_story(story: dict[str, Any]) -> dict[str, Any]:
@@ -243,6 +319,29 @@ def main() -> int:
     parser.add_argument("--stories-dir", type=Path, default=Path("content/stories"))
     parser.add_argument("--sources-dir", type=Path, default=Path("content/sources"))
     parser.add_argument("--ids", nargs="*", default=None, help="Optional story ids to generate.")
+    parser.add_argument("--audio", action="store_true", help="Generate per-sentence sentence audio files.")
+    parser.add_argument("--mock", action="store_true", help="Use mock TTS provider for offline generation.")
+    parser.add_argument(
+        "--sync-app-resources",
+        action="store_true",
+        help="Copy generated audio.json and audio/ wavs into apps/reader/shared resources.",
+    )
+    parser.add_argument(
+        "--app-stories-dir",
+        type=Path,
+        default=Path("apps/reader/shared/src/commonMain/resources/stories"),
+        help="App resource story folder for syncing audio outputs.",
+    )
+    parser.add_argument(
+        "--audio-provider",
+        default=None,
+        help="Override LMC_TTS_PROVIDER for audio generation.",
+    )
+    parser.add_argument(
+        "--skip-missing-audio-provider",
+        action="store_true",
+        help="Mark audio entries unavailable instead of failing when provider config is missing.",
+    )
     parser.add_argument(
         "--migrate-cells",
         action="store_true",
@@ -257,9 +356,24 @@ def main() -> int:
         print(f"Migrated cells in {len(paths)} story files")
         return 0
 
-    paths = generate_all(args.stories_dir, args.sources_dir, args.ids)
+    paths = generate_all(
+        args.stories_dir,
+        args.sources_dir,
+        args.ids,
+        audio=args.audio,
+        audio_provider=args.audio_provider,
+        mock_audio=args.mock,
+        allow_missing_provider=args.skip_missing_audio_provider,
+        sync_app_resources=args.sync_app_resources,
+        app_stories_dir=args.app_stories_dir,
+    )
+
+    if args.audio:
+        print(f"Audio processed for {len(paths)} story files")
+
     for path in paths:
         print(path)
+
     print(f"Generated {len(paths)} story files")
     return 0
 

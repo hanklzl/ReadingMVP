@@ -43,6 +43,8 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -151,6 +153,8 @@ import com.littlemandarin.classics.shared.presentation.ReaderSettings
 import com.littlemandarin.classics.shared.presentation.ReaderSettingsService
 import com.littlemandarin.classics.shared.presentation.ReadingSessionReducer
 import com.littlemandarin.classics.shared.presentation.ReadingTextSize
+import com.littlemandarin.classics.shared.presentation.SentenceSegment
+import com.littlemandarin.classics.shared.presentation.SentenceSegmenter
 import com.littlemandarin.classics.shared.presentation.StreakSummary
 import com.littlemandarin.classics.shared.presentation.StreakUseCase
 import com.littlemandarin.classics.shared.presentation.StoryPresentationUseCases
@@ -182,12 +186,16 @@ import com.littlemandarin.classics.shared.service.AiExplanationResponse
 import com.littlemandarin.classics.shared.service.AiServiceConfig
 import com.littlemandarin.classics.shared.service.AiQuestionTypes
 import com.littlemandarin.classics.shared.service.AiService
+import com.littlemandarin.classics.shared.service.AndroidAudioServiceProvider
+import com.littlemandarin.classics.shared.service.AudioService
 import com.littlemandarin.classics.shared.service.AndroidTtsServiceProvider
 import com.littlemandarin.classics.shared.service.TtsService
 import com.littlemandarin.classics.shared.service.createAiService
+import com.littlemandarin.classics.shared.service.createAudioService
 import com.littlemandarin.classics.shared.service.createTtsService
 import com.littlemandarin.classics.shared.story.DefaultStoryRepository
 import com.littlemandarin.classics.shared.story.Paragraph
+import com.littlemandarin.classics.shared.story.PinyinCell
 import com.littlemandarin.classics.shared.story.Question
 import com.littlemandarin.classics.shared.story.Story
 import com.littlemandarin.classics.shared.story.Vocab
@@ -201,8 +209,11 @@ import java.util.Locale
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -218,6 +229,7 @@ class MainActivity : ComponentActivity() {
         AndroidReaderSettingsServiceProvider.initialize(applicationContext)
         AndroidEngagementServiceProvider.initialize(applicationContext)
         AndroidVocabReviewServiceProvider.initialize(applicationContext)
+        AndroidAudioServiceProvider.initialize(applicationContext)
         AndroidTtsServiceProvider.initialize(applicationContext)
 
         setContent {
@@ -387,6 +399,7 @@ private fun ReaderAppContent(
     val progressService = remember { createPlatformProgressService() }
     val streakService = remember { createPlatformStreakService() }
     val vocabReviewService = remember { createPlatformVocabReviewService() }
+    val audioService = remember { createAudioService() }
     val ttsService = remember { createTtsService() }
     val storyPresentationUseCases = remember { StoryPresentationUseCases() }
     val streakUseCase = remember(streakService) { StreakUseCase(streakService) }
@@ -666,6 +679,7 @@ private fun ReaderAppContent(
                         settings = settings,
                         analytics = analytics,
                         aiService = aiService,
+                        audioService = audioService,
                         ttsService = ttsService,
                         initialParagraphIndex = readingPositions[story.id] ?: -1,
                         onClose = { navController.popBackStack() },
@@ -1472,6 +1486,7 @@ private fun ReadingScreen(
     settings: ReaderSettings,
     analytics: ReaderAnalytics,
     aiService: AiService,
+    audioService: AudioService,
     ttsService: TtsService,
     initialParagraphIndex: Int,
     onClose: () -> Unit,
@@ -1491,9 +1506,22 @@ private fun ReadingScreen(
     }
     val paragraphIndex = readingState.paragraphIndex
     val paragraphCount = readingState.paragraphCount
-    var isSpeaking by remember(story.id) { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val paragraph = readingState.currentParagraph
+    val sentenceSegments = remember(paragraph?.text) {
+        paragraph?.let { SentenceSegmenter.segment(it.text) }.orEmpty()
+    }
+    val sentenceCountInParagraph = sentenceSegments.size
+    val listState = rememberLazyListState()
+    var playbackState by remember(story.id) {
+        mutableStateOf(
+            SentencePlaybackUiState(
+                paragraphIndex = paragraphIndex,
+                sentenceCountInParagraph = sentenceCountInParagraph,
+            ),
+        )
+    }
+    var playbackJob by remember(story.id) { mutableStateOf<Job?>(null) }
     val readingType = readingTypeStyles(settings.readingTextSize)
     var aiState by remember(story.id, paragraphIndex) {
         mutableStateOf<AiUiState>(AiUiState.Idle)
@@ -1501,10 +1529,200 @@ private fun ReadingScreen(
     val aiStubText = stringResource(R.string.ai_answer_stub)
     val aiOutOfScopeText = stringResource(R.string.prompt_story_only_reply)
     val buildAiExplanationRequestUseCase = remember { BuildAiExplanationRequestUseCase() }
-    val buildSpeechTextUseCase = remember { BuildSpeechTextUseCase() }
 
     LaunchedEffect(story.id, paragraphIndex) {
         onReadingPositionChange(story.id, paragraphIndex)
+    }
+
+    LaunchedEffect(
+        playbackState.paragraphIndex,
+        playbackState.sentenceIndex,
+        playbackState.status,
+        paragraphIndex,
+        sentenceCountInParagraph,
+    ) {
+        if (
+            playbackState.status != SentencePlaybackStatus.Stopped &&
+            playbackState.paragraphIndex == paragraphIndex &&
+            sentenceCountInParagraph > 0
+        ) {
+            listState.animateScrollToItem(
+                playbackState.sentenceIndex.coerceIn(0, sentenceCountInParagraph - 1),
+            )
+        }
+    }
+
+    fun stopAudioTransport() {
+        playbackJob?.cancel()
+        playbackJob = null
+        scope.launch {
+            audioService.stop()
+            ttsService.stop()
+        }
+    }
+
+    fun stopSentencePlayback() {
+        stopAudioTransport()
+        playbackState = SentencePlaybackUiState(
+            paragraphIndex = paragraphIndex,
+            sentenceCountInParagraph = sentenceCountInParagraph,
+        )
+    }
+
+    fun startSentencePlayback(
+        target: SentencePlaybackTarget,
+        playThroughStory: Boolean = true,
+    ) {
+        if (story.paragraphs.getOrNull(target.paragraphIndex) == null) return
+
+        playbackJob?.cancel()
+        playbackJob = scope.launch {
+            audioService.stop()
+            ttsService.stop()
+
+            var nextTarget: SentencePlaybackTarget? = target
+            while (nextTarget != null) {
+                val activeTarget = nextTarget
+                val targetParagraph = story.paragraphs.getOrNull(activeTarget.paragraphIndex) ?: break
+                val targetSegments = SentenceSegmenter.segment(targetParagraph.text)
+                val sentence = targetSegments.getOrNull(activeTarget.sentenceIndex) ?: break
+                val hasGeneratedAudio = audioService.hasSentenceAudio(
+                    storyId = story.id,
+                    paragraphIndex = activeTarget.paragraphIndex,
+                    sentenceIndex = activeTarget.sentenceIndex,
+                )
+                val audioSource = if (hasGeneratedAudio) {
+                    SentenceAudioSource.Generated
+                } else {
+                    SentenceAudioSource.Tts
+                }
+
+                readingState = readingSessionReducer.stateFor(story, activeTarget.paragraphIndex)
+                playbackState = SentencePlaybackUiState(
+                    status = SentencePlaybackStatus.Playing,
+                    paragraphIndex = activeTarget.paragraphIndex,
+                    sentenceIndex = activeTarget.sentenceIndex,
+                    sentenceCountInParagraph = targetSegments.size,
+                    audioSource = audioSource,
+                    playThroughStory = playThroughStory,
+                )
+                analytics.track(
+                    ReaderAnalyticsEvents.paragraphAudioPlay(
+                        storyId = story.id,
+                        paragraphIndex = activeTarget.paragraphIndex,
+                        audioSource = audioSource.analyticsValue,
+                        sentenceIndex = activeTarget.sentenceIndex,
+                    ),
+                )
+
+                if (hasGeneratedAudio) {
+                    try {
+                        audioService.playSentence(
+                            storyId = story.id,
+                            paragraphIndex = activeTarget.paragraphIndex,
+                            sentenceIndex = activeTarget.sentenceIndex,
+                        )
+                    } catch (cancellation: CancellationException) {
+                        throw cancellation
+                    } catch (_: Throwable) {
+                        playbackState = playbackState.copy(audioSource = SentenceAudioSource.Tts)
+                        analytics.track(
+                            ReaderAnalyticsEvents.paragraphAudioPlay(
+                                storyId = story.id,
+                                paragraphIndex = activeTarget.paragraphIndex,
+                                audioSource = SentenceAudioSource.Tts.analyticsValue,
+                                sentenceIndex = activeTarget.sentenceIndex,
+                            ),
+                        )
+                        ttsService.speak(sentence.text)
+                        delay(estimatedSentencePlaybackMillis(sentence.text))
+                    }
+                } else {
+                    ttsService.speak(sentence.text)
+                    delay(estimatedSentencePlaybackMillis(sentence.text))
+                }
+
+                nextTarget = if (playThroughStory) {
+                    nextSentenceTarget(story, activeTarget)
+                } else {
+                    null
+                }
+            }
+
+            if (playbackState.status == SentencePlaybackStatus.Playing) {
+                playbackState = SentencePlaybackUiState(
+                    paragraphIndex = playbackState.paragraphIndex,
+                    sentenceCountInParagraph = playbackState.sentenceCountInParagraph,
+                )
+            }
+            playbackJob = null
+        }
+    }
+
+    fun startCurrentSentencePlayback() {
+        val targetSentenceIndex = if (playbackState.paragraphIndex == paragraphIndex) {
+            playbackState.sentenceIndex.coerceIn(0, (sentenceCountInParagraph - 1).coerceAtLeast(0))
+        } else {
+            0
+        }
+        if (sentenceCountInParagraph > 0) {
+            startSentencePlayback(
+                target = SentencePlaybackTarget(
+                    paragraphIndex = paragraphIndex,
+                    sentenceIndex = targetSentenceIndex,
+                ),
+            )
+        }
+    }
+
+    fun pauseSentencePlayback() {
+        if (playbackState.status != SentencePlaybackStatus.Playing) return
+
+        playbackJob?.cancel()
+        playbackJob = null
+        val activePlayback = playbackState
+        playbackState = activePlayback.copy(status = SentencePlaybackStatus.Paused)
+        scope.launch {
+            if (activePlayback.audioSource == SentenceAudioSource.Generated) {
+                audioService.pause()
+            } else {
+                ttsService.stop()
+            }
+        }
+    }
+
+    fun resumeSentencePlayback() {
+        startSentencePlayback(
+            target = SentencePlaybackTarget(
+                paragraphIndex = playbackState.paragraphIndex,
+                sentenceIndex = playbackState.sentenceIndex,
+            ),
+            playThroughStory = playbackState.playThroughStory,
+        )
+    }
+
+    fun playNextSentence() {
+        val baseTarget = if (playbackState.paragraphIndex in story.paragraphs.indices) {
+            SentencePlaybackTarget(
+                paragraphIndex = playbackState.paragraphIndex,
+                sentenceIndex = playbackState.sentenceIndex,
+            )
+        } else {
+            SentencePlaybackTarget(paragraphIndex = paragraphIndex, sentenceIndex = 0)
+        }
+        val nextTarget = nextSentenceTarget(story, baseTarget) ?: return
+        startSentencePlayback(
+            target = nextTarget,
+            playThroughStory = playbackState.playThroughStory || playbackState.status == SentencePlaybackStatus.Playing,
+        )
+    }
+
+    fun resetPlaybackForParagraph(targetParagraphIndex: Int) {
+        stopAudioTransport()
+        playbackState = SentencePlaybackUiState(
+            paragraphIndex = targetParagraphIndex,
+            sentenceCountInParagraph = sentenceCountFor(story, targetParagraphIndex),
+        )
     }
 
     Column(
@@ -1517,29 +1735,16 @@ private fun ReadingScreen(
             paragraphIndex = paragraphIndex,
             paragraphCount = paragraphCount,
             progressFraction = readingState.progressFraction,
-            isSpeaking = isSpeaking,
+            playbackStatus = playbackState.status,
             onClose = {
-                scope.launch {
-                    ttsService.stop()
-                }
+                stopAudioTransport()
                 onClose()
             },
             onAudioClick = {
-                val textToRead = paragraph?.text.orEmpty()
-                scope.launch {
-                    if (isSpeaking) {
-                        ttsService.stop()
-                        isSpeaking = false
-                    } else {
-                        analytics.track(
-                            ReaderAnalyticsEvents.paragraphAudioPlay(
-                                storyId = story.id,
-                                paragraphIndex = paragraphIndex,
-                            ),
-                        )
-                        isSpeaking = true
-                        ttsService.speak(textToRead)
-                    }
+                when (playbackState.status) {
+                    SentencePlaybackStatus.Playing -> pauseSentencePlayback()
+                    SentencePlaybackStatus.Paused -> resumeSentencePlayback()
+                    SentencePlaybackStatus.Stopped -> startCurrentSentencePlayback()
                 }
             },
         )
@@ -1560,24 +1765,16 @@ private fun ReadingScreen(
             onTextSizeChange = onTextSizeChange,
         )
         ReadingFullAudioRow(
-            isSpeaking = isSpeaking,
-            onClick = {
-                scope.launch {
-                    if (isSpeaking) {
-                        ttsService.stop()
-                        isSpeaking = false
-                    } else {
-                        analytics.track(
-                            ReaderAnalyticsEvents.paragraphAudioPlay(
-                                storyId = story.id,
-                                paragraphIndex = paragraphIndex,
-                            ),
-                        )
-                        isSpeaking = true
-                        ttsService.speak(buildSpeechTextUseCase.story(story))
-                    }
+            playbackState = playbackState,
+            onPrimaryClick = {
+                when (playbackState.status) {
+                    SentencePlaybackStatus.Playing -> pauseSentencePlayback()
+                    SentencePlaybackStatus.Paused -> resumeSentencePlayback()
+                    SentencePlaybackStatus.Stopped -> startCurrentSentencePlayback()
                 }
             },
+            onNextSentence = ::playNextSentence,
+            onStop = ::stopSentencePlayback,
         )
         Box(
             modifier = Modifier
@@ -1585,90 +1782,111 @@ private fun ReadingScreen(
                 .fillMaxWidth(),
             contentAlignment = Alignment.TopCenter,
         ) {
-            Column(
+            LazyColumn(
+                state = listState,
                 modifier = Modifier
                     .fillMaxSize()
                     .widthIn(max = LmcSpacing.ReadingMaxWidth)
-                    .verticalScroll(rememberScrollState())
                     .padding(
                         horizontal = LmcSpacing.ScreenPadding,
                         vertical = LmcSpacing.Space4,
                     ),
+                verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space3),
             ) {
                 if (paragraph != null) {
-                    PinyinTextBlock(
-                        paragraph = paragraph,
-                        showPinyin = settings.showPinyinByDefault,
-                        readingType = readingType,
-                    )
-                    Spacer(modifier = Modifier.height(LmcSpacing.Space4))
-                    AskExplanationCard(
-                        state = aiState,
-                        enabled = paragraph.text.isNotBlank(),
-                        onAsk = {
-                            val request = buildAiExplanationRequestUseCase.forParagraph(
-                                storyId = story.id,
+                    if (sentenceSegments.isNotEmpty()) {
+                        itemsIndexed(
+                            items = sentenceSegments,
+                            key = { index, _ -> "paragraph-$paragraphIndex-sentence-$index" },
+                        ) { sentenceIndex, sentence ->
+                            SentenceTextBlock(
                                 paragraph = paragraph,
+                                sentence = sentence,
+                                showPinyin = settings.showPinyinByDefault,
+                                readingType = readingType,
+                                isHighlighted = playbackState.status != SentencePlaybackStatus.Stopped &&
+                                    playbackState.paragraphIndex == paragraphIndex &&
+                                    playbackState.sentenceIndex == sentenceIndex,
                             )
-                            if (request == null) {
-                                aiState = AiUiState.Error
-                                return@AskExplanationCard
-                            }
-                            aiState = AiUiState.Loading
-                            scope.launch {
-                                runCatching {
-                                    aiService.explain(request)
-                                }.onSuccess { response ->
-                                    val answer = response.toLimitedDisplayText(
-                                        stubText = aiStubText,
-                                        outOfScopeText = aiOutOfScopeText,
-                                    )
-                                    analytics.track(
-                                        ReaderAnalyticsEvents.aiExplainRequest(
-                                            storyId = story.id,
-                                            requestType = AiQuestionTypes.ExplainSentence,
-                                            targetType = "paragraph",
-                                            safetyOutcome = response.safetyOutcome(answer, aiOutOfScopeText),
-                                        ),
-                                    )
-                                    aiState = AiUiState.Answer(answer)
-                                }.onFailure {
-                                    analytics.track(
-                                        ReaderAnalyticsEvents.aiExplainRequest(
-                                            storyId = story.id,
-                                            requestType = AiQuestionTypes.ExplainSentence,
-                                            targetType = "paragraph",
-                                            safetyOutcome = "error",
-                                        ),
-                                    )
+                        }
+                    } else {
+                        item(key = "paragraph-$paragraphIndex-fallback") {
+                            PinyinTextBlock(
+                                paragraph = paragraph,
+                                showPinyin = settings.showPinyinByDefault,
+                                readingType = readingType,
+                            )
+                        }
+                    }
+                    item(key = "paragraph-$paragraphIndex-ask") {
+                        AskExplanationCard(
+                            state = aiState,
+                            enabled = paragraph.text.isNotBlank(),
+                            onAsk = {
+                                val request = buildAiExplanationRequestUseCase.forParagraph(
+                                    storyId = story.id,
+                                    paragraph = paragraph,
+                                )
+                                if (request == null) {
                                     aiState = AiUiState.Error
+                                    return@AskExplanationCard
                                 }
-                            }
-                        },
-                    )
+                                aiState = AiUiState.Loading
+                                scope.launch {
+                                    runCatching {
+                                        aiService.explain(request)
+                                    }.onSuccess { response ->
+                                        val answer = response.toLimitedDisplayText(
+                                            stubText = aiStubText,
+                                            outOfScopeText = aiOutOfScopeText,
+                                        )
+                                        analytics.track(
+                                            ReaderAnalyticsEvents.aiExplainRequest(
+                                                storyId = story.id,
+                                                requestType = AiQuestionTypes.ExplainSentence,
+                                                targetType = "paragraph",
+                                                safetyOutcome = response.safetyOutcome(answer, aiOutOfScopeText),
+                                            ),
+                                        )
+                                        aiState = AiUiState.Answer(answer)
+                                    }.onFailure {
+                                        analytics.track(
+                                            ReaderAnalyticsEvents.aiExplainRequest(
+                                                storyId = story.id,
+                                                requestType = AiQuestionTypes.ExplainSentence,
+                                                targetType = "paragraph",
+                                                safetyOutcome = "error",
+                                            ),
+                                        )
+                                        aiState = AiUiState.Error
+                                    }
+                                }
+                            },
+                        )
+                    }
                 }
             }
         }
-	        BottomActionRow {
-	            OutlinedButton(
-		                enabled = readingState.canGoPrevious,
-		                onClick = {
-		                    readingState = readingSessionReducer.previous(story, readingState)
-		                },
-	                modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
-	            ) {
+        BottomActionRow {
+            OutlinedButton(
+                enabled = readingState.canGoPrevious,
+                onClick = {
+                    val previousState = readingSessionReducer.previous(story, readingState)
+                    readingState = previousState
+                    resetPlaybackForParagraph(previousState.paragraphIndex)
+                },
+                modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
+            ) {
                 Text(text = stringResource(R.string.action_previous))
             }
-	            Button(
-		                onClick = {
-		                    val transition = readingSessionReducer.next(story, readingState)
-		                    readingState = transition.state
-		                    if (transition.shouldOpenVocabulary) {
-		                        scope.launch {
-		                            ttsService.stop()
-	                            isSpeaking = false
-	                        }
-	                        onVocabulary()
+            Button(
+                onClick = {
+                    val transition = readingSessionReducer.next(story, readingState)
+                    readingState = transition.state
+                    resetPlaybackForParagraph(transition.state.paragraphIndex)
+                    if (transition.shouldOpenVocabulary) {
+                        stopAudioTransport()
+                        onVocabulary()
                     }
                 },
                 modifier = Modifier.heightIn(min = LmcSpacing.ButtonPrimaryHeight),
@@ -1677,6 +1895,77 @@ private fun ReadingScreen(
                 Text(text = stringResource(R.string.action_next))
             }
         }
+    }
+}
+
+private data class SentencePlaybackUiState(
+    val status: SentencePlaybackStatus = SentencePlaybackStatus.Stopped,
+    val paragraphIndex: Int = 0,
+    val sentenceIndex: Int = 0,
+    val sentenceCountInParagraph: Int = 0,
+    val audioSource: SentenceAudioSource? = null,
+    val playThroughStory: Boolean = true,
+)
+
+private data class SentencePlaybackTarget(
+    val paragraphIndex: Int,
+    val sentenceIndex: Int,
+)
+
+private enum class SentencePlaybackStatus {
+    Stopped,
+    Playing,
+    Paused,
+}
+
+private enum class SentenceAudioSource(val analyticsValue: String) {
+    Generated("generated"),
+    Tts("tts"),
+}
+
+private fun nextSentenceTarget(
+    story: Story,
+    target: SentencePlaybackTarget,
+): SentencePlaybackTarget? {
+    val currentSentenceCount = sentenceCountFor(story, target.paragraphIndex)
+    if (target.sentenceIndex + 1 < currentSentenceCount) {
+        return target.copy(sentenceIndex = target.sentenceIndex + 1)
+    }
+
+    var nextParagraphIndex = target.paragraphIndex + 1
+    while (nextParagraphIndex < story.paragraphs.size) {
+        if (sentenceCountFor(story, nextParagraphIndex) > 0) {
+            return SentencePlaybackTarget(
+                paragraphIndex = nextParagraphIndex,
+                sentenceIndex = 0,
+            )
+        }
+        nextParagraphIndex += 1
+    }
+
+    return null
+}
+
+private fun sentenceCountFor(
+    story: Story,
+    paragraphIndex: Int,
+): Int = story.paragraphs
+    .getOrNull(paragraphIndex)
+    ?.let { SentenceSegmenter.segment(it.text).size }
+    ?: 0
+
+private fun estimatedSentencePlaybackMillis(text: String): Long =
+    (text.length.coerceAtLeast(4) * 320L).coerceIn(1_400L, 12_000L)
+
+private fun Paragraph.cellsFor(sentence: SentenceSegment): List<PinyinCell> {
+    if (cells.isEmpty()) return emptyList()
+
+    var offset = 0
+    return cells.filter { cell ->
+        val cellStart = offset
+        val cellEnd = cellStart + cell.c.length
+        offset = cellEnd
+        cellEnd > sentence.startOffset && cellStart < sentence.endOffset
     }
 }
 
@@ -2247,7 +2536,7 @@ private fun ReadingTopBar(
     paragraphIndex: Int,
     paragraphCount: Int,
     progressFraction: Double,
-    isSpeaking: Boolean,
+    playbackStatus: SentencePlaybackStatus,
     onClose: () -> Unit,
     onAudioClick: () -> Unit,
 ) {
@@ -2278,12 +2567,16 @@ private fun ReadingTopBar(
                 overflow = TextOverflow.Ellipsis,
             )
             HeaderIconButton(
-                icon = if (isSpeaking) LmcIcon.StopAudio else LmcIcon.Audio,
+                icon = when (playbackStatus) {
+                    SentencePlaybackStatus.Playing -> LmcIcon.PauseAudio
+                    SentencePlaybackStatus.Paused,
+                    SentencePlaybackStatus.Stopped -> LmcIcon.Audio
+                },
                 contentDescription = stringResource(
-                    if (isSpeaking) {
-                        R.string.action_stop_audio
-                    } else {
-                        R.string.action_play_audio
+                    when (playbackStatus) {
+                        SentencePlaybackStatus.Playing -> R.string.action_pause_audio
+                        SentencePlaybackStatus.Paused -> R.string.action_resume_audio
+                        SentencePlaybackStatus.Stopped -> R.string.action_play_audio
                     },
                 ),
                 onClick = onAudioClick,
@@ -2358,37 +2651,113 @@ private fun ReadingControls(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ReadingFullAudioRow(
-    isSpeaking: Boolean,
-    onClick: () -> Unit,
+    playbackState: SentencePlaybackUiState,
+    onPrimaryClick: () -> Unit,
+    onNextSentence: () -> Unit,
+    onStop: () -> Unit,
 ) {
-    Row(
+    val audioSourceText = when (playbackState.audioSource) {
+        SentenceAudioSource.Generated -> stringResource(R.string.reading_audio_source_generated)
+        SentenceAudioSource.Tts -> stringResource(R.string.reading_audio_source_tts)
+        null -> null
+    }
+
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = LmcSpacing.ScreenPadding)
             .padding(bottom = LmcSpacing.Space3),
-        horizontalArrangement = Arrangement.End,
+        verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
     ) {
-        OutlinedButton(
-            onClick = onClick,
-            modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
         ) {
-            LmcCanvasIcon(
-                icon = if (isSpeaking) LmcIcon.StopAudio else LmcIcon.Audio,
-                color = MaterialTheme.colorScheme.secondary,
-            )
-            Spacer(modifier = Modifier.width(LmcSpacing.Space2))
             Text(
                 text = stringResource(
-                    if (isSpeaking) {
-                        R.string.action_stop_audio
-                    } else {
-                        R.string.reading_read_all
+                    R.string.reading_sentence_progress,
+                    (playbackState.sentenceIndex + 1).coerceAtLeast(1),
+                    playbackState.sentenceCountInParagraph.coerceAtLeast(1),
+                ),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = stringResource(
+                    when (playbackState.status) {
+                        SentencePlaybackStatus.Playing -> R.string.reading_audio_playing
+                        SentencePlaybackStatus.Paused -> R.string.reading_audio_paused
+                        SentencePlaybackStatus.Stopped -> R.string.reading_audio_stopped
                     },
                 ),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
             )
+            if (audioSourceText != null) {
+                Text(
+                    text = audioSourceText,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
+            }
+        }
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space2, Alignment.End),
+            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+        ) {
+            OutlinedButton(
+                onClick = onPrimaryClick,
+                modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
+            ) {
+                LmcCanvasIcon(
+                    icon = if (playbackState.status == SentencePlaybackStatus.Playing) {
+                        LmcIcon.PauseAudio
+                    } else {
+                        LmcIcon.Audio
+                    },
+                    color = MaterialTheme.colorScheme.secondary,
+                )
+                Spacer(modifier = Modifier.width(LmcSpacing.Space2))
+                Text(
+                    text = stringResource(
+                        when (playbackState.status) {
+                            SentencePlaybackStatus.Playing -> R.string.action_pause_audio
+                            SentencePlaybackStatus.Paused -> R.string.action_resume_audio
+                            SentencePlaybackStatus.Stopped -> R.string.reading_read_all
+                        },
+                    ),
+                )
+            }
+            OutlinedButton(
+                onClick = onNextSentence,
+                modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
+            ) {
+                LmcCanvasIcon(
+                    icon = LmcIcon.Next,
+                    color = MaterialTheme.colorScheme.secondary,
+                )
+                Spacer(modifier = Modifier.width(LmcSpacing.Space2))
+                Text(text = stringResource(R.string.reading_next_sentence))
+            }
+            if (playbackState.status != SentencePlaybackStatus.Stopped) {
+                TextButton(
+                    onClick = onStop,
+                    modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
+                ) {
+                    Text(text = stringResource(R.string.action_stop_audio))
+                }
+            }
         }
     }
 }
@@ -2839,47 +3208,95 @@ private fun PinyinTextBlock(
     showPinyin: Boolean,
     readingType: ReadingTypeStyles,
 ) {
+    SentenceSurface(isHighlighted = false) {
+        if (showPinyin && paragraph.cells.isNotEmpty()) {
+            RubyFlowText(
+                text = paragraph.text,
+                cells = paragraph.cells,
+                readingType = readingType,
+            )
+        } else {
+            Text(
+                text = paragraph.text,
+                style = readingType.hanzi,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SentenceTextBlock(
+    paragraph: Paragraph,
+    sentence: SentenceSegment,
+    showPinyin: Boolean,
+    readingType: ReadingTypeStyles,
+    isHighlighted: Boolean,
+) {
+    val sentenceCells = remember(paragraph.cells, sentence.startOffset, sentence.endOffset) {
+        paragraph.cellsFor(sentence)
+    }
+
+    SentenceSurface(isHighlighted = isHighlighted) {
+        if (showPinyin && sentenceCells.isNotEmpty()) {
+            RubyFlowText(
+                text = sentence.text,
+                cells = sentenceCells,
+                readingType = readingType,
+            )
+        } else {
+            Text(
+                text = sentence.text,
+                style = readingType.hanzi,
+                color = if (isHighlighted) {
+                    MaterialTheme.colorScheme.onSecondaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun SentenceSurface(
+    isHighlighted: Boolean,
+    content: @Composable ColumnScope.() -> Unit,
+) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(LmcSpacing.ReadingPanelRadius),
-        color = MaterialTheme.colorScheme.surfaceVariant,
+        color = if (isHighlighted) {
+            MaterialTheme.colorScheme.secondaryContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant
+        },
     ) {
         Column(
             modifier = Modifier.padding(LmcSpacing.ReadingPanelPadding),
             verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space3),
-        ) {
-            if (showPinyin && paragraph.cells.isNotEmpty()) {
-                RubyFlowText(
-                    paragraph = paragraph,
-                    readingType = readingType,
-                )
-            } else {
-                Text(
-                    text = paragraph.text,
-                    style = readingType.hanzi,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-            }
-        }
+            content = content,
+        )
     }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun RubyFlowText(
-    paragraph: Paragraph,
+    text: String,
+    cells: List<PinyinCell>,
     readingType: ReadingTypeStyles,
 ) {
     FlowRow(
         modifier = Modifier
             .fillMaxWidth()
             .clearAndSetSemantics {
-                contentDescription = paragraph.text
+                contentDescription = text
             },
         horizontalArrangement = Arrangement.Start,
         verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
     ) {
-        paragraph.cells.forEach { cell ->
+        cells.forEach { cell ->
             RubyCell(
                 hanzi = cell.c,
                 pinyin = cell.p,
@@ -4502,6 +4919,20 @@ private fun LmcCanvasIcon(
                 drawLine(color, Offset(size.width * 0.5f, size.height * 0.68f), Offset(size.width * 0.5f, size.height * 0.36f), stroke.width, StrokeCap.Round)
                 drawLine(color, Offset(size.width * 0.68f, size.height * 0.68f), Offset(size.width * 0.68f, size.height * 0.46f), stroke.width, StrokeCap.Round)
             }
+            LmcIcon.PauseAudio -> {
+                drawRoundRect(
+                    color = color,
+                    topLeft = Offset(size.width * 0.30f, size.height * 0.24f),
+                    size = Size(size.width * 0.12f, size.height * 0.52f),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(2.dp.toPx()),
+                )
+                drawRoundRect(
+                    color = color,
+                    topLeft = Offset(size.width * 0.58f, size.height * 0.24f),
+                    size = Size(size.width * 0.12f, size.height * 0.52f),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(2.dp.toPx()),
+                )
+            }
             LmcIcon.Settings -> {
                 drawCircle(color = color, radius = size.minDimension * 0.22f, style = stroke)
                 repeat(8) { tick ->
@@ -4870,6 +5301,7 @@ private enum class LmcIcon {
     Library,
     Next,
     Parent,
+    PauseAudio,
     Settings,
     StopAudio,
     Today,

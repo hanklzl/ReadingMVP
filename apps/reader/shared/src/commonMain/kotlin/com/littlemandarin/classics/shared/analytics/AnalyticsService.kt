@@ -415,6 +415,7 @@ private val EventSchemas: Map<AnalyticsEventName, AnalyticsEventSchema> = mapOf(
         ),
         optional = mapOf(
             "playback_speed_bucket" to AnalyticsPropertyType.StringValue,
+            "sentence_index" to AnalyticsPropertyType.IntValue,
         ),
     ),
     AnalyticsEventName.PinyinToggle to AnalyticsEventSchema(

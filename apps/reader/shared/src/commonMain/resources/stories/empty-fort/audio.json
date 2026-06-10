@@ -1,0 +1,116 @@
+{
+  "sentences": [
+    {
+      "paraIndex": 0,
+      "sentIndex": 0,
+      "text": "有一回，诸葛亮身边的人很少，却听说司马懿带着队伍来到城外。",
+      "audioPath": "audio/p1_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 0,
+      "sentIndex": 1,
+      "text": "城里的人紧张起来，不知道该怎样办。",
+      "audioPath": "audio/p1_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 0,
+      "sentIndex": 2,
+      "text": "有人想关门，有人想躲起来，大家都看着诸葛亮。",
+      "audioPath": "audio/p1_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 0,
+      "text": "诸葛亮先让大家安静。",
+      "audioPath": "audio/p2_s1.wav",
+      "durationMs": 1300
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 1,
+      "text": "他打开城门，安排几个人在门口慢慢扫地，自己穿戴整齐，坐到城楼上弹琴。",
+      "audioPath": "audio/p2_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 2,
+      "text": "扫地的人也照着吩咐，一下一下地扫，不让手忙脚乱露出来。",
+      "audioPath": "audio/p2_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 0,
+      "text": "琴声从城楼上传出去，清清稳稳。",
+      "audioPath": "audio/p3_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 1,
+      "text": "司马懿远远看见城门大开，又听见诸葛亮这样沉着，心里开始仔细判断。",
+      "audioPath": "audio/p3_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 2,
+      "text": "他知道诸葛亮平时谨慎，不会随便做奇怪的事。",
+      "audioPath": "audio/p3_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 0,
+      "text": "他想，诸葛亮平日做事周全，现在如此安静，也许城中另有安排。",
+      "audioPath": "audio/p4_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 1,
+      "text": "为了谨慎，他决定先带队退去，再观察情况。",
+      "audioPath": "audio/p4_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 2,
+      "text": "城里的人仍按诸葛亮的安排站好，没有大声欢呼。",
+      "audioPath": "audio/p4_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 0,
+      "text": "等城外安静下来，大家才松了一口气。",
+      "audioPath": "audio/p5_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 1,
+      "text": "诸葛亮告诉他们，越是紧张，越要让心稳住。",
+      "audioPath": "audio/p5_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 2,
+      "text": "空城计靠的正是沉着和判断。",
+      "audioPath": "audio/p5_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 3,
+      "text": "遇到难题时，先稳住自己，才有机会想出办法。",
+      "audioPath": "audio/p5_s4.wav",
+      "durationMs": 1500
+    }
+  ]
+}

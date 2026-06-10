@@ -1,0 +1,116 @@
+{
+  "sentences": [
+    {
+      "paraIndex": 0,
+      "sentIndex": 0,
+      "text": "赤壁之后，曹操带着疲惫的队伍来到华容道。",
+      "audioPath": "audio/p1_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 0,
+      "sentIndex": 1,
+      "text": "小路泥泞，大家走得很慢。",
+      "audioPath": "audio/p1_s2.wav",
+      "durationMs": 1490
+    },
+    {
+      "paraIndex": 0,
+      "sentIndex": 2,
+      "text": "关羽早已在路口等候，心里也很不平静。",
+      "audioPath": "audio/p1_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 0,
+      "sentIndex": 3,
+      "text": "他知道这里的选择很重要，不能只凭一时的情绪。",
+      "audioPath": "audio/p1_s4.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 0,
+      "text": "关羽记得，过去自己遇到困难时，曹操曾经礼待过他。",
+      "audioPath": "audio/p2_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 1,
+      "text": "现在两人站在不同一边，可旧日恩情仍在心中。",
+      "audioPath": "audio/p2_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 2,
+      "text": "关羽一向重信用，所以更明白恩情二字的分量。",
+      "audioPath": "audio/p2_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 0,
+      "text": "曹操上前说明来意，希望能借路离开。",
+      "audioPath": "audio/p3_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 1,
+      "text": "关羽看着疲惫的人们，想到仁义二字，也想到做人要记得恩情。",
+      "audioPath": "audio/p3_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 2,
+      "text": "路边风很冷，大家都在等他的决定。",
+      "audioPath": "audio/p3_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 0,
+      "text": "最后，关羽决定放行。",
+      "audioPath": "audio/p4_s1.wav",
+      "durationMs": 1300
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 1,
+      "text": "他知道这个选择需要承担责任，但他愿意守住心里的仁义，不让恩情被忘记。",
+      "audioPath": "audio/p4_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 2,
+      "text": "放行之后，他也准备回去说明原因，接受该有的责问。",
+      "audioPath": "audio/p4_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 0,
+      "text": "华容道上的故事告诉我们，真正的英雄不只看输赢，也看内心是否正直。",
+      "audioPath": "audio/p5_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 1,
+      "text": "记得别人给过的善意，也是一种勇敢。",
+      "audioPath": "audio/p5_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 2,
+      "text": "做选择时想一想良心，比只想赢更难，也更珍贵。",
+      "audioPath": "audio/p5_s3.wav",
+      "durationMs": 1500
+    }
+  ]
+}

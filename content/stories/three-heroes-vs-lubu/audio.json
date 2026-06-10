@@ -1,0 +1,116 @@
+{
+  "sentences": [
+    {
+      "paraIndex": 0,
+      "sentIndex": 0,
+      "text": "虎牢关前，许多人马排成队伍。",
+      "audioPath": "audio/p1_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 0,
+      "sentIndex": 1,
+      "text": "吕布骑着高马来到关口，声音洪亮，大家都觉得他的气势很强，一时不知怎样应对。",
+      "audioPath": "audio/p1_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 0,
+      "sentIndex": 2,
+      "text": "风把旗子吹得呼呼响，年轻的人更需要一个稳稳的榜样。",
+      "audioPath": "audio/p1_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 0,
+      "text": "张飞先稳住队形，上前大声提醒同伴不要慌。",
+      "audioPath": "audio/p2_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 1,
+      "text": "关羽看见机会，立刻从旁边配合。",
+      "audioPath": "audio/p2_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 2,
+      "text": "刘备也赶来，帮助两位兄弟照看前后。",
+      "audioPath": "audio/p2_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 3,
+      "text": "他们没有急着表现自己，而是先让身边的人放心。",
+      "audioPath": "audio/p2_s4.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 0,
+      "text": "三个人没有争谁最厉害，而是看着彼此的位置。",
+      "audioPath": "audio/p3_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 1,
+      "text": "张飞负责牵住局面，关羽负责相助，刘备负责补上空处，队伍慢慢安定下来。",
+      "audioPath": "audio/p3_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 2,
+      "text": "有人看见他们互相点头，也跟着站稳脚步。",
+      "audioPath": "audio/p3_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 0,
+      "text": "吕布见三人齐心，难以占到上风，便转身退回关内。",
+      "audioPath": "audio/p4_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 1,
+      "text": "关前的人们这才松了一口气，也看见了合作的力量。",
+      "audioPath": "audio/p4_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 2,
+      "text": "原来遇到强大的对手时，整齐的心比响亮的话更有用。",
+      "audioPath": "audio/p4_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 0,
+      "text": "这一回没有人靠吵闹取胜。",
+      "audioPath": "audio/p5_s1.wav",
+      "durationMs": 1490
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 1,
+      "text": "刘备、关羽、张飞用勇敢、配合和信任告诉大家：真正强大的队伍，心要站在一起。",
+      "audioPath": "audio/p5_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 2,
+      "text": "每个人做好自己的位置，朋友之间互相补足，困难就会小一些。",
+      "audioPath": "audio/p5_s3.wav",
+      "durationMs": 1500
+    }
+  ]
+}

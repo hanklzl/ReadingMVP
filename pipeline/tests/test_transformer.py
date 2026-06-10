@@ -1,6 +1,7 @@
 import unittest
 
 from transformer import generate
+from transformer.audio import split_paragraph_to_sentences
 from transformer.generate import build_story, pinyin_for_text
 from transformer.story_data import STORY_DRAFTS
 
@@ -40,6 +41,31 @@ class TransformerTest(unittest.TestCase):
                 [{"c": char, "p": cell["p"]} for char, cell in zip(paragraph["text"], paragraph["cells"])],
                 paragraph["cells"],
             )
+
+    def test_sentence_splitting_keeps_consecutive_sentence_punctuation(self):
+        text = "孩子们很激动。她问：你会吗？！你敢吗？？"
+        self.assertEqual(
+            ["孩子们很激动。", "她问：你会吗？！", "你敢吗？？"],
+            split_paragraph_to_sentences(text),
+        )
+
+    def test_sentence_splitting_keeps_ellipsis_as_unit(self):
+        text = "他停下来想了想……继续往前走。"
+        self.assertEqual(
+            ["他停下来想了想……", "继续往前走。"],
+            split_paragraph_to_sentences(text),
+        )
+
+    def test_sentence_splitting_ignores_blank_segments(self):
+        text = "第一句。   第二句。    \n\n第三句；"
+        self.assertEqual(["第一句。", "第二句。", "第三句；"], split_paragraph_to_sentences(text))
+
+    def test_sentence_splitting_keeps_closing_quotes_and_parentheses(self):
+        text = "他说：“好！”大家点头。再看（可以吗？）"
+        self.assertEqual(
+            ["他说：“好！”", "大家点头。", "再看（可以吗？）"],
+            split_paragraph_to_sentences(text),
+        )
 
 
 if __name__ == "__main__":

@@ -1,4 +1,5 @@
 import Foundation
+import AVFoundation
 import SwiftUI
 import shared
 
@@ -242,6 +243,7 @@ final class ReaderViewModel: ObservableObject {
     @Published private(set) var parentReport: ParentProgressReport?
     @Published private(set) var loadingState: LMCLoadingState = .idle
     @Published private(set) var isSpeaking = false
+    @Published private(set) var readingAudioStatus: LMCReadingAudioStatus = .idle
     @Published private(set) var launchGate: LMCLaunchGate = .loading
     @Published private(set) var wordBookSummary: WordBookSummary?
     @Published private(set) var streakSummary: StreakSummary?
@@ -266,6 +268,9 @@ final class ReaderViewModel: ObservableObject {
     private let feedbackRepository = LMCSharedFeedbackRepository()
     private let aiService = LMCAiExplanationAdapter()
     private var speechTask: Task<Void, Never>?
+    private var readingAudioTask: Task<Void, Never>?
+    private var generatedAudioPlayer: AVAudioPlayer?
+    private var generatedAudioDelegate: LMCGeneratedAudioDelegate?
 
     private lazy var getStoryListUseCase = GetStoryListUseCase(repository: repository)
     private lazy var markStoryCompletedUseCase = MarkStoryCompletedUseCase(progressService: progressService)
@@ -285,6 +290,18 @@ final class ReaderViewModel: ObservableObject {
 
     var upNextStory: Story? {
         todayShelf.upNextStory
+    }
+
+    var readingAudioLocation: LMCSentenceLocation? {
+        readingAudioStatus.location
+    }
+
+    var isReadingAudioActive: Bool {
+        readingAudioStatus.isActive
+    }
+
+    var isReadingAudioPaused: Bool {
+        readingAudioStatus.isPaused
     }
 
     private var todayShelf: TodayStories {
@@ -403,15 +420,73 @@ final class ReaderViewModel: ObservableObject {
         speak(buildSpeechTextUseCase.story(story: story))
     }
 
+    func startSentencePlayback(story: Story, paragraphIndex: Int, sentenceIndex: Int = 0) {
+        guard let location = story.lmcNormalizedSentenceLocation(
+            paragraphIndex: paragraphIndex,
+            sentenceIndex: sentenceIndex
+        ) else {
+            stopSpeaking()
+            return
+        }
+        playReadingSentence(story: story, location: location, shouldTrack: true)
+    }
+
+    func pauseSentencePlayback() {
+        guard case .playing(let location, let source) = readingAudioStatus else { return }
+        switch source {
+        case .generated:
+            generatedAudioPlayer?.pause()
+        case .tts:
+            readingAudioTask?.cancel()
+            readingAudioTask = nil
+            speechTask = Task { @MainActor in
+                try? await ttsService.stop()
+            }
+        }
+        readingAudioStatus = .paused(location, source)
+        isSpeaking = false
+    }
+
+    func resumeSentencePlayback(story: Story) {
+        guard case .paused(let location, let source) = readingAudioStatus else { return }
+        switch source {
+        case .generated where generatedAudioPlayer != nil:
+            guard generatedAudioPlayer?.play() == true else {
+                playReadingSentence(story: story, location: location, shouldTrack: false)
+                return
+            }
+            readingAudioStatus = .playing(location, source)
+            isSpeaking = true
+        default:
+            playReadingSentence(story: story, location: location, shouldTrack: false)
+        }
+    }
+
+    func advanceSentencePlayback(story: Story) {
+        guard let location = readingAudioLocation else { return }
+        guard let nextLocation = story.lmcNextSentenceLocation(after: location) else {
+            stopSpeaking()
+            return
+        }
+        playReadingSentence(story: story, location: nextLocation, shouldTrack: true)
+    }
+
+    func stopSentencePlayback() {
+        stopSpeaking()
+    }
+
     func vocabSpeechText(_ word: Vocab) -> String {
         buildSpeechTextUseCase.vocab(word: word)
     }
 
     func stopSpeaking() {
         speechTask?.cancel()
+        readingAudioTask?.cancel()
+        stopGeneratedAudio()
+        isSpeaking = false
+        readingAudioStatus = .idle
         speechTask = Task { @MainActor in
             try? await ttsService.stop()
-            isSpeaking = false
         }
     }
 
@@ -430,12 +505,18 @@ final class ReaderViewModel: ObservableObject {
         )
     }
 
-    func trackParagraphAudioPlay(_ story: Story, paragraphIndex: Int) {
+    func trackParagraphAudioPlay(
+        _ story: Story,
+        paragraphIndex: Int,
+        sentenceIndex: Int? = nil,
+        audioSource: LMCAudioSource = .tts
+    ) {
         analytics.track(
             ReaderAnalyticsEvents.shared.paragraphAudioPlay(
                 storyId: story.id,
                 paragraphIndex: Int32(paragraphIndex + 1),
-                audioSource: "tts"
+                audioSource: audioSource.rawValue,
+                sentenceIndex: sentenceIndex.map { KotlinInt(int: Int32($0)) }
             )
         )
     }
@@ -590,7 +671,14 @@ final class ReaderViewModel: ObservableObject {
 
     func savedReadingParagraphIndex(for story: Story) async -> Int {
         let saved = (try? await settingsService.readReadingParagraphIndex(storyId: story.id)) ?? -1
-        return Int(readingSessionReducer.initialState(story: story, savedParagraphIndex: Int32(saved)).paragraphIndex)
+        return Int(
+            readingSessionReducer.initialState(
+                story: story,
+                savedParagraphIndex: Int32(saved),
+                audioManifest: emptyAudioManifest(for: story),
+                savedSentenceIndex: 0
+            ).paragraphIndex
+        )
     }
 
     func saveReadingParagraphIndex(_ index: Int, for story: Story) {
@@ -599,15 +687,33 @@ final class ReaderViewModel: ObservableObject {
     }
 
     func readingState(for story: Story, paragraphIndex: Int) -> ReadingSessionState {
-        readingSessionReducer.stateFor(story: story, paragraphIndex: Int32(paragraphIndex))
+        readingSessionReducer.stateFor(
+            story: story,
+            paragraphIndex: Int32(paragraphIndex),
+            sentenceIndex: 0,
+            audioManifest: emptyAudioManifest(for: story),
+            playbackStatus: .stopped
+        )
     }
 
     func previousReadingState(_ story: Story, state: ReadingSessionState) -> ReadingSessionState {
-        readingSessionReducer.previous(story: story, state: state)
+        readingSessionReducer.previous(
+            story: story,
+            state: state,
+            audioManifest: emptyAudioManifest(for: story)
+        )
     }
 
     func nextReadingTransition(_ story: Story, state: ReadingSessionState) -> ReadingSessionTransition {
-        readingSessionReducer.next(story: story, state: state)
+        readingSessionReducer.next(
+            story: story,
+            state: state,
+            audioManifest: emptyAudioManifest(for: story)
+        )
+    }
+
+    private func emptyAudioManifest(for story: Story) -> StoryAudioManifest {
+        StoryAudioManifest.companion.empty(storyId: story.id)
     }
 
     func filteredStories(level selectedLevel: Int?) -> [Story] {
@@ -657,10 +763,118 @@ final class ReaderViewModel: ObservableObject {
 
     private func speak(_ text: String) {
         speechTask?.cancel()
+        readingAudioTask?.cancel()
+        stopGeneratedAudio()
+        readingAudioStatus = .idle
         speechTask = Task { @MainActor in
             isSpeaking = true
             try? await ttsService.speak(text: text)
         }
+    }
+
+    private func playReadingSentence(story: Story, location: LMCSentenceLocation, shouldTrack: Bool) {
+        guard let sentence = story.lmcSentence(at: location) else {
+            stopSpeaking()
+            return
+        }
+
+        speechTask?.cancel()
+        readingAudioTask?.cancel()
+        stopGeneratedAudio()
+
+        if let url = LMCSentenceAudioResolver.generatedAudioURL(storyId: story.id, location: location),
+           playGeneratedSentenceAudio(url: url, story: story, location: location, shouldTrack: shouldTrack) {
+            return
+        }
+
+        playTtsSentenceAudio(text: sentence.text, story: story, location: location, shouldTrack: shouldTrack)
+    }
+
+    private func playGeneratedSentenceAudio(
+        url: URL,
+        story: Story,
+        location: LMCSentenceLocation,
+        shouldTrack: Bool
+    ) -> Bool {
+        do {
+            try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .spokenAudio, options: [.duckOthers])
+            try? AVAudioSession.sharedInstance().setActive(true)
+
+            let player = try AVAudioPlayer(contentsOf: url)
+            let delegate = LMCGeneratedAudioDelegate { [weak self] in
+                Task { @MainActor [weak self] in
+                    self?.finishReadingSentence(story: story, location: location)
+                }
+            }
+            player.delegate = delegate
+            player.prepareToPlay()
+            guard player.play() else { return false }
+
+            generatedAudioPlayer = player
+            generatedAudioDelegate = delegate
+            readingAudioStatus = .playing(location, .generated)
+            isSpeaking = true
+            if shouldTrack {
+                trackParagraphAudioPlay(
+                    story,
+                    paragraphIndex: location.paragraphIndex,
+                    sentenceIndex: location.sentenceIndex,
+                    audioSource: .generated
+                )
+            }
+            return true
+        } catch {
+            stopGeneratedAudio()
+            return false
+        }
+    }
+
+    private func playTtsSentenceAudio(
+        text: String,
+        story: Story,
+        location: LMCSentenceLocation,
+        shouldTrack: Bool
+    ) {
+        readingAudioStatus = .playing(location, .tts)
+        isSpeaking = true
+        if shouldTrack {
+            trackParagraphAudioPlay(
+                story,
+                paragraphIndex: location.paragraphIndex,
+                sentenceIndex: location.sentenceIndex,
+                audioSource: .tts
+            )
+        }
+
+        readingAudioTask = Task { @MainActor in
+            try? await ttsService.speak(text: text)
+            do {
+                try await Task.sleep(nanoseconds: LMCTtsDurationEstimator.nanoseconds(for: text))
+            } catch {
+                return
+            }
+            guard !Task.isCancelled else { return }
+            try? await ttsService.stop()
+            readingAudioTask = nil
+            finishReadingSentence(story: story, location: location)
+        }
+    }
+
+    private func finishReadingSentence(story: Story, location: LMCSentenceLocation) {
+        guard readingAudioStatus.location == location else { return }
+        guard let nextLocation = story.lmcNextSentenceLocation(after: location) else {
+            readingAudioStatus = .idle
+            isSpeaking = false
+            stopGeneratedAudio()
+            return
+        }
+        playReadingSentence(story: story, location: nextLocation, shouldTrack: true)
+    }
+
+    private func stopGeneratedAudio() {
+        generatedAudioPlayer?.stop()
+        generatedAudioPlayer = nil
+        generatedAudioDelegate = nil
     }
 
     private func refreshProgress() async throws {
@@ -785,6 +999,46 @@ enum LMCVocabOpenSource: String {
     case todaySummary = "today_summary"
     case readingFlow = "reading_flow"
     case quizBack = "quiz_back"
+}
+
+enum LMCAudioSource: String {
+    case generated
+    case tts
+}
+
+struct LMCSentenceLocation: Equatable {
+    let storyId: String
+    let paragraphIndex: Int
+    let sentenceIndex: Int
+
+    var scrollId: String {
+        "sentence-\(storyId)-\(paragraphIndex)-\(sentenceIndex)"
+    }
+}
+
+enum LMCReadingAudioStatus {
+    case idle
+    case playing(LMCSentenceLocation, LMCAudioSource)
+    case paused(LMCSentenceLocation, LMCAudioSource)
+
+    var location: LMCSentenceLocation? {
+        switch self {
+        case .idle:
+            return nil
+        case .playing(let location, _), .paused(let location, _):
+            return location
+        }
+    }
+
+    var isActive: Bool {
+        if case .idle = self { return false }
+        return true
+    }
+
+    var isPaused: Bool {
+        if case .paused = self { return true }
+        return false
+    }
 }
 
 enum LMCParentReportEntryPoint: String {
@@ -2041,6 +2295,11 @@ private struct ReadingScreen: View {
     @State private var paragraphIndex = 0
     @State private var askState: LMCAiAskState = .idle
 
+    private var activeSentenceLocation: LMCSentenceLocation? {
+        guard let location = viewModel.readingAudioLocation, location.storyId == story.id else { return nil }
+        return location
+    }
+
     private var readingState: ReadingSessionState {
         viewModel.readingState(for: story, paragraphIndex: paragraphIndex)
     }
@@ -2055,48 +2314,59 @@ private struct ReadingScreen: View {
 
     var body: some View {
         VStack(spacing: 0) {
-                ReadingTopBar(
-                    story: story,
-                    progress: progress,
-                    countText: "\(Int(readingState.paragraphIndex) + 1) / \(Int(readingState.paragraphCount))",
-                    isSpeaking: viewModel.isSpeaking,
+            ReadingTopBar(
+                story: story,
+                progress: progress,
+                countText: "\(Int(readingState.paragraphIndex) + 1) / \(Int(readingState.paragraphCount))",
+                isSpeaking: viewModel.isReadingAudioActive,
                 close: {
                     viewModel.stopSpeaking()
                     close()
                 },
                 playCurrent: {
-                    if viewModel.isSpeaking {
-                        viewModel.stopSpeaking()
+                    if viewModel.isReadingAudioActive {
+                        viewModel.stopSentencePlayback()
                     } else {
-                        viewModel.trackParagraphAudioPlay(story, paragraphIndex: paragraphIndex)
-                        viewModel.speakCurrent(currentParagraph.text)
+                        viewModel.startSentencePlayback(story: story, paragraphIndex: paragraphIndex)
                     }
                 }
             )
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: LMCSpace.s5) {
-                    readingControls
-                    askPanel
-
+            ScrollViewReader { proxy in
+                ScrollView {
                     VStack(alignment: .leading, spacing: LMCSpace.s5) {
-                        ForEach(Array(story.paragraphs.enumerated()), id: \.offset) { index, paragraph in
-                            ReadingParagraphView(
-                                paragraph: paragraph,
-                                size: size,
-                                showPinyin: showPinyin,
-                                isCurrent: index == paragraphIndex
-                            )
+                        readingControls
+                        askPanel
+
+                        VStack(alignment: .leading, spacing: LMCSpace.s5) {
+                            ForEach(Array(story.paragraphs.enumerated()), id: \.offset) { index, paragraph in
+                                ReadingParagraphView(
+                                    storyId: story.id,
+                                    paragraphIndex: index,
+                                    paragraph: paragraph,
+                                    size: size,
+                                    showPinyin: showPinyin,
+                                    isCurrentParagraph: index == paragraphIndex,
+                                    activeSentenceIndex: activeSentenceLocation?.paragraphIndex == index ? activeSentenceLocation?.sentenceIndex : nil
+                                )
+                            }
                         }
+                        .padding(LMCSpace.s4)
+                        .background(LMCColor.surfaceVariant)
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .frame(maxWidth: LMCSpace.readingMaxWidth, alignment: .leading)
                     }
                     .padding(LMCSpace.s4)
-                    .background(LMCColor.surfaceVariant)
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .frame(maxWidth: LMCSpace.readingMaxWidth, alignment: .leading)
+                    .frame(maxWidth: LMCSpace.readingMaxWidth + LMCSpace.s8)
+                    .frame(maxWidth: .infinity)
                 }
-                .padding(LMCSpace.s4)
-                .frame(maxWidth: LMCSpace.readingMaxWidth + LMCSpace.s8)
-                .frame(maxWidth: .infinity)
+                .onChange(of: viewModel.readingAudioLocation) { location in
+                    guard let location, location.storyId == story.id else { return }
+                    paragraphIndex = location.paragraphIndex
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        proxy.scrollTo(location.scrollId, anchor: .center)
+                    }
+                }
             }
 
             ReadingBottomBar(
@@ -2109,7 +2379,7 @@ private struct ReadingScreen: View {
                     let transition = viewModel.nextReadingTransition(story, state: readingState)
                     paragraphIndex = Int(transition.state.paragraphIndex)
                     if transition.shouldOpenVocabulary {
-                        viewModel.stopSpeaking()
+                        viewModel.stopSentencePlayback()
                         openVocabulary()
                     }
                 }
@@ -2125,6 +2395,9 @@ private struct ReadingScreen: View {
         .onChange(of: paragraphIndex) { _ in
             askState = .idle
             viewModel.saveReadingParagraphIndex(paragraphIndex, for: story)
+        }
+        .onDisappear {
+            viewModel.stopSentencePlayback()
         }
     }
 
@@ -2149,16 +2422,43 @@ private struct ReadingScreen: View {
                 LMCSegmentedReadingSize(readingSize: $readingSize)
             }
 
+            if viewModel.isReadingAudioActive {
+                HStack(spacing: LMCSpace.s2) {
+                    IconButton(
+                        systemName: viewModel.isReadingAudioPaused ? "play.fill" : "pause.fill",
+                        labelKey: viewModel.isReadingAudioPaused ? "reading_resume_audio" : "reading_pause_audio",
+                        action: {
+                            if viewModel.isReadingAudioPaused {
+                                viewModel.resumeSentencePlayback(story: story)
+                            } else {
+                                viewModel.pauseSentencePlayback()
+                            }
+                        }
+                    )
+                    IconButton(
+                        systemName: "forward.end.fill",
+                        labelKey: "reading_next_sentence",
+                        action: { viewModel.advanceSentencePlayback(story: story) }
+                    )
+                    IconButton(
+                        systemName: "stop.circle.fill",
+                        labelKey: "reading_stop_audio",
+                        action: { viewModel.stopSentencePlayback() }
+                    )
+                    Spacer(minLength: 0)
+                }
+            }
+
             Button {
-                if viewModel.isSpeaking {
-                    viewModel.stopSpeaking()
+                if viewModel.isReadingAudioActive {
+                    viewModel.stopSentencePlayback()
                 } else {
-                    viewModel.speakAll(story)
+                    viewModel.startSentencePlayback(story: story, paragraphIndex: paragraphIndex)
                 }
             } label: {
                 Label(
-                    LocalizedStringKey(viewModel.isSpeaking ? "reading_stop_audio" : "reading_read_all"),
-                    systemImage: viewModel.isSpeaking ? "stop.circle.fill" : "speaker.wave.2.fill"
+                    LocalizedStringKey(viewModel.isReadingAudioActive ? "reading_stop_audio" : "reading_read_all"),
+                    systemImage: viewModel.isReadingAudioActive ? "stop.circle.fill" : "speaker.wave.2.fill"
                 )
                     .frame(maxWidth: .infinity)
             }
@@ -3084,37 +3384,98 @@ private struct ReadingTopBar: View {
 }
 
 private struct ReadingParagraphView: View {
+    let storyId: String
+    let paragraphIndex: Int
     let paragraph: Paragraph
     let size: LMCReadingSize
     let showPinyin: Bool
-    let isCurrent: Bool
+    let isCurrentParagraph: Bool
+    let activeSentenceIndex: Int?
 
     var body: some View {
-        content
+        VStack(alignment: .leading, spacing: LMCSpace.s3) {
+            ForEach(paragraph.lmcSentenceSegments) { sentence in
+                ReadingSentenceView(
+                    sentence: sentence,
+                    size: size,
+                    showPinyin: showPinyin,
+                    isActive: activeSentenceIndex == sentence.index
+                )
+                .id(LMCSentenceLocation(
+                    storyId: storyId,
+                    paragraphIndex: paragraphIndex,
+                    sentenceIndex: sentence.index
+                ).scrollId)
+            }
+        }
             .padding(LMCSpace.s3)
-            .background(isCurrent ? LMCColor.surface.opacity(0.8) : Color.clear)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(isCurrentParagraph ? LMCColor.surface.opacity(0.8) : Color.clear)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(Text(paragraph.text))
     }
+}
+
+private struct ReadingSentenceView: View {
+    let sentence: LMCSentenceSegment
+    let size: LMCReadingSize
+    let showPinyin: Bool
+    let isActive: Bool
 
     @ViewBuilder
-    private var content: some View {
+    var body: some View {
         if showPinyin {
-            LMCRubyTextFlow(cells: paragraph.lmcRubyCells, size: size)
+            LMCRubyTextFlow(cells: sentence.cells, size: size)
+                .padding(.horizontal, LMCSpace.s2)
+                .padding(.vertical, LMCSpace.s1)
+                .background(sentenceBackground)
+                .overlay(sentenceBorder)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         } else {
-            Text(paragraph.text)
+            Text(sentence.text)
                 .font(size.hanziFont)
                 .foregroundStyle(LMCColor.textPrimary)
                 .lineSpacing(size.hanziLineSpacing)
                 .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, LMCSpace.s3)
+                .padding(.vertical, LMCSpace.s2)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(sentenceBackground)
+                .overlay(sentenceBorder)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
+    }
+
+    private var sentenceBackground: Color {
+        isActive ? LMCColor.primaryContainer : Color.clear
+    }
+
+    private var sentenceBorder: some View {
+        RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .stroke(isActive ? LMCColor.primary.opacity(0.35) : Color.clear, lineWidth: 1)
     }
 }
 
 private struct LMCRubyCellData: Equatable {
     let character: String
     let pinyin: String
+}
+
+private struct LMCSentenceSegment: Identifiable, Equatable {
+    let index: Int
+    let text: String
+    let cells: [LMCRubyCellData]
+
+    var id: Int {
+        index
+    }
+}
+
+private struct LMCSentenceTextSegment {
+    let index: Int
+    let text: String
+    let characterRange: Range<Int>
 }
 
 private extension Paragraph {
@@ -3128,6 +3489,212 @@ private extension Paragraph {
         return cells.map { cell in
             LMCRubyCellData(character: cell.c, pinyin: cell.p)
         }
+    }
+
+    var lmcSentenceSegments: [LMCSentenceSegment] {
+        let textSegments = LMCSentenceSplitter.split(text)
+        let rubyCells = lmcRubyCells
+        let textCharacterCount = text.count
+
+        return textSegments.map { segment in
+            let sentenceCells: [LMCRubyCellData]
+            if rubyCells.count == textCharacterCount {
+                sentenceCells = Array(rubyCells[segment.characterRange])
+            } else {
+                sentenceCells = segment.text.map { character in
+                    LMCRubyCellData(character: String(character), pinyin: "")
+                }
+            }
+            return LMCSentenceSegment(index: segment.index, text: segment.text, cells: sentenceCells)
+        }
+    }
+}
+
+private extension Story {
+    func lmcSentence(at location: LMCSentenceLocation) -> LMCSentenceSegment? {
+        guard location.storyId == id, paragraphs.indices.contains(location.paragraphIndex) else { return nil }
+        return paragraphs[location.paragraphIndex].lmcSentenceSegments.first { $0.index == location.sentenceIndex }
+    }
+
+    func lmcNormalizedSentenceLocation(paragraphIndex: Int, sentenceIndex: Int) -> LMCSentenceLocation? {
+        guard !paragraphs.isEmpty else { return nil }
+        let clampedParagraphIndex = max(0, min(paragraphIndex, paragraphs.count - 1))
+
+        for candidateParagraphIndex in clampedParagraphIndex..<paragraphs.count {
+            let segments = paragraphs[candidateParagraphIndex].lmcSentenceSegments
+            guard !segments.isEmpty else { continue }
+            let candidateSentenceIndex = candidateParagraphIndex == clampedParagraphIndex
+                ? max(0, min(sentenceIndex, segments.count - 1))
+                : 0
+            return LMCSentenceLocation(
+                storyId: id,
+                paragraphIndex: candidateParagraphIndex,
+                sentenceIndex: candidateSentenceIndex
+            )
+        }
+
+        return nil
+    }
+
+    func lmcNextSentenceLocation(after location: LMCSentenceLocation) -> LMCSentenceLocation? {
+        guard location.storyId == id, paragraphs.indices.contains(location.paragraphIndex) else { return nil }
+
+        for candidateParagraphIndex in location.paragraphIndex..<paragraphs.count {
+            let segments = paragraphs[candidateParagraphIndex].lmcSentenceSegments
+            guard !segments.isEmpty else { continue }
+            let firstCandidateSentenceIndex = candidateParagraphIndex == location.paragraphIndex
+                ? location.sentenceIndex + 1
+                : 0
+            if segments.indices.contains(firstCandidateSentenceIndex) {
+                return LMCSentenceLocation(
+                    storyId: id,
+                    paragraphIndex: candidateParagraphIndex,
+                    sentenceIndex: firstCandidateSentenceIndex
+                )
+            }
+        }
+
+        return nil
+    }
+}
+
+private enum LMCSentenceSplitter {
+    // TODO(shared API): replace this local splitter with the shared sentence plan when it lands.
+    private static let sentenceEndPunctuation: Set<Character> = ["。", "！", "？", "；", "…"]
+    private static let sentenceTrailingCharacters: Set<Character> = ["”", "’", "」", "』", "》", "〉", "）", ")"]
+
+    static func split(_ text: String) -> [LMCSentenceTextSegment] {
+        let characters = Array(text)
+        guard !characters.isEmpty else { return [] }
+
+        var segments: [LMCSentenceTextSegment] = []
+        var start = 0
+        var index = 0
+
+        while index < characters.count {
+            if sentenceEndPunctuation.contains(characters[index]) {
+                var end = index + 1
+                while end < characters.count,
+                      sentenceEndPunctuation.contains(characters[end]) || sentenceTrailingCharacters.contains(characters[end]) {
+                    end += 1
+                }
+                appendSegment(characters: characters, range: start..<end, to: &segments)
+                start = end
+                while start < characters.count, characters[start].lmcIsWhitespace {
+                    start += 1
+                }
+                index = start
+            } else {
+                index += 1
+            }
+        }
+
+        appendSegment(characters: characters, range: start..<characters.count, to: &segments)
+        return segments
+    }
+
+    private static func appendSegment(
+        characters: [Character],
+        range: Range<Int>,
+        to segments: inout [LMCSentenceTextSegment]
+    ) {
+        var lowerBound = range.lowerBound
+        var upperBound = range.upperBound
+
+        while lowerBound < upperBound, characters[lowerBound].lmcIsWhitespace {
+            lowerBound += 1
+        }
+        while upperBound > lowerBound, characters[upperBound - 1].lmcIsWhitespace {
+            upperBound -= 1
+        }
+        guard lowerBound < upperBound else { return }
+
+        let text = characters[lowerBound..<upperBound].map(String.init).joined()
+        segments.append(
+            LMCSentenceTextSegment(
+                index: segments.count,
+                text: text,
+                characterRange: lowerBound..<upperBound
+            )
+        )
+    }
+}
+
+private enum LMCSentenceAudioResolver {
+    // TODO(shared API): replace Bundle manifest lookup with a shared audio resource resolver when it lands.
+    static func generatedAudioURL(storyId: String, location: LMCSentenceLocation) -> URL? {
+        if let manifestURL = Bundle.main.url(forResource: "audio", withExtension: "json", subdirectory: "stories/\(storyId)"),
+           let data = try? Data(contentsOf: manifestURL),
+           let manifest = try? JSONDecoder().decode(LMCAudioManifest.self, from: data),
+           let sentence = manifest.sentences.first(where: {
+               $0.paraIndex == location.paragraphIndex && $0.sentIndex == location.sentenceIndex && $0.unavailable != true
+           }),
+           let manifestAudioURL = url(storyId: storyId, audioPath: sentence.audioPath) {
+            return manifestAudioURL
+        }
+
+        return Bundle.main.url(
+            forResource: "p\(location.paragraphIndex + 1)_s\(location.sentenceIndex + 1)",
+            withExtension: "wav",
+            subdirectory: "stories/\(storyId)/audio"
+        )
+    }
+
+    private static func url(storyId: String, audioPath: String) -> URL? {
+        let path = NSString(string: audioPath)
+        let directory = path.deletingLastPathComponent
+        let resource = NSString(string: path.lastPathComponent).deletingPathExtension
+        let ext = path.pathExtension
+        guard !resource.isEmpty, !ext.isEmpty else { return nil }
+        let subdirectory = directory.isEmpty || directory == "."
+            ? "stories/\(storyId)"
+            : "stories/\(storyId)/\(directory)"
+        return Bundle.main.url(
+            forResource: resource,
+            withExtension: ext,
+            subdirectory: subdirectory
+        )
+    }
+}
+
+private struct LMCAudioManifest: Decodable {
+    let sentences: [LMCAudioManifestSentence]
+}
+
+private struct LMCAudioManifestSentence: Decodable {
+    let paraIndex: Int
+    let sentIndex: Int
+    let audioPath: String
+    let unavailable: Bool?
+}
+
+private enum LMCTtsDurationEstimator {
+    static func nanoseconds(for text: String) -> UInt64 {
+        let characterCount = max(4, text.count)
+        let seconds = min(14.0, max(1.4, Double(characterCount) * 0.28 + 0.6))
+        return UInt64(seconds * 1_000_000_000)
+    }
+}
+
+private final class LMCGeneratedAudioDelegate: NSObject, AVAudioPlayerDelegate {
+    private let finish: () -> Void
+
+    init(finish: @escaping () -> Void) {
+        self.finish = finish
+    }
+
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        finish()
+    }
+
+    func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
+        finish()
+    }
+}
+
+private extension Character {
+    var lmcIsWhitespace: Bool {
+        unicodeScalars.allSatisfy { CharacterSet.whitespacesAndNewlines.contains($0) }
     }
 }
 

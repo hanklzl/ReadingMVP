@@ -1,0 +1,130 @@
+{
+  "sentences": [
+    {
+      "paraIndex": 0,
+      "sentIndex": 0,
+      "text": "很久以前，涿县贴出榜文，盼望有人一起保护乡里。",
+      "audioPath": "audio/p1_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 0,
+      "sentIndex": 1,
+      "text": "刘备读完榜文，心里想着百姓过安稳日子，不由得长叹。",
+      "audioPath": "audio/p1_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 0,
+      "sentIndex": 2,
+      "text": "他明白，一个人的力量有限，若能找到志同道合的朋友，就能多做一点好事。",
+      "audioPath": "audio/p1_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 0,
+      "text": "张飞听见叹声，走来问原因。",
+      "audioPath": "audio/p2_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 1,
+      "text": "刘备说自己力量小，却想做有益的事。",
+      "audioPath": "audio/p2_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 2,
+      "text": "张飞很赞成，愿意拿出家中积蓄，招呼乡勇。",
+      "audioPath": "audio/p2_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 3,
+      "text": "他说，家里有粮有地方，可以先让愿意帮忙的人聚在一起。",
+      "audioPath": "audio/p2_s4.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 0,
+      "text": "这时关羽也来到店里。",
+      "audioPath": "audio/p3_s1.wav",
+      "durationMs": 1300
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 1,
+      "text": "他听见二人的心愿，觉得他们正直可靠，便坐下一起商量。",
+      "audioPath": "audio/p3_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 2,
+      "text": "三个人越谈越投合，都想扶危助困。",
+      "audioPath": "audio/p3_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 3,
+      "text": "关羽说，做大事先要守信用，也要懂得照顾弱小的人。",
+      "audioPath": "audio/p3_s4.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 0,
+      "text": "张飞家后有一片桃园，桃花开得正好。",
+      "audioPath": "audio/p4_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 1,
+      "text": "第二天，他们在桃树下结为兄弟，约定同心协力，互相提醒，先想着百姓。",
+      "audioPath": "audio/p4_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 2,
+      "text": "桃花落在衣袖上，像给这个约定盖上温柔的印记。",
+      "audioPath": "audio/p4_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 0,
+      "text": "从此，刘备、关羽、张飞一起练习、准备、照看乡亲。",
+      "audioPath": "audio/p5_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 1,
+      "text": "遇到有人搬东西，他们去帮忙；",
+      "audioPath": "audio/p5_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 2,
+      "text": "听见老人担心，他们耐心安慰。",
+      "audioPath": "audio/p5_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 3,
+      "text": "桃园里的誓言像春风一样，告诉大家：真正的勇气，是和朋友一起守护善良。",
+      "audioPath": "audio/p5_s4.wav",
+      "durationMs": 1500
+    }
+  ]
+}

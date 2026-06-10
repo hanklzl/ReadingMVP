@@ -1,0 +1,116 @@
+{
+  "sentences": [
+    {
+      "paraIndex": 0,
+      "sentIndex": 0,
+      "text": "有一次，曹操带着队伍赶路。",
+      "audioPath": "audio/p1_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 0,
+      "sentIndex": 1,
+      "text": "太阳很大，路又长，大家走得口渴，脚步也慢了下来。",
+      "audioPath": "audio/p1_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 0,
+      "sentIndex": 2,
+      "text": "曹操看在眼里，知道大家需要鼓励。",
+      "audioPath": "audio/p1_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 0,
+      "sentIndex": 3,
+      "text": "他先让队伍放慢一点，又提醒大家不要互相抱怨。",
+      "audioPath": "audio/p1_s4.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 0,
+      "text": "他没有责备大家，而是指着前方说，前面好像有一片梅林，梅子又酸又甜，想到味道就会舒服些。",
+      "audioPath": "audio/p2_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 1,
+      "text": "大家听了，嘴里仿佛有了清凉的感觉。",
+      "audioPath": "audio/p2_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 2,
+      "text": "有人还笑着说，酸梅子的味道已经跑到舌尖上了。",
+      "audioPath": "audio/p2_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 0,
+      "text": "队伍重新打起精神，继续向前走。",
+      "audioPath": "audio/p3_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 1,
+      "text": "有人想着酸甜的梅子，有人想着快点找到水源，脚步渐渐稳了。",
+      "audioPath": "audio/p3_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 2,
+      "text": "大家开始互相照看，前面的人提醒后面的人跟上，后面的人也不再着急。",
+      "audioPath": "audio/p3_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 0,
+      "text": "过了一会儿，大家真的找到水源，可以安心休息。",
+      "audioPath": "audio/p4_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 1,
+      "text": "曹操用一个巧妙的想法，帮助大家把难走的一段路坚持过去。",
+      "audioPath": "audio/p4_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 2,
+      "text": "找到水以后，大家更明白，先稳住心，路就能一步一步走完。",
+      "audioPath": "audio/p4_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 0,
+      "text": "这个故事后来成了成语“望梅止渴”。",
+      "audioPath": "audio/p5_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 1,
+      "text": "它提醒我们，遇到困难时，温和的鼓励和清楚的目标，能让人多一分力量。",
+      "audioPath": "audio/p5_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 2,
+      "text": "当然，真正解决问题还要继续寻找办法，就像大家最后找到了水源。",
+      "audioPath": "audio/p5_s3.wav",
+      "durationMs": 1500
+    }
+  ]
+}

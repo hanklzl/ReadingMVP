@@ -1,0 +1,109 @@
+{
+  "sentences": [
+    {
+      "paraIndex": 0,
+      "sentIndex": 0,
+      "text": "诸葛亮来到南方，见到当地首领孟获。",
+      "audioPath": "audio/p1_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 0,
+      "sentIndex": 1,
+      "text": "孟获勇敢，也很爱自己的百姓，可他一开始不相信诸葛亮的诚意。",
+      "audioPath": "audio/p1_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 0,
+      "sentIndex": 2,
+      "text": "他担心家乡受委屈，所以总想亲自看个明白。",
+      "audioPath": "audio/p1_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 0,
+      "text": "诸葛亮没有只想让人害怕。",
+      "audioPath": "audio/p2_s1.wav",
+      "durationMs": 1490
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 1,
+      "text": "他说，要让人真正信服，先要让对方明白自己的心。",
+      "audioPath": "audio/p2_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 2,
+      "text": "于是，每次孟获不服，他都放他回去再谈。",
+      "audioPath": "audio/p2_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 3,
+      "text": "旁人觉得奇怪，诸葛亮却说，心服比口服更重要。",
+      "audioPath": "audio/p2_s4.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 0,
+      "text": "一次又一次，诸葛亮守信，也请队伍尊重当地百姓。",
+      "audioPath": "audio/p3_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 1,
+      "text": "孟获看见他们不抢东西，不欺负人，心里的疑问慢慢少了。",
+      "audioPath": "audio/p3_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 2,
+      "text": "有人送来水和食物，诸葛亮也让大家礼貌道谢。",
+      "audioPath": "audio/p3_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 0,
+      "text": "到了第七次，孟获终于明白，诸葛亮不是为了逞强，而是希望大家少争执、多安定。",
+      "audioPath": "audio/p4_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 1,
+      "text": "他认真表示愿意和好，也愿意一起照看南方的百姓。",
+      "audioPath": "audio/p4_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 0,
+      "text": "七擒孟获的故事告诉我们，宽容有时比强硬更有力量。",
+      "audioPath": "audio/p5_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 1,
+      "text": "让别人信服，靠的是守信、尊重和为百姓着想。",
+      "audioPath": "audio/p5_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 2,
+      "text": "当彼此都愿意好好说话，原来的距离就会慢慢变近。",
+      "audioPath": "audio/p5_s3.wav",
+      "durationMs": 1500
+    }
+  ]
+}

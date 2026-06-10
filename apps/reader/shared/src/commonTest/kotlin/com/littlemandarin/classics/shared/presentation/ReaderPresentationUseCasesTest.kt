@@ -14,6 +14,8 @@ import com.littlemandarin.classics.shared.service.AiQuestionTypes
 import com.littlemandarin.classics.shared.story.Paragraph
 import com.littlemandarin.classics.shared.story.Question
 import com.littlemandarin.classics.shared.story.Story
+import com.littlemandarin.classics.shared.story.StoryAudioManifest
+import com.littlemandarin.classics.shared.story.StoryAudioSegment
 import com.littlemandarin.classics.shared.story.Vocab
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -43,6 +45,68 @@ class ReaderPresentationUseCasesTest {
         assertEquals(2, next.state.paragraphIndex)
         assertEquals("${sampleParagraphText()}2", next.state.currentParagraph?.text)
         assertTrue(reducer.next(story, next.state).shouldOpenVocabulary)
+    }
+
+    @Test
+    fun readingSessionAdvancesBySentenceAndStopsAtVocabularyGate() {
+        val story = sampleStory(paragraphCount = 2).copy(
+            paragraphs = listOf(
+                Paragraph(
+                    text = "桃园开花。三人说：好！",
+                    pinyin = "tao yuan kai hua. san ren shuo hao.",
+                ),
+                Paragraph(
+                    text = "大家点头……",
+                    pinyin = "da jia dian tou.",
+                ),
+            ),
+        )
+        val manifest = StoryAudioManifest(
+            storyId = story.id,
+            segments = listOf(
+                StoryAudioSegment(
+                    paragraphIndex = 0,
+                    sentenceIndex = 0,
+                    text = "桃园开花。",
+                    resourcePath = "stories/sample/audio/p1_s1.wav",
+                    durationMillis = 2100L,
+                ),
+            ),
+        )
+        val reducer = ReadingSessionReducer()
+
+        val initial = reducer.initialState(story, savedParagraphIndex = 0, audioManifest = manifest)
+        val playing = reducer.start(initial)
+        val paused = reducer.pause(playing)
+        val stopped = reducer.stop(paused)
+        val secondSentence = reducer.nextSentence(story, playing, audioManifest = manifest)
+        val nextParagraph = reducer.nextSentence(story, secondSentence.state, audioManifest = manifest)
+        val vocabularyGate = reducer.nextSentence(story, nextParagraph.state, audioManifest = manifest)
+
+        assertEquals(listOf("桃园开花。", "三人说：好！"), initial.segments.map { it.text })
+        assertEquals(0, initial.sentenceIndex)
+        assertEquals("桃园开花。", initial.currentSentence?.text)
+        assertTrue(initial.hasGeneratedAudio)
+        assertEquals("stories/sample/audio/p1_s1.wav", initial.currentAudioResourcePath)
+
+        assertEquals(ReadingPlaybackStatus.Playing, playing.playbackStatus)
+        assertEquals(ReadingPlaybackStatus.Paused, paused.playbackStatus)
+        assertEquals(ReadingPlaybackStatus.Stopped, stopped.playbackStatus)
+
+        assertFalse(secondSentence.shouldOpenVocabulary)
+        assertEquals(0, secondSentence.state.paragraphIndex)
+        assertEquals(1, secondSentence.state.sentenceIndex)
+        assertEquals("三人说：好！", secondSentence.state.currentSentence?.text)
+        assertFalse(secondSentence.state.hasGeneratedAudio)
+
+        assertEquals(1, nextParagraph.state.paragraphIndex)
+        assertEquals(0, nextParagraph.state.sentenceIndex)
+        assertEquals("大家点头……", nextParagraph.state.currentSentence?.text)
+
+        assertTrue(vocabularyGate.shouldOpenVocabulary)
+        assertEquals(ReadingPlaybackStatus.Stopped, vocabularyGate.state.playbackStatus)
+        assertEquals(1, vocabularyGate.state.paragraphIndex)
+        assertEquals(0, vocabularyGate.state.sentenceIndex)
     }
 
     @Test
@@ -248,6 +312,12 @@ class ReaderPresentationUseCasesTest {
             surface = "reading",
             paragraphIndex = 2,
         )
+        val paragraphAudioPlay = ReaderAnalyticsEvents.paragraphAudioPlay(
+            storyId = story.id,
+            paragraphIndex = 0,
+            audioSource = "generated",
+            sentenceIndex = 1,
+        )
         val vocabOpen = ReaderAnalyticsEvents.vocabOpen(story, vocabIndex = 1, openSource = "story")
 
         val event = analytics.track(storyOpen.eventName, storyOpen.properties)
@@ -264,6 +334,8 @@ class ReaderPresentationUseCasesTest {
         assertEquals("settings", parentReportOpen.properties.getValue("entry_point").toString().trim('"'))
         assertEquals(AnalyticsEventName.PinyinToggle, pinyinToggle.eventName)
         assertEquals("2", pinyinToggle.properties.getValue("paragraph_index").toString())
+        assertEquals(AnalyticsEventName.ParagraphAudioPlay, paragraphAudioPlay.eventName)
+        assertEquals("1", paragraphAudioPlay.properties.getValue("sentence_index").toString())
         assertEquals(AnalyticsEventName.VocabOpen, vocabOpen.eventName)
         assertEquals("first:2", vocabOpen.properties.getValue("vocab_id").toString().trim('"'))
     }

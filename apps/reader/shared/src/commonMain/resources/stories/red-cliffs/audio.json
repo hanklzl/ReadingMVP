@@ -1,0 +1,109 @@
+{
+  "sentences": [
+    {
+      "paraIndex": 0,
+      "sentIndex": 0,
+      "text": "赤壁江边，曹操的船队很多，江面显得十分热闹。",
+      "audioPath": "audio/p1_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 0,
+      "sentIndex": 1,
+      "text": "孙权和刘备一方人数较少，大家知道，只有合作，才可能想出好办法。",
+      "audioPath": "audio/p1_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 0,
+      "sentIndex": 2,
+      "text": "江边百姓也盼着风浪早点过去，日子重新安定。",
+      "audioPath": "audio/p1_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 0,
+      "text": "周瑜负责安排船只，诸葛亮负责观察风向，黄盖负责传递信号。",
+      "audioPath": "audio/p2_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 1,
+      "text": "每个人做的事不同，目标却一样：保护百姓，让江边早日安定。",
+      "audioPath": "audio/p2_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 2,
+      "text": "他们反复核对时间，提醒同伴不要抢先行动。",
+      "audioPath": "audio/p2_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 0,
+      "text": "他们发现曹操的船连在一起，转身不太方便。",
+      "audioPath": "audio/p3_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 1,
+      "text": "夜里，东南风起，信号传来，江面出现明亮火光，曹操的船队一下子乱了阵脚。",
+      "audioPath": "audio/p3_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 2,
+      "text": "火光在故事里只是计策的信号，不是吓人的场面。",
+      "audioPath": "audio/p3_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 0,
+      "text": "孙刘两方没有追着吵闹，而是按计划守住江岸，帮助自己的人安全前进。",
+      "audioPath": "audio/p4_s1.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 1,
+      "text": "曹操见形势不利，带着船队后退。",
+      "audioPath": "audio/p4_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 2,
+      "text": "大家把路让给需要离开的人，也把注意力放在照看队伍上。",
+      "audioPath": "audio/p4_s3.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 0,
+      "text": "赤壁的故事很有名。",
+      "audioPath": "audio/p5_s1.wav",
+      "durationMs": 1205
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 1,
+      "text": "它告诉我们，聪明不是一个人的表演，而是许多人看准时机、互相信任、一起完成重要的事。",
+      "audioPath": "audio/p5_s2.wav",
+      "durationMs": 1500
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 2,
+      "text": "分工清楚、彼此相信，小队伍也能做成大事情。",
+      "audioPath": "audio/p5_s3.wav",
+      "durationMs": 1500
+    }
+  ]
+}
