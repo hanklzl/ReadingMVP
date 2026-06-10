@@ -42,8 +42,5 @@ google-services.json
 GoogleService-Info.plist
 secrets.*
 
-# generated TTS audio (placeholders / regenerable; real audio via provider or CDN later)
-**/stories/*/audio/*.wav
-**/stories/*/audio/*.mp3
 # local QA scratch (screenshots, agent reports)
 docs/qa/
