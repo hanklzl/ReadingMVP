@@ -95,6 +95,13 @@
     <string name="completion_milestone_streak_title">连续 %1$d 天</string>
     <string name="completion_milestone_goal_body">今日已读 %1$d / %2$d 篇</string>
     <string name="completion_milestone_keep_going">明天还有新的故事等着你。</string>
+    <string name="completion_encouragement_title">读得真棒</string>
+    <string name="completion_encouragement_body">很专心，今天的故事完成了。</string>
+    <string name="completion_stamp_story_done">故事完成</string>
+    <string name="completion_stamp_story_plus_one">故事 +1</string>
+    <string name="completion_stamp_streak_plus_one">连续 +1</string>
+    <string name="completion_stamp_milestone">达成 %1$d 天</string>
+    <string name="completion_sticker_content_description">阅读奖励印章</string>
 
     <!-- Today -->
     <string name="today_title">今日</string>

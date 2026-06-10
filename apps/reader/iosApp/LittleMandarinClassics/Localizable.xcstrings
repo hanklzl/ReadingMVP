@@ -245,7 +245,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Daily Chinese classics"
+            "value" : "Little Mandarin Classics"
           }
         },
         "zh-Hans" : {
@@ -1901,6 +1901,48 @@
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "%d-day streak" } },
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "连续 %d 天" } }
+      }
+    },
+    "completion_encouragement_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Well done!" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "读得真棒" } }
+      }
+    },
+    "completion_encouragement_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Great focus. You finished today's story." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "很专心，今天的故事完成了。" } }
+      }
+    },
+    "completion_stamp_story_done" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Story done" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "故事完成" } }
+      }
+    },
+    "completion_stamp_story_plus_one" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Story +1" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "故事 +1" } }
+      }
+    },
+    "completion_stamp_streak_plus_one" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Streak +1" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "连续 +1" } }
+      }
+    },
+    "completion_stamp_milestone" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%d-day mark" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "达成 %d 天" } }
       }
     },
     "nav_word_book" : {

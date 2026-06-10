@@ -4,11 +4,16 @@ import android.content.Context
 import android.content.res.Configuration
 import android.os.Bundle
 import android.os.LocaleList
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.StringRes
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -80,17 +85,23 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -187,6 +198,9 @@ import java.net.URL
 import java.nio.charset.StandardCharsets
 import java.text.NumberFormat
 import java.util.Locale
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -195,6 +209,7 @@ import org.json.JSONObject
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        setTheme(R.style.Theme_LittleMandarinClassics)
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         AndroidAnalyticsServiceProvider.initialize(applicationContext)
@@ -1794,6 +1809,7 @@ private fun QuizScreen(
     }
     var completionHandled by remember(story.id) { mutableStateOf(false) }
     var completionStreakSummary by remember(story.id) { mutableStateOf<StreakSummary?>(null) }
+    var completionJustRecorded by remember(story.id) { mutableStateOf(false) }
 
     LaunchedEffect(story.id) {
         analytics.track(ReaderAnalyticsEvents.quizStart(story))
@@ -1804,6 +1820,7 @@ private fun QuizScreen(
             completionHandled = true
             val now = System.currentTimeMillis()
             val wasAlreadyCompleted = progressService.getRecords().any { it.storyId == story.id }
+            completionJustRecorded = !wasAlreadyCompleted
             MarkStoryCompletedUseCase(progressService).invoke(
                 quizSessionReducer.completionRecord(
                     story = story,
@@ -1835,6 +1852,7 @@ private fun QuizScreen(
             correctCount = score.correctCount,
             totalQuestions = score.totalQuestions,
             streakSummary = completionStreakSummary,
+            completionJustRecorded = completionJustRecorded,
             onReadAgain = onReadAgain,
             onDone = onDone,
         )
@@ -3436,92 +3454,309 @@ private fun QuizCompletionScreen(
     correctCount: Int,
     totalQuestions: Int,
     streakSummary: StreakSummary?,
+    completionJustRecorded: Boolean,
     onReadAgain: () -> Unit,
     onDone: () -> Unit,
 ) {
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(LmcSpacing.ScreenPadding),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space6),
+            .background(MaterialTheme.colorScheme.background),
     ) {
-        Spacer(modifier = Modifier.height(LmcSpacing.Space8))
+        CompletionCelebrationBurst(
+            enabled = completionJustRecorded || streakSummary?.newMilestoneDays != null,
+            modifier = Modifier.matchParentSize(),
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .semantics { liveRegion = LiveRegionMode.Polite },
+        ) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(LmcSpacing.ScreenPadding),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space5),
+            ) {
+                Spacer(modifier = Modifier.height(LmcSpacing.Space8))
+                CompletionRewardHero(
+                    streakSummary = streakSummary,
+                    completionJustRecorded = completionJustRecorded,
+                )
+                Text(
+                    text = stringResource(R.string.quiz_complete_title),
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    text = stringResource(R.string.completion_encouragement_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    text = stringResource(R.string.completion_encouragement_body),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    text = stringResource(R.string.quiz_score, correctCount, totalQuestions),
+                    style = MaterialTheme.typography.displaySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                if (streakSummary != null) {
+                    CompletionMilestoneBanner(streakSummary = streakSummary)
+                }
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+                    color = MaterialTheme.colorScheme.surface,
+                    shadowElevation = LmcSpacing.CardElevation,
+                ) {
+                    Column(
+                        modifier = Modifier.padding(LmcSpacing.CardPadding),
+                        verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.quiz_retell),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = story.retellPrompt,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(
+                        horizontal = LmcSpacing.ScreenPadding,
+                        vertical = LmcSpacing.Space3,
+                    ),
+                horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space3),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                OutlinedButton(
+                    onClick = onReadAgain,
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = LmcSpacing.ButtonSecondaryHeight),
+                ) {
+                    Text(text = stringResource(R.string.action_read_again))
+                }
+                Button(
+                    onClick = onDone,
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = LmcSpacing.ButtonPrimaryHeight),
+                    shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+                ) {
+                    Text(text = stringResource(R.string.action_done))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CompletionCelebrationBurst(
+    enabled: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    if (!enabled) return
+
+    val reduceMotion = rememberReduceMotionEnabled()
+    val progress = remember(reduceMotion) { Animatable(if (reduceMotion) 1f else 0f) }
+
+    LaunchedEffect(reduceMotion) {
+        if (reduceMotion) {
+            progress.snapTo(1f)
+        } else {
+            progress.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(
+                    durationMillis = LmcMotion.CelebrationMillis,
+                    easing = FastOutSlowInEasing,
+                ),
+            )
+        }
+    }
+
+    Canvas(
+        modifier = modifier.clearAndSetSemantics {},
+    ) {
+        CompletionParticles.forEachIndexed { index, particle ->
+            val start = Offset(size.width * 0.5f, size.height * 0.18f)
+            val target = Offset(size.width * particle.x, size.height * particle.y)
+            val animated = progress.value
+            val lift = if (reduceMotion) 0f else sin(animated * PI).toFloat() * particle.lift.toPx()
+            val center = Offset(
+                x = start.x + (target.x - start.x) * animated,
+                y = start.y + (target.y - start.y) * animated - lift,
+            )
+            val alpha = if (reduceMotion) {
+                0.22f
+            } else {
+                (0.25f + (1f - animated) * 0.75f).coerceIn(0.25f, 1f)
+            }
+            val color = particle.color
+            if (index % 3 == 0) {
+                drawCompletionStar(
+                    center = center,
+                    radius = particle.size.toPx(),
+                    color = color,
+                    alpha = alpha,
+                )
+            } else {
+                drawRoundRect(
+                    color = color.copy(alpha = alpha),
+                    topLeft = Offset(center.x - particle.size.toPx() / 2f, center.y - particle.size.toPx() / 2f),
+                    size = Size(particle.size.toPx() * 1.4f, particle.size.toPx() * 0.75f),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(3.dp.toPx()),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CompletionRewardHero(
+    streakSummary: StreakSummary?,
+    completionJustRecorded: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val reduceMotion = rememberReduceMotionEnabled()
+    val scale = remember(reduceMotion) { Animatable(if (reduceMotion) 1f else 0.88f) }
+    val milestoneDays = streakSummary?.newMilestoneDays
+    val stampText = when {
+        milestoneDays != null -> stringResource(
+            R.string.completion_stamp_milestone,
+            milestoneDays,
+        )
+        completionJustRecorded && streakSummary?.didAdvanceStreakOnCompletion() == true ->
+            stringResource(R.string.completion_stamp_streak_plus_one)
+        completionJustRecorded ->
+            stringResource(R.string.completion_stamp_story_plus_one)
+        else ->
+            stringResource(R.string.completion_stamp_story_done)
+    }
+    val contentDescription = stringResource(R.string.completion_sticker_content_description)
+
+    LaunchedEffect(reduceMotion) {
+        if (reduceMotion) {
+            scale.snapTo(1f)
+        } else {
+            scale.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(
+                    durationMillis = LmcMotion.MediumMillis,
+                    easing = FastOutSlowInEasing,
+                ),
+            )
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .size(width = 152.dp, height = 116.dp)
+            .semantics { this.contentDescription = "$contentDescription, $stampText" },
+        contentAlignment = Alignment.Center,
+    ) {
         Surface(
-            modifier = Modifier.size(88.dp),
+            modifier = Modifier.size((92.dp * scale.value)),
             shape = CircleShape,
             color = LmcColors.SuccessContainer,
+            shadowElevation = LmcSpacing.CardElevation,
         ) {
             Box(contentAlignment = Alignment.Center) {
                 LmcCanvasIcon(
                     icon = LmcIcon.Check,
                     color = LmcColors.Success,
-                    modifier = Modifier.size(40.dp),
+                    modifier = Modifier.size(42.dp),
                 )
             }
         }
-        Text(
-            text = stringResource(R.string.quiz_complete_title),
-            style = MaterialTheme.typography.headlineLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center,
-        )
-        Text(
-            text = stringResource(R.string.quiz_score, correctCount, totalQuestions),
-            style = MaterialTheme.typography.displaySmall,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        if (streakSummary != null) {
-            CompletionMilestoneBanner(streakSummary = streakSummary)
-        }
+
         Surface(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .rotate(if (reduceMotion) 0f else -6f),
             shape = RoundedCornerShape(LmcSpacing.RadiusLg),
-            color = MaterialTheme.colorScheme.surface,
+            color = MaterialTheme.colorScheme.primaryContainer,
             shadowElevation = LmcSpacing.CardElevation,
         ) {
-            Column(
-                modifier = Modifier.padding(LmcSpacing.CardPadding),
-                verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+            Row(
+                modifier = Modifier.padding(
+                    horizontal = LmcSpacing.Space3,
+                    vertical = LmcSpacing.Space2,
+                ),
+                horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space1),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = stringResource(R.string.quiz_retell),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
+                LmcCanvasIcon(
+                    icon = LmcIcon.Check,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp),
                 )
                 Text(
-                    text = story.retellPrompt,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    text = stampText,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
-            }
-        }
-        Spacer(modifier = Modifier.weight(1f))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space3),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            OutlinedButton(
-                onClick = onReadAgain,
-                modifier = Modifier
-                    .weight(1f)
-                    .heightIn(min = LmcSpacing.ButtonSecondaryHeight),
-            ) {
-                Text(text = stringResource(R.string.action_read_again))
-            }
-            Button(
-                onClick = onDone,
-                modifier = Modifier
-                    .weight(1f)
-                    .heightIn(min = LmcSpacing.ButtonPrimaryHeight),
-                shape = RoundedCornerShape(LmcSpacing.RadiusLg),
-            ) {
-                Text(text = stringResource(R.string.action_done))
             }
         }
     }
+}
+
+private fun StreakSummary.didAdvanceStreakOnCompletion(): Boolean =
+    todayGoalMet && todayCompletedStories == dailyGoalStories
+
+@Composable
+private fun rememberReduceMotionEnabled(): Boolean {
+    val context = LocalContext.current
+    return remember(context) {
+        runCatching {
+            Settings.Global.getFloat(
+                context.contentResolver,
+                Settings.Global.ANIMATOR_DURATION_SCALE,
+                1f,
+            ) == 0f
+        }.getOrDefault(false)
+    }
+}
+
+private fun DrawScope.drawCompletionStar(
+    center: Offset,
+    radius: Float,
+    color: Color,
+    alpha: Float,
+) {
+    val path = Path()
+    repeat(10) { point ->
+        val angle = -PI / 2.0 + point * PI / 5.0
+        val pointRadius = if (point % 2 == 0) radius else radius * 0.45f
+        val x = center.x + cos(angle).toFloat() * pointRadius
+        val y = center.y + sin(angle).toFloat() * pointRadius
+        if (point == 0) {
+            path.moveTo(x, y)
+        } else {
+            path.lineTo(x, y)
+        }
+    }
+    path.close()
+    drawPath(path, color.copy(alpha = alpha))
 }
 
 @Composable
@@ -4167,10 +4402,28 @@ private fun OptionCircle(
 @Composable
 private fun LoadingScreen() {
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
         contentAlignment = Alignment.Center,
     ) {
-        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space4),
+        ) {
+            Image(
+                painter = painterResource(R.mipmap.ic_launcher_foreground),
+                contentDescription = null,
+                modifier = Modifier.size(112.dp),
+            )
+            Text(
+                text = stringResource(R.string.app_name),
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onBackground,
+                textAlign = TextAlign.Center,
+            )
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+        }
     }
 }
 
@@ -4626,6 +4879,34 @@ private object LmcColors {
     val Success = Color(0xFF3B7A3B)
     val SuccessContainer = Color(0xFFE1F3DC)
 }
+
+private object LmcMotion {
+    const val MediumMillis = 180
+    const val CelebrationMillis = 720
+}
+
+private data class CompletionParticle(
+    val x: Float,
+    val y: Float,
+    val size: Dp,
+    val lift: Dp,
+    val color: Color,
+)
+
+private val CompletionParticles = listOf(
+    CompletionParticle(0.16f, 0.18f, 8.dp, 34.dp, Color(0xFFB84535)),
+    CompletionParticle(0.28f, 0.12f, 7.dp, 28.dp, Color(0xFF126B68)),
+    CompletionParticle(0.40f, 0.20f, 6.dp, 30.dp, Color(0xFF8A6100)),
+    CompletionParticle(0.62f, 0.14f, 8.dp, 34.dp, Color(0xFF3B7A3B)),
+    CompletionParticle(0.76f, 0.22f, 7.dp, 28.dp, Color(0xFFB84535)),
+    CompletionParticle(0.86f, 0.32f, 6.dp, 24.dp, Color(0xFF126B68)),
+    CompletionParticle(0.12f, 0.38f, 6.dp, 20.dp, Color(0xFF8A6100)),
+    CompletionParticle(0.30f, 0.42f, 8.dp, 26.dp, Color(0xFF3B7A3B)),
+    CompletionParticle(0.72f, 0.46f, 8.dp, 24.dp, Color(0xFFB84535)),
+    CompletionParticle(0.90f, 0.52f, 7.dp, 22.dp, Color(0xFF126B68)),
+    CompletionParticle(0.20f, 0.64f, 7.dp, 16.dp, Color(0xFF3B7A3B)),
+    CompletionParticle(0.82f, 0.68f, 6.dp, 18.dp, Color(0xFF8A6100)),
+)
 
 private object LmcSpacing {
     val Space1 = 4.dp

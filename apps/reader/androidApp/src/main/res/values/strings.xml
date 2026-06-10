@@ -97,6 +97,13 @@
     <string name="completion_milestone_streak_title">%1$d-day streak</string>
     <string name="completion_milestone_goal_body">%1$d / %2$d stories today</string>
     <string name="completion_milestone_keep_going">Tomorrow has another story ready.</string>
+    <string name="completion_encouragement_title">Well done!</string>
+    <string name="completion_encouragement_body">Great focus. You finished today\'s story.</string>
+    <string name="completion_stamp_story_done">Story done</string>
+    <string name="completion_stamp_story_plus_one">Story +1</string>
+    <string name="completion_stamp_streak_plus_one">Streak +1</string>
+    <string name="completion_stamp_milestone">%1$d-day mark</string>
+    <string name="completion_sticker_content_description">Reading reward seal</string>
 
     <!-- Today -->
     <string name="today_title">Today</string>

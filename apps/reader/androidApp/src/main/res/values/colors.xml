@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="lmc_background_rice_paper">#FFF8EC</color>
+    <color name="lmc_primary_vermilion">#B84535</color>
+    <color name="lmc_primary_container">#FFE0D6</color>
+    <color name="lmc_secondary_teal">#126B68</color>
+    <color name="lmc_tertiary_gold">#8A6100</color>
+    <color name="ic_launcher_background">#FFF8EC</color>
+</resources>

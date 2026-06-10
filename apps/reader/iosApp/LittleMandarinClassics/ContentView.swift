@@ -363,8 +363,9 @@ final class ReaderViewModel: ObservableObject {
         )
     }
 
-    func completeStory(_ story: Story, quizState: QuizSessionState) async -> QuizScore {
+    func completeStory(_ story: Story, quizState: QuizSessionState) async -> (score: QuizScore, wasNewCompletion: Bool) {
         let score = quizScore(story, state: quizState)
+        var wasNewCompletion = false
         do {
             let now = Int64(Date().timeIntervalSince1970 * 1_000)
             let wasAlreadyCompleted = try await progressService.getRecords().contains { $0.storyId == story.id }
@@ -375,6 +376,7 @@ final class ReaderViewModel: ObservableObject {
             } else {
                 lastCompletionStreakSummary = try await streakUseCase.recordStoryCompleted(nowEpochMillis: now)
             }
+            wasNewCompletion = !wasAlreadyCompleted
             try await refreshProgress()
             try await refreshWordBook()
             try await refreshStreak()
@@ -382,7 +384,7 @@ final class ReaderViewModel: ObservableObject {
         } catch {
             loadingState = .failed
         }
-        return score
+        return (score, wasNewCompletion)
     }
 
     func progressValue(for story: Story) -> Double {
@@ -1781,6 +1783,184 @@ private struct CompletionMilestoneBanner: View {
     }
 }
 
+private struct CompletionCelebrationLayer: View {
+    let animationToken: Int
+    let isMilestone: Bool
+    let enabled: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var progress = 0.0
+
+    var body: some View {
+        GeometryReader { proxy in
+            ZStack {
+                ForEach(CompletionParticle.particles) { particle in
+                    CompletionParticleView(particle: particle, isMilestone: isMilestone)
+                        .position(position(for: particle, in: proxy.size))
+                        .opacity(opacity)
+                        .scaleEffect(reduceMotion ? 1 : 0.85 + progress * 0.25)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+        .onAppear(perform: runAnimation)
+        .onChange(of: animationToken) { _ in runAnimation() }
+    }
+
+    private var opacity: Double {
+        if reduceMotion { return enabled ? 0.18 : 0 }
+        return enabled ? max(0.22, 1.0 - progress * 0.58) : 0
+    }
+
+    private func position(for particle: CompletionParticle, in size: CGSize) -> CGPoint {
+        let target = CGPoint(x: size.width * particle.x, y: size.height * particle.y)
+        if reduceMotion {
+            return target
+        }
+        let origin = CGPoint(x: size.width * 0.5, y: min(120, size.height * 0.18))
+        let lift = sin(progress * .pi) * particle.lift
+        return CGPoint(
+            x: origin.x + (target.x - origin.x) * progress,
+            y: origin.y + (target.y - origin.y) * progress - lift
+        )
+    }
+
+    private func runAnimation() {
+        guard enabled else {
+            progress = 0
+            return
+        }
+        if reduceMotion {
+            progress = 1
+            return
+        }
+        progress = 0
+        withAnimation(.easeOut(duration: 0.72)) {
+            progress = 1
+        }
+    }
+}
+
+private struct CompletionStampBadge: View {
+    let summary: StreakSummary?
+    let completionJustRecorded: Bool
+    let animationToken: Int
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var isVisible = false
+
+    var body: some View {
+        ZStack(alignment: .bottomTrailing) {
+            Circle()
+                .fill(LMCColor.successContainer)
+                .frame(width: 96, height: 96)
+                .overlay {
+                    Image(systemName: "checkmark.seal.fill")
+                        .font(.system(size: 54, weight: .bold))
+                        .foregroundStyle(LMCColor.success)
+                        .accessibilityHidden(true)
+                }
+                .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 1)
+
+            Label(stampText, systemImage: "seal.fill")
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(LMCColor.primary)
+                .lineLimit(1)
+                .padding(.horizontal, LMCSpace.s3)
+                .frame(minHeight: 36)
+                .background(LMCColor.primaryContainer)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .rotationEffect(.degrees(reduceMotion ? 0 : -6))
+                .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 1)
+        }
+        .frame(width: 152, height: 118)
+        .scaleEffect(isVisible ? 1 : 0.9)
+        .opacity(isVisible ? 1 : 0.2)
+        .onAppear(perform: runAnimation)
+        .onChange(of: animationToken) { _ in runAnimation() }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(stampText))
+    }
+
+    private var stampText: String {
+        if let milestone = summary?.newMilestoneDays {
+            return LMCStrings.format("completion_stamp_milestone", Int(milestone))
+        }
+        if didAdvanceStreakOnCompletion {
+            return LMCStrings.localized("completion_stamp_streak_plus_one")
+        }
+        if completionJustRecorded {
+            return LMCStrings.localized("completion_stamp_story_plus_one")
+        }
+        return LMCStrings.localized("completion_stamp_story_done")
+    }
+
+    private var didAdvanceStreakOnCompletion: Bool {
+        guard completionJustRecorded, let summary = summary else { return false }
+        return summary.todayGoalMet && summary.todayCompletedStories == summary.dailyGoalStories
+    }
+
+    private func runAnimation() {
+        if reduceMotion {
+            isVisible = true
+            return
+        }
+        isVisible = false
+        withAnimation(.spring(response: 0.42, dampingFraction: 0.72)) {
+            isVisible = true
+        }
+    }
+}
+
+private struct CompletionParticleView: View {
+    let particle: CompletionParticle
+    let isMilestone: Bool
+
+    var body: some View {
+        Group {
+            if particle.kind == .star {
+                Image(systemName: isMilestone ? "sparkles" : "star.fill")
+                    .font(.system(size: particle.size, weight: .bold))
+                    .foregroundStyle(particle.color)
+            } else {
+                RoundedRectangle(cornerRadius: 3, style: .continuous)
+                    .fill(particle.color)
+                    .frame(width: particle.size * 1.5, height: particle.size * 0.72)
+                    .rotationEffect(.degrees(particle.rotation))
+            }
+        }
+    }
+}
+
+private struct CompletionParticle: Identifiable {
+    enum Kind {
+        case star
+        case confetti
+    }
+
+    let id: Int
+    let x: CGFloat
+    let y: CGFloat
+    let size: CGFloat
+    let lift: CGFloat
+    let rotation: Double
+    let color: Color
+    let kind: Kind
+
+    static let particles: [CompletionParticle] = [
+        CompletionParticle(id: 0, x: 0.14, y: 0.16, size: 16, lift: 34, rotation: -12, color: LMCColor.primary, kind: .star),
+        CompletionParticle(id: 1, x: 0.30, y: 0.10, size: 14, lift: 28, rotation: 18, color: LMCColor.secondary, kind: .confetti),
+        CompletionParticle(id: 2, x: 0.44, y: 0.18, size: 12, lift: 30, rotation: -24, color: LMCColor.tertiary, kind: .star),
+        CompletionParticle(id: 3, x: 0.62, y: 0.12, size: 15, lift: 34, rotation: 10, color: LMCColor.success, kind: .confetti),
+        CompletionParticle(id: 4, x: 0.78, y: 0.22, size: 15, lift: 28, rotation: 28, color: LMCColor.primary, kind: .star),
+        CompletionParticle(id: 5, x: 0.88, y: 0.34, size: 13, lift: 24, rotation: -18, color: LMCColor.secondary, kind: .confetti),
+        CompletionParticle(id: 6, x: 0.12, y: 0.42, size: 12, lift: 20, rotation: 32, color: LMCColor.tertiary, kind: .confetti),
+        CompletionParticle(id: 7, x: 0.28, y: 0.52, size: 15, lift: 24, rotation: -8, color: LMCColor.success, kind: .star),
+        CompletionParticle(id: 8, x: 0.74, y: 0.50, size: 15, lift: 22, rotation: 20, color: LMCColor.primary, kind: .confetti),
+        CompletionParticle(id: 9, x: 0.90, y: 0.62, size: 12, lift: 18, rotation: -30, color: LMCColor.secondary, kind: .star),
+    ]
+}
+
 private struct LibraryScreen: View {
     @ObservedObject var viewModel: ReaderViewModel
     let openReading: (Story) -> Void
@@ -2140,6 +2320,8 @@ private struct QuizScreen: View {
     @State private var completionScore: QuizScore?
     @State private var didMarkComplete = false
     @State private var didTrackQuizStart = false
+    @State private var completionAnimationToken = 0
+    @State private var completionJustRecorded = false
 
     private var activeQuizState: QuizSessionState {
         quizState ?? viewModel.initialQuizState(story)
@@ -2173,7 +2355,9 @@ private struct QuizScreen: View {
             let score = viewModel.quizScore(story, state: activeQuizState)
             completionScore = score
             viewModel.trackQuizComplete(story, score: score)
-            _ = await viewModel.completeStory(story, quizState: activeQuizState)
+            let completionResult = await viewModel.completeStory(story, quizState: activeQuizState)
+            completionJustRecorded = completionResult.wasNewCompletion
+            completionAnimationToken += 1
         }
     }
 
@@ -2235,42 +2419,61 @@ private struct QuizScreen: View {
     private var completionView: some View {
         VStack(spacing: 0) {
             LMCFlowTopBar(titleKey: "quiz_complete_title", trailingText: nil, close: done)
-            ScrollView {
-                VStack(alignment: .center, spacing: LMCSpace.s6) {
-                    Image(systemName: "checkmark.seal.fill")
-                        .font(.system(size: 64, weight: .bold))
-                        .foregroundStyle(LMCColor.success)
-                        .accessibilityHidden(true)
+            ZStack(alignment: .top) {
+                CompletionCelebrationLayer(
+                    animationToken: completionAnimationToken,
+                    isMilestone: viewModel.lastCompletionStreakSummary?.newMilestoneDays != nil,
+                    enabled: completionJustRecorded || viewModel.lastCompletionStreakSummary?.newMilestoneDays != nil
+                )
 
-                    VStack(spacing: LMCSpace.s2) {
-                        Text(scoreText)
-                            .font(.system(size: 32, weight: .bold))
-                            .foregroundStyle(LMCColor.textPrimary)
-                        Text("quiz_score_label")
-                            .font(.system(size: 16))
-                            .foregroundStyle(LMCColor.textSecondary)
-                    }
+                ScrollView {
+                    VStack(alignment: .center, spacing: LMCSpace.s6) {
+                        CompletionStampBadge(
+                            summary: viewModel.lastCompletionStreakSummary,
+                            completionJustRecorded: completionJustRecorded,
+                            animationToken: completionAnimationToken
+                        )
 
-                    if let streak = viewModel.lastCompletionStreakSummary {
-                        CompletionMilestoneBanner(summary: streak)
-                    }
+                        VStack(spacing: LMCSpace.s2) {
+                            Text("completion_encouragement_title")
+                                .font(.system(size: 24, weight: .bold))
+                                .foregroundStyle(LMCColor.primary)
+                            Text("completion_encouragement_body")
+                                .font(.system(size: 18))
+                                .foregroundStyle(LMCColor.textSecondary)
+                                .multilineTextAlignment(.center)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Text(scoreText)
+                                .font(.system(size: 32, weight: .bold))
+                                .foregroundStyle(LMCColor.textPrimary)
+                            Text("quiz_score_label")
+                                .font(.system(size: 16))
+                                .foregroundStyle(LMCColor.textSecondary)
+                        }
 
-                    VStack(alignment: .leading, spacing: LMCSpace.s3) {
-                        SectionTitle("quiz_retell")
-                        Text(story.retellPrompt)
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundStyle(LMCColor.textPrimary)
-                            .fixedSize(horizontal: false, vertical: true)
+                        if let streak = viewModel.lastCompletionStreakSummary {
+                            CompletionMilestoneBanner(summary: streak)
+                        }
+
+                        VStack(alignment: .leading, spacing: LMCSpace.s3) {
+                            SectionTitle("quiz_retell")
+                            Text(story.retellPrompt)
+                                .font(.system(size: 20, weight: .medium))
+                                .foregroundStyle(LMCColor.textPrimary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(LMCSpace.s4)
+                        .background(LMCColor.tertiaryContainer)
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(LMCSpace.s4)
-                    .background(LMCColor.tertiaryContainer)
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .frame(maxWidth: LMCSpace.readingMaxWidth)
+                    .frame(maxWidth: .infinity)
                 }
-                .padding(LMCSpace.s4)
-                .frame(maxWidth: LMCSpace.readingMaxWidth)
-                .frame(maxWidth: .infinity)
             }
+            .accessibilityElement(children: .contain)
+            .accessibilityAddTraits(.updatesFrequently)
 
             LMCBottomActionBar {
                 Button("action_read_again", action: readAgain)
@@ -3619,7 +3822,16 @@ private struct StepDots: View {
 
 private struct LMCLoadingView: View {
     var body: some View {
-        VStack(spacing: LMCSpace.s3) {
+        VStack(spacing: LMCSpace.s4) {
+            Image("LaunchMark")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 112, height: 112)
+                .accessibilityHidden(true)
+            Text("app_name")
+                .font(.system(size: 22, weight: .bold))
+                .foregroundStyle(LMCColor.textPrimary)
+                .multilineTextAlignment(.center)
             ProgressView()
                 .tint(LMCColor.primary)
             Text("state_loading")

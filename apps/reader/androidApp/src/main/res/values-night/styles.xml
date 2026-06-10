@@ -6,4 +6,10 @@
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowLightNavigationBar">true</item>
     </style>
+
+    <style name="Theme.LittleMandarinClassics.Starting" parent="Theme.LittleMandarinClassics">
+        <item name="android:windowBackground">@drawable/lmc_splash_window_background</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
 </resources>

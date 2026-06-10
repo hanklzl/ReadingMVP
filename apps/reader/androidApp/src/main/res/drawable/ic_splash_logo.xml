@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M22,28 L52,36 L52,78 L22,70 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M56,36 L86,28 L86,70 L56,78 Z" />
+    <path
+        android:fillColor="@color/lmc_primary_vermilion"
+        android:pathData="M22,28 L52,36 L52,78 L22,70 Z"
+        android:strokeColor="@color/lmc_primary_vermilion"
+        android:strokeLineJoin="round"
+        android:strokeWidth="3" />
+    <path
+        android:fillColor="@color/lmc_background_rice_paper"
+        android:pathData="M27,34 L48,40 L48,70 L27,65 Z" />
+    <path
+        android:fillColor="@color/lmc_primary_vermilion"
+        android:pathData="M56,36 L86,28 L86,70 L56,78 Z"
+        android:strokeColor="@color/lmc_primary_vermilion"
+        android:strokeLineJoin="round"
+        android:strokeWidth="3" />
+    <path
+        android:fillColor="@color/lmc_background_rice_paper"
+        android:pathData="M60,40 L81,34 L81,65 L60,70 Z" />
+    <path
+        android:strokeColor="@color/lmc_secondary_teal"
+        android:strokeLineCap="round"
+        android:strokeWidth="3"
+        android:pathData="M54,36 L54,78" />
+    <path
+        android:fillColor="@color/lmc_primary_vermilion"
+        android:pathData="M74,63 m-12,0 a12,12 0,1 0,24 0 a12,12 0,1 0,-24 0" />
+    <path
+        android:fillColor="@color/lmc_primary_vermilion"
+        android:pathData="M68,58 C66,50 72,47 76,55 C80,47 86,50 84,58 Z" />
+    <path
+        android:fillColor="@color/lmc_primary_container"
+        android:pathData="M70,66 m-3,0 a3,3 0,1 0,6 0 a3,3 0,1 0,-6 0" />
+    <path
+        android:fillColor="@color/lmc_secondary_teal"
+        android:pathData="M78,52 C86,47 91,51 94,57 C86,60 81,58 78,52 Z" />
+</vector>
