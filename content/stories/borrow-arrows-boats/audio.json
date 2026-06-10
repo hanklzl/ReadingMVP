@@ -9,87 +9,87 @@
       "chars": [
         {
           "c": "周",
-          "startMs": 0,
-          "endMs": 88
+          "startMs": 80,
+          "endMs": 240
         },
         {
           "c": "瑜",
-          "startMs": 88,
-          "endMs": 176
+          "startMs": 240,
+          "endMs": 400
         },
         {
           "c": "请",
-          "startMs": 176,
-          "endMs": 265
+          "startMs": 400,
+          "endMs": 640
         },
         {
           "c": "诸",
-          "startMs": 265,
-          "endMs": 353
+          "startMs": 640,
+          "endMs": 720
         },
         {
           "c": "葛",
-          "startMs": 353,
-          "endMs": 441
+          "startMs": 720,
+          "endMs": 880
         },
         {
           "c": "亮",
-          "startMs": 441,
-          "endMs": 529
+          "startMs": 880,
+          "endMs": 1120
         },
         {
           "c": "在",
-          "startMs": 529,
-          "endMs": 618
+          "startMs": 1120,
+          "endMs": 1200
         },
         {
           "c": "三",
-          "startMs": 618,
-          "endMs": 706
+          "startMs": 1200,
+          "endMs": 1440
         },
         {
           "c": "天",
-          "startMs": 706,
-          "endMs": 794
+          "startMs": 1440,
+          "endMs": 1500
         },
         {
           "c": "内",
-          "startMs": 794,
-          "endMs": 882
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "准",
-          "startMs": 882,
-          "endMs": 971
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "备",
-          "startMs": 971,
-          "endMs": 1059
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "十",
-          "startMs": 1059,
-          "endMs": 1147
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "万",
-          "startMs": 1147,
-          "endMs": 1235
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "枝",
-          "startMs": 1235,
-          "endMs": 1324
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "箭",
-          "startMs": 1324,
-          "endMs": 1412
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "。",
-          "startMs": 1412,
+          "startMs": 1500,
           "endMs": 1500
         }
       ]
@@ -103,92 +103,92 @@
       "chars": [
         {
           "c": "这",
-          "startMs": 0,
-          "endMs": 83
+          "startMs": 80,
+          "endMs": 160
         },
         {
           "c": "个",
-          "startMs": 83,
-          "endMs": 167
+          "startMs": 160,
+          "endMs": 240
         },
         {
           "c": "任",
-          "startMs": 167,
-          "endMs": 250
+          "startMs": 240,
+          "endMs": 400
         },
         {
           "c": "务",
-          "startMs": 250,
-          "endMs": 333
+          "startMs": 480,
+          "endMs": 480
         },
         {
           "c": "听",
-          "startMs": 333,
-          "endMs": 417
+          "startMs": 480,
+          "endMs": 720
         },
         {
           "c": "起",
-          "startMs": 417,
-          "endMs": 500
+          "startMs": 720,
+          "endMs": 800
         },
         {
           "c": "来",
-          "startMs": 500,
-          "endMs": 583
+          "startMs": 800,
+          "endMs": 960
         },
         {
           "c": "很",
-          "startMs": 583,
-          "endMs": 667
+          "startMs": 960,
+          "endMs": 1120
         },
         {
           "c": "难",
-          "startMs": 667,
-          "endMs": 750
+          "startMs": 1120,
+          "endMs": 1440
         },
         {
           "c": "，",
-          "startMs": 750,
-          "endMs": 833
+          "startMs": 1440,
+          "endMs": 1500
         },
         {
           "c": "大",
-          "startMs": 833,
-          "endMs": 917
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "家",
-          "startMs": 917,
-          "endMs": 1000
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "都",
-          "startMs": 1000,
-          "endMs": 1083
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "替",
-          "startMs": 1083,
-          "endMs": 1167
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "他",
-          "startMs": 1167,
-          "endMs": 1250
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "担",
-          "startMs": 1250,
-          "endMs": 1333
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "心",
-          "startMs": 1333,
-          "endMs": 1417
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "。",
-          "startMs": 1417,
+          "startMs": 1500,
           "endMs": 1500
         }
       ]
@@ -202,92 +202,92 @@
       "chars": [
         {
           "c": "诸",
-          "startMs": 0,
-          "endMs": 83
+          "startMs": 80,
+          "endMs": 240
         },
         {
           "c": "葛",
-          "startMs": 83,
-          "endMs": 167
+          "startMs": 240,
+          "endMs": 400
         },
         {
           "c": "亮",
-          "startMs": 167,
-          "endMs": 250
+          "startMs": 400,
+          "endMs": 640
         },
         {
           "c": "却",
-          "startMs": 250,
-          "endMs": 333
+          "startMs": 640,
+          "endMs": 800
         },
         {
           "c": "很",
-          "startMs": 333,
-          "endMs": 417
+          "startMs": 800,
+          "endMs": 960
         },
         {
           "c": "从",
-          "startMs": 417,
-          "endMs": 500
+          "startMs": 960,
+          "endMs": 1200
         },
         {
           "c": "容",
-          "startMs": 500,
-          "endMs": 583
+          "startMs": 1200,
+          "endMs": 1440
         },
         {
           "c": "，",
-          "startMs": 583,
-          "endMs": 667
+          "startMs": 1440,
+          "endMs": 1500
         },
         {
           "c": "只",
-          "startMs": 667,
-          "endMs": 750
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "说",
-          "startMs": 750,
-          "endMs": 833
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "到",
-          "startMs": 833,
-          "endMs": 917
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "时",
-          "startMs": 917,
-          "endMs": 1000
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "候",
-          "startMs": 1000,
-          "endMs": 1083
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "一",
-          "startMs": 1083,
-          "endMs": 1167
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "定",
-          "startMs": 1167,
-          "endMs": 1250
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "交",
-          "startMs": 1250,
-          "endMs": 1333
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "上",
-          "startMs": 1333,
-          "endMs": 1417
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "。",
-          "startMs": 1417,
+          "startMs": 1500,
           "endMs": 1500
         }
       ]
@@ -301,122 +301,122 @@
       "chars": [
         {
           "c": "他",
-          "startMs": 0,
-          "endMs": 62
+          "startMs": 80,
+          "endMs": 240
         },
         {
           "c": "没",
-          "startMs": 62,
-          "endMs": 125
+          "startMs": 240,
+          "endMs": 480
         },
         {
           "c": "有",
-          "startMs": 125,
-          "endMs": 188
+          "startMs": 480,
+          "endMs": 640
         },
         {
           "c": "先",
-          "startMs": 188,
-          "endMs": 250
+          "startMs": 640,
+          "endMs": 960
         },
         {
           "c": "解",
-          "startMs": 250,
-          "endMs": 312
+          "startMs": 960,
+          "endMs": 1200
         },
         {
           "c": "释",
-          "startMs": 312,
-          "endMs": 375
+          "startMs": 1200,
+          "endMs": 1440
         },
         {
           "c": "很",
-          "startMs": 375,
-          "endMs": 438
+          "startMs": 1440,
+          "endMs": 1500
         },
         {
           "c": "多",
-          "startMs": 438,
-          "endMs": 500
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "，",
-          "startMs": 500,
-          "endMs": 562
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "而",
-          "startMs": 562,
-          "endMs": 625
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "是",
-          "startMs": 625,
-          "endMs": 688
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "把",
-          "startMs": 688,
-          "endMs": 750
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "需",
-          "startMs": 750,
-          "endMs": 812
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "要",
-          "startMs": 812,
-          "endMs": 875
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "的",
-          "startMs": 875,
-          "endMs": 938
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "东",
-          "startMs": 938,
-          "endMs": 1000
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "西",
-          "startMs": 1000,
-          "endMs": 1062
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "一",
-          "startMs": 1062,
-          "endMs": 1125
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "件",
-          "startMs": 1125,
-          "endMs": 1188
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "件",
-          "startMs": 1188,
-          "endMs": 1250
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "记",
-          "startMs": 1250,
-          "endMs": 1312
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "下",
-          "startMs": 1312,
-          "endMs": 1375
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "来",
-          "startMs": 1375,
-          "endMs": 1438
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "。",
-          "startMs": 1438,
+          "startMs": 1500,
           "endMs": 1500
         }
       ]
@@ -430,117 +430,117 @@
       "chars": [
         {
           "c": "他",
-          "startMs": 0,
-          "endMs": 65
+          "startMs": 80,
+          "endMs": 240
         },
         {
           "c": "请",
-          "startMs": 65,
-          "endMs": 130
+          "startMs": 240,
+          "endMs": 400
         },
         {
           "c": "鲁",
-          "startMs": 130,
-          "endMs": 196
+          "startMs": 400,
+          "endMs": 560
         },
         {
           "c": "肃",
-          "startMs": 196,
-          "endMs": 261
+          "startMs": 560,
+          "endMs": 720
         },
         {
           "c": "帮",
-          "startMs": 261,
-          "endMs": 326
+          "startMs": 720,
+          "endMs": 880
         },
         {
           "c": "忙",
-          "startMs": 326,
-          "endMs": 391
+          "startMs": 880,
+          "endMs": 1120
         },
         {
           "c": "准",
-          "startMs": 391,
-          "endMs": 457
+          "startMs": 1120,
+          "endMs": 1280
         },
         {
           "c": "备",
-          "startMs": 457,
-          "endMs": 522
+          "startMs": 1280,
+          "endMs": 1360
         },
         {
           "c": "二",
-          "startMs": 522,
-          "endMs": 587
+          "startMs": 1360,
+          "endMs": 1500
         },
         {
           "c": "十",
-          "startMs": 587,
-          "endMs": 652
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "条",
-          "startMs": 652,
-          "endMs": 717
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "草",
-          "startMs": 717,
-          "endMs": 783
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "船",
-          "startMs": 783,
-          "endMs": 848
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "，",
-          "startMs": 848,
-          "endMs": 913
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "又",
-          "startMs": 913,
-          "endMs": 978
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "在",
-          "startMs": 978,
-          "endMs": 1043
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "船",
-          "startMs": 1043,
-          "endMs": 1109
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "上",
-          "startMs": 1109,
-          "endMs": 1174
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "扎",
-          "startMs": 1174,
-          "endMs": 1239
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "满",
-          "startMs": 1239,
-          "endMs": 1304
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "草",
-          "startMs": 1304,
-          "endMs": 1370
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "把",
-          "startMs": 1370,
-          "endMs": 1435
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "。",
-          "startMs": 1435,
+          "startMs": 1500,
           "endMs": 1500
         }
       ]
@@ -554,92 +554,92 @@
       "chars": [
         {
           "c": "鲁",
-          "startMs": 0,
-          "endMs": 83
+          "startMs": 80,
+          "endMs": 240
         },
         {
           "c": "肃",
-          "startMs": 83,
-          "endMs": 167
+          "startMs": 240,
+          "endMs": 560
         },
         {
           "c": "虽",
-          "startMs": 167,
-          "endMs": 250
+          "startMs": 560,
+          "endMs": 720
         },
         {
           "c": "然",
-          "startMs": 250,
-          "endMs": 333
+          "startMs": 720,
+          "endMs": 880
         },
         {
           "c": "不",
-          "startMs": 333,
-          "endMs": 417
+          "startMs": 880,
+          "endMs": 960
         },
         {
           "c": "明",
-          "startMs": 417,
-          "endMs": 500
+          "startMs": 960,
+          "endMs": 1120
         },
         {
           "c": "白",
-          "startMs": 500,
-          "endMs": 583
+          "startMs": 1120,
+          "endMs": 1280
         },
         {
           "c": "原",
-          "startMs": 583,
-          "endMs": 667
+          "startMs": 1280,
+          "endMs": 1500
         },
         {
           "c": "因",
-          "startMs": 667,
-          "endMs": 750
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "，",
-          "startMs": 750,
-          "endMs": 833
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "还",
-          "startMs": 833,
-          "endMs": 917
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "是",
-          "startMs": 917,
-          "endMs": 1000
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "按",
-          "startMs": 1000,
-          "endMs": 1083
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "约",
-          "startMs": 1083,
-          "endMs": 1167
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "定",
-          "startMs": 1167,
-          "endMs": 1250
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "帮",
-          "startMs": 1250,
-          "endMs": 1333
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "忙",
-          "startMs": 1333,
-          "endMs": 1417
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "。",
-          "startMs": 1417,
+          "startMs": 1500,
           "endMs": 1500
         }
       ]
@@ -653,132 +653,132 @@
       "chars": [
         {
           "c": "到",
-          "startMs": 0,
-          "endMs": 58
+          "startMs": 80,
+          "endMs": 160
         },
         {
           "c": "了",
-          "startMs": 58,
-          "endMs": 115
+          "startMs": 160,
+          "endMs": 320
         },
         {
           "c": "大",
-          "startMs": 115,
-          "endMs": 173
+          "startMs": 320,
+          "endMs": 480
         },
         {
           "c": "雾",
-          "startMs": 173,
-          "endMs": 231
+          "startMs": 480,
+          "endMs": 560
         },
         {
           "c": "很",
-          "startMs": 231,
-          "endMs": 288
+          "startMs": 560,
+          "endMs": 800
         },
         {
           "c": "浓",
-          "startMs": 288,
-          "endMs": 346
+          "startMs": 800,
+          "endMs": 960
         },
         {
           "c": "的",
-          "startMs": 346,
-          "endMs": 404
+          "startMs": 960,
+          "endMs": 1040
         },
         {
           "c": "清",
-          "startMs": 404,
-          "endMs": 462
+          "startMs": 1040,
+          "endMs": 1280
         },
         {
           "c": "晨",
-          "startMs": 462,
-          "endMs": 519
+          "startMs": 1280,
+          "endMs": 1500
         },
         {
           "c": "，",
-          "startMs": 519,
-          "endMs": 577
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "江",
-          "startMs": 577,
-          "endMs": 635
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "面",
-          "startMs": 635,
-          "endMs": 692
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "白",
-          "startMs": 692,
-          "endMs": 750
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "茫",
-          "startMs": 750,
-          "endMs": 808
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "茫",
-          "startMs": 808,
-          "endMs": 865
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "一",
-          "startMs": 865,
-          "endMs": 923
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "片",
-          "startMs": 923,
-          "endMs": 981
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "，",
-          "startMs": 981,
-          "endMs": 1038
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "远",
-          "startMs": 1038,
-          "endMs": 1096
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "处",
-          "startMs": 1096,
-          "endMs": 1154
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "几",
-          "startMs": 1154,
-          "endMs": 1212
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "乎",
-          "startMs": 1212,
-          "endMs": 1269
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "看",
-          "startMs": 1269,
-          "endMs": 1327
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "不",
-          "startMs": 1327,
-          "endMs": 1385
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "清",
-          "startMs": 1385,
-          "endMs": 1442
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "。",
-          "startMs": 1442,
+          "startMs": 1500,
           "endMs": 1500
         }
       ]
@@ -792,112 +792,112 @@
       "chars": [
         {
           "c": "诸",
-          "startMs": 0,
-          "endMs": 68
+          "startMs": 80,
+          "endMs": 160
         },
         {
           "c": "葛",
-          "startMs": 68,
-          "endMs": 136
+          "startMs": 160,
+          "endMs": 320
         },
         {
           "c": "亮",
-          "startMs": 136,
-          "endMs": 205
+          "startMs": 320,
+          "endMs": 560
         },
         {
           "c": "让",
-          "startMs": 205,
-          "endMs": 273
+          "startMs": 560,
+          "endMs": 720
         },
         {
           "c": "草",
-          "startMs": 273,
-          "endMs": 341
+          "startMs": 720,
+          "endMs": 880
         },
         {
           "c": "船",
-          "startMs": 341,
-          "endMs": 409
+          "startMs": 880,
+          "endMs": 1200
         },
         {
           "c": "慢",
-          "startMs": 409,
-          "endMs": 477
+          "startMs": 1200,
+          "endMs": 1360
         },
         {
           "c": "慢",
-          "startMs": 477,
-          "endMs": 545
+          "startMs": 1360,
+          "endMs": 1500
         },
         {
           "c": "靠",
-          "startMs": 545,
-          "endMs": 614
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "近",
-          "startMs": 614,
-          "endMs": 682
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "曹",
-          "startMs": 682,
-          "endMs": 750
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "营",
-          "startMs": 750,
-          "endMs": 818
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "，",
-          "startMs": 818,
-          "endMs": 886
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "又",
-          "startMs": 886,
-          "endMs": 955
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "让",
-          "startMs": 955,
-          "endMs": 1023
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "船",
-          "startMs": 1023,
-          "endMs": 1091
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "上",
-          "startMs": 1091,
-          "endMs": 1159
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "敲",
-          "startMs": 1159,
-          "endMs": 1227
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "起",
-          "startMs": 1227,
-          "endMs": 1295
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "鼓",
-          "startMs": 1295,
-          "endMs": 1364
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "声",
-          "startMs": 1364,
-          "endMs": 1432
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "。",
-          "startMs": 1432,
+          "startMs": 1500,
           "endMs": 1500
         }
       ]
@@ -911,127 +911,127 @@
       "chars": [
         {
           "c": "对",
-          "startMs": 0,
-          "endMs": 60
+          "startMs": 80,
+          "endMs": 160
         },
         {
           "c": "岸",
-          "startMs": 60,
-          "endMs": 120
+          "startMs": 160,
+          "endMs": 320
         },
         {
           "c": "的",
-          "startMs": 120,
-          "endMs": 180
+          "startMs": 320,
+          "endMs": 400
         },
         {
           "c": "人",
-          "startMs": 180,
-          "endMs": 240
+          "startMs": 400,
+          "endMs": 560
         },
         {
           "c": "看",
-          "startMs": 240,
-          "endMs": 300
-        },
-        {
-          "c": "不",
-          "startMs": 300,
-          "endMs": 360
-        },
-        {
-          "c": "清",
-          "startMs": 360,
-          "endMs": 420
-        },
-        {
-          "c": "情",
-          "startMs": 420,
-          "endMs": 480
-        },
-        {
-          "c": "况",
-          "startMs": 480,
-          "endMs": 540
-        },
-        {
-          "c": "，",
-          "startMs": 540,
-          "endMs": 600
-        },
-        {
-          "c": "只",
-          "startMs": 600,
-          "endMs": 660
-        },
-        {
-          "c": "好",
-          "startMs": 660,
+          "startMs": 560,
           "endMs": 720
         },
         {
-          "c": "向",
+          "c": "不",
           "startMs": 720,
-          "endMs": 780
+          "endMs": 800
         },
         {
-          "c": "声",
-          "startMs": 780,
-          "endMs": 840
-        },
-        {
-          "c": "音",
-          "startMs": 840,
-          "endMs": 900
-        },
-        {
-          "c": "来",
-          "startMs": 900,
+          "c": "清",
+          "startMs": 800,
           "endMs": 960
         },
         {
-          "c": "的",
+          "c": "情",
           "startMs": 960,
-          "endMs": 1020
-        },
-        {
-          "c": "地",
-          "startMs": 1020,
-          "endMs": 1080
-        },
-        {
-          "c": "方",
-          "startMs": 1080,
-          "endMs": 1140
-        },
-        {
-          "c": "放",
-          "startMs": 1140,
           "endMs": 1200
         },
         {
-          "c": "出",
+          "c": "况",
           "startMs": 1200,
-          "endMs": 1260
+          "endMs": 1500
+        },
+        {
+          "c": "，",
+          "startMs": 1500,
+          "endMs": 1500
+        },
+        {
+          "c": "只",
+          "startMs": 1500,
+          "endMs": 1500
+        },
+        {
+          "c": "好",
+          "startMs": 1500,
+          "endMs": 1500
+        },
+        {
+          "c": "向",
+          "startMs": 1500,
+          "endMs": 1500
+        },
+        {
+          "c": "声",
+          "startMs": 1500,
+          "endMs": 1500
+        },
+        {
+          "c": "音",
+          "startMs": 1500,
+          "endMs": 1500
+        },
+        {
+          "c": "来",
+          "startMs": 1500,
+          "endMs": 1500
+        },
+        {
+          "c": "的",
+          "startMs": 1500,
+          "endMs": 1500
+        },
+        {
+          "c": "地",
+          "startMs": 1500,
+          "endMs": 1500
+        },
+        {
+          "c": "方",
+          "startMs": 1500,
+          "endMs": 1500
+        },
+        {
+          "c": "放",
+          "startMs": 1500,
+          "endMs": 1500
+        },
+        {
+          "c": "出",
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "许",
-          "startMs": 1260,
-          "endMs": 1320
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "多",
-          "startMs": 1320,
-          "endMs": 1380
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "箭",
-          "startMs": 1380,
-          "endMs": 1440
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "。",
-          "startMs": 1440,
+          "startMs": 1500,
           "endMs": 1500
         }
       ]
@@ -1045,112 +1045,112 @@
       "chars": [
         {
           "c": "草",
-          "startMs": 0,
-          "endMs": 68
+          "startMs": 80,
+          "endMs": 240
         },
         {
           "c": "船",
-          "startMs": 68,
-          "endMs": 136
+          "startMs": 240,
+          "endMs": 480
         },
         {
           "c": "排",
-          "startMs": 136,
-          "endMs": 205
+          "startMs": 480,
+          "endMs": 720
         },
         {
           "c": "得",
-          "startMs": 205,
-          "endMs": 273
+          "startMs": 720,
+          "endMs": 800
         },
         {
           "c": "整",
-          "startMs": 273,
-          "endMs": 341
+          "startMs": 800,
+          "endMs": 1120
         },
         {
           "c": "整",
-          "startMs": 341,
-          "endMs": 409
+          "startMs": 1120,
+          "endMs": 1280
         },
         {
           "c": "齐",
-          "startMs": 409,
-          "endMs": 477
+          "startMs": 1280,
+          "endMs": 1500
         },
         {
           "c": "齐",
-          "startMs": 477,
-          "endMs": 545
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "，",
-          "startMs": 545,
-          "endMs": 614
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "像",
-          "startMs": 614,
-          "endMs": 682
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "安",
-          "startMs": 682,
-          "endMs": 750
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "静",
-          "startMs": 750,
-          "endMs": 818
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "的",
-          "startMs": 818,
-          "endMs": 886
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "朋",
-          "startMs": 886,
-          "endMs": 955
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "友",
-          "startMs": 955,
-          "endMs": 1023
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "一",
-          "startMs": 1023,
-          "endMs": 1091
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "起",
-          "startMs": 1091,
-          "endMs": 1159
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "完",
-          "startMs": 1159,
-          "endMs": 1227
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "成",
-          "startMs": 1227,
-          "endMs": 1295
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "任",
-          "startMs": 1295,
-          "endMs": 1364
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "务",
-          "startMs": 1364,
-          "endMs": 1432
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "。",
-          "startMs": 1432,
+          "startMs": 1500,
           "endMs": 1500
         }
       ]
@@ -1164,102 +1164,102 @@
       "chars": [
         {
           "c": "箭",
-          "startMs": 0,
-          "endMs": 75
+          "startMs": 80,
+          "endMs": 320
         },
         {
           "c": "纷",
-          "startMs": 75,
-          "endMs": 150
+          "startMs": 320,
+          "endMs": 480
         },
         {
           "c": "纷",
-          "startMs": 150,
-          "endMs": 225
+          "startMs": 480,
+          "endMs": 640
         },
         {
           "c": "落",
-          "startMs": 225,
-          "endMs": 300
+          "startMs": 640,
+          "endMs": 720
         },
         {
           "c": "在",
-          "startMs": 300,
-          "endMs": 375
+          "startMs": 720,
+          "endMs": 880
         },
         {
           "c": "草",
-          "startMs": 375,
-          "endMs": 450
+          "startMs": 880,
+          "endMs": 1120
         },
         {
           "c": "把",
-          "startMs": 450,
-          "endMs": 525
+          "startMs": 1120,
+          "endMs": 1360
         },
         {
           "c": "上",
-          "startMs": 525,
-          "endMs": 600
+          "startMs": 1360,
+          "endMs": 1500
         },
         {
           "c": "，",
-          "startMs": 600,
-          "endMs": 675
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "草",
-          "startMs": 675,
-          "endMs": 750
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "船",
-          "startMs": 750,
-          "endMs": 825
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "两",
-          "startMs": 825,
-          "endMs": 900
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "边",
-          "startMs": 900,
-          "endMs": 975
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "很",
-          "startMs": 975,
-          "endMs": 1050
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "快",
-          "startMs": 1050,
-          "endMs": 1125
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "插",
-          "startMs": 1125,
-          "endMs": 1200
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "满",
-          "startMs": 1200,
-          "endMs": 1275
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "了",
-          "startMs": 1275,
-          "endMs": 1350
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "箭",
-          "startMs": 1350,
-          "endMs": 1425
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "。",
-          "startMs": 1425,
+          "startMs": 1500,
           "endMs": 1500
         }
       ]
@@ -1273,102 +1273,102 @@
       "chars": [
         {
           "c": "诸",
-          "startMs": 0,
-          "endMs": 75
+          "startMs": 80,
+          "endMs": 240
         },
         {
           "c": "葛",
-          "startMs": 75,
-          "endMs": 150
+          "startMs": 240,
+          "endMs": 320
         },
         {
           "c": "亮",
-          "startMs": 150,
-          "endMs": 225
+          "startMs": 320,
+          "endMs": 560
         },
         {
           "c": "看",
-          "startMs": 225,
-          "endMs": 300
+          "startMs": 560,
+          "endMs": 720
         },
         {
           "c": "时",
-          "startMs": 300,
-          "endMs": 375
+          "startMs": 720,
+          "endMs": 960
         },
         {
           "c": "机",
-          "startMs": 375,
-          "endMs": 450
+          "startMs": 960,
+          "endMs": 1040
         },
         {
           "c": "差",
-          "startMs": 450,
-          "endMs": 525
+          "startMs": 1040,
+          "endMs": 1280
         },
         {
           "c": "不",
-          "startMs": 525,
-          "endMs": 600
+          "startMs": 1280,
+          "endMs": 1360
         },
         {
           "c": "多",
-          "startMs": 600,
-          "endMs": 675
+          "startMs": 1360,
+          "endMs": 1500
         },
         {
           "c": "，",
-          "startMs": 675,
-          "endMs": 750
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "就",
-          "startMs": 750,
-          "endMs": 825
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "带",
-          "startMs": 825,
-          "endMs": 900
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "着",
-          "startMs": 900,
-          "endMs": 975
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "船",
-          "startMs": 975,
-          "endMs": 1050
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "队",
-          "startMs": 1050,
-          "endMs": 1125
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "顺",
-          "startMs": 1125,
-          "endMs": 1200
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "风",
-          "startMs": 1200,
-          "endMs": 1275
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "回",
-          "startMs": 1275,
-          "endMs": 1350
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "来",
-          "startMs": 1350,
-          "endMs": 1425
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "。",
-          "startMs": 1425,
+          "startMs": 1500,
           "endMs": 1500
         }
       ]
@@ -1382,122 +1382,122 @@
       "chars": [
         {
           "c": "回",
-          "startMs": 0,
-          "endMs": 62
+          "startMs": 80,
+          "endMs": 320
         },
         {
           "c": "来",
-          "startMs": 62,
-          "endMs": 125
+          "startMs": 320,
+          "endMs": 480
         },
         {
           "c": "的",
-          "startMs": 125,
-          "endMs": 188
+          "startMs": 480,
+          "endMs": 560
         },
         {
           "c": "路",
-          "startMs": 188,
-          "endMs": 250
+          "startMs": 560,
+          "endMs": 800
         },
         {
           "c": "上",
-          "startMs": 250,
-          "endMs": 312
+          "startMs": 800,
+          "endMs": 1280
         },
         {
           "c": "，",
-          "startMs": 312,
-          "endMs": 375
+          "startMs": 1280,
+          "endMs": 1500
         },
         {
           "c": "他",
-          "startMs": 375,
-          "endMs": 438
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "还",
-          "startMs": 438,
-          "endMs": 500
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "让",
-          "startMs": 500,
-          "endMs": 562
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "船",
-          "startMs": 562,
-          "endMs": 625
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "换",
-          "startMs": 625,
-          "endMs": 688
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "个",
-          "startMs": 688,
-          "endMs": 750
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "方",
-          "startMs": 750,
-          "endMs": 812
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "向",
-          "startMs": 812,
-          "endMs": 875
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "，",
-          "startMs": 875,
-          "endMs": 938
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "好",
-          "startMs": 938,
-          "endMs": 1000
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "让",
-          "startMs": 1000,
-          "endMs": 1062
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "两",
-          "startMs": 1062,
-          "endMs": 1125
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "边",
-          "startMs": 1125,
-          "endMs": 1188
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "都",
-          "startMs": 1188,
-          "endMs": 1250
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "能",
-          "startMs": 1250,
-          "endMs": 1312
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "装",
-          "startMs": 1312,
-          "endMs": 1375
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "满",
-          "startMs": 1375,
-          "endMs": 1438
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "。",
-          "startMs": 1438,
+          "startMs": 1500,
           "endMs": 1500
         }
       ]
@@ -1511,67 +1511,67 @@
       "chars": [
         {
           "c": "三",
-          "startMs": 0,
-          "endMs": 115
+          "startMs": 80,
+          "endMs": 320
         },
         {
           "c": "天",
-          "startMs": 115,
-          "endMs": 231
+          "startMs": 320,
+          "endMs": 480
         },
         {
           "c": "期",
-          "startMs": 231,
-          "endMs": 346
+          "startMs": 480,
+          "endMs": 640
         },
         {
           "c": "限",
-          "startMs": 346,
-          "endMs": 462
+          "startMs": 640,
+          "endMs": 800
         },
         {
           "c": "到",
-          "startMs": 462,
-          "endMs": 577
+          "startMs": 800,
+          "endMs": 1040
         },
         {
           "c": "了",
-          "startMs": 577,
-          "endMs": 692
+          "startMs": 1040,
+          "endMs": 1280
         },
         {
           "c": "，",
-          "startMs": 692,
-          "endMs": 808
+          "startMs": 1280,
+          "endMs": 1440
         },
         {
           "c": "箭",
-          "startMs": 808,
-          "endMs": 923
+          "startMs": 1440,
+          "endMs": 1500
         },
         {
           "c": "如",
-          "startMs": 923,
-          "endMs": 1038
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "数",
-          "startMs": 1038,
-          "endMs": 1154
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "送",
-          "startMs": 1154,
-          "endMs": 1269
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "到",
-          "startMs": 1269,
-          "endMs": 1385
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "。",
-          "startMs": 1385,
+          "startMs": 1500,
           "endMs": 1500
         }
       ]
@@ -1585,172 +1585,172 @@
       "chars": [
         {
           "c": "大",
-          "startMs": 0,
-          "endMs": 44
+          "startMs": 80,
+          "endMs": 160
         },
         {
           "c": "家",
-          "startMs": 44,
-          "endMs": 88
+          "startMs": 160,
+          "endMs": 320
         },
         {
           "c": "这",
-          "startMs": 88,
-          "endMs": 132
+          "startMs": 320,
+          "endMs": 480
         },
         {
           "c": "才",
-          "startMs": 132,
-          "endMs": 176
+          "startMs": 480,
+          "endMs": 640
         },
         {
           "c": "明",
-          "startMs": 176,
-          "endMs": 221
+          "startMs": 640,
+          "endMs": 800
         },
         {
           "c": "白",
-          "startMs": 221,
-          "endMs": 265
+          "startMs": 800,
+          "endMs": 1040
         },
         {
           "c": "，",
-          "startMs": 265,
-          "endMs": 309
+          "startMs": 1040,
+          "endMs": 1440
         },
         {
           "c": "诸",
-          "startMs": 309,
-          "endMs": 353
+          "startMs": 1440,
+          "endMs": 1500
         },
         {
           "c": "葛",
-          "startMs": 353,
-          "endMs": 397
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "亮",
-          "startMs": 397,
-          "endMs": 441
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "靠",
-          "startMs": 441,
-          "endMs": 485
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "的",
-          "startMs": 485,
-          "endMs": 529
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "不",
-          "startMs": 529,
-          "endMs": 574
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "是",
-          "startMs": 574,
-          "endMs": 618
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "急",
-          "startMs": 618,
-          "endMs": 662
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "躁",
-          "startMs": 662,
-          "endMs": 706
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "，",
-          "startMs": 706,
-          "endMs": 750
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "而",
-          "startMs": 750,
-          "endMs": 794
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "是",
-          "startMs": 794,
-          "endMs": 838
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "观",
-          "startMs": 838,
-          "endMs": 882
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "察",
-          "startMs": 882,
-          "endMs": 926
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "天",
-          "startMs": 926,
-          "endMs": 971
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "气",
-          "startMs": 971,
-          "endMs": 1015
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "、",
-          "startMs": 1015,
-          "endMs": 1059
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "准",
-          "startMs": 1059,
-          "endMs": 1103
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "备",
-          "startMs": 1103,
-          "endMs": 1147
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "周",
-          "startMs": 1147,
-          "endMs": 1191
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "全",
-          "startMs": 1191,
-          "endMs": 1235
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "和",
-          "startMs": 1235,
-          "endMs": 1279
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "守",
-          "startMs": 1279,
-          "endMs": 1324
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "住",
-          "startMs": 1324,
-          "endMs": 1368
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "约",
-          "startMs": 1368,
-          "endMs": 1412
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "定",
-          "startMs": 1412,
-          "endMs": 1456
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "。",
-          "startMs": 1456,
+          "startMs": 1500,
           "endMs": 1500
         }
       ]
@@ -1764,132 +1764,132 @@
       "chars": [
         {
           "c": "一",
-          "startMs": 0,
-          "endMs": 58
+          "startMs": 80,
+          "endMs": 160
         },
         {
           "c": "个",
-          "startMs": 58,
-          "endMs": 115
+          "startMs": 160,
+          "endMs": 320
         },
         {
           "c": "好",
-          "startMs": 115,
-          "endMs": 173
+          "startMs": 320,
+          "endMs": 640
         },
         {
           "c": "办",
-          "startMs": 173,
-          "endMs": 231
+          "startMs": 640,
+          "endMs": 880
         },
         {
           "c": "法",
-          "startMs": 231,
-          "endMs": 288
+          "startMs": 880,
+          "endMs": 1280
         },
         {
           "c": "，",
-          "startMs": 288,
-          "endMs": 346
+          "startMs": 1280,
+          "endMs": 1500
         },
         {
           "c": "常",
-          "startMs": 346,
-          "endMs": 404
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "常",
-          "startMs": 404,
-          "endMs": 462
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "来",
-          "startMs": 462,
-          "endMs": 519
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "自",
-          "startMs": 519,
-          "endMs": 577
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "细",
-          "startMs": 577,
-          "endMs": 635
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "心",
-          "startMs": 635,
-          "endMs": 692
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "观",
-          "startMs": 692,
-          "endMs": 750
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "察",
-          "startMs": 750,
-          "endMs": 808
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "，",
-          "startMs": 808,
-          "endMs": 865
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "也",
-          "startMs": 865,
-          "endMs": 923
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "来",
-          "startMs": 923,
-          "endMs": 981
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "自",
-          "startMs": 981,
-          "endMs": 1038
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "朋",
-          "startMs": 1038,
-          "endMs": 1096
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "友",
-          "startMs": 1096,
-          "endMs": 1154
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "之",
-          "startMs": 1154,
-          "endMs": 1212
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "间",
-          "startMs": 1212,
-          "endMs": 1269
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "的",
-          "startMs": 1269,
-          "endMs": 1327
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "信",
-          "startMs": 1327,
-          "endMs": 1385
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "任",
-          "startMs": 1385,
-          "endMs": 1442
+          "startMs": 1500,
+          "endMs": 1500
         },
         {
           "c": "。",
-          "startMs": 1442,
+          "startMs": 1500,
           "endMs": 1500
         }
       ]
