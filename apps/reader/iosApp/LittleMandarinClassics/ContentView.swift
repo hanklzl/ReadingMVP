@@ -5,7 +5,7 @@ import shared
 
 struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
-    @State private var localeIdentifier = LMCAppLocale.english.rawValue
+    @State private var localeIdentifier = Self.defaultAppLocaleIdentifier()
     @State private var showPinyin = true
     @State private var readingSize = LMCReadingSize.medium.rawValue
     @State private var aiBackendBaseURL = ""
@@ -27,7 +27,7 @@ struct ContentView: View {
                     .padding(LMCSpace.s4)
             } else if viewModel.launchGate == .onboarding {
                 OnboardingFlow(
-                    initialLocaleIdentifier: localeIdentifier,
+                    initialLocaleIdentifier: Self.defaultAppLocaleIdentifier(),
                     complete: { ageBand, languageTag, dailyGoal in
                         localeIdentifier = languageTag
                         await viewModel.finishOnboarding(
@@ -40,9 +40,10 @@ struct ContentView: View {
                         await loadSettings()
                     },
                     skip: {
-                        await viewModel.skipOnboarding()
+                        await viewModel.skipOnboardingWithDefaults()
                         selectedTab = .today
                         flowRoute = nil
+                        await loadSettings()
                     }
                 )
             } else {
@@ -69,8 +70,8 @@ struct ContentView: View {
                 }
             }
             await viewModel.load()
-            await loadSettings()
             await viewModel.loadLaunchState()
+            await loadSettings()
         }
         .onChange(of: localeIdentifier) { newValue in
             Task { await viewModel.setLanguageTag(newValue) }
@@ -127,33 +128,26 @@ struct ContentView: View {
                     }
                 },
                 openParent: { selectTab(.parent, parentEntryPoint: .todayHeader) },
-                openSettings: { selectedTab = .settings }
+                openSettings: { flowRoute = .settings }
             )
         case .library:
             LibraryScreen(
                 viewModel: viewModel,
-                openReading: { openStory($0, source: .library) }
+                openReading: { openStory($0, source: .library) },
+                openSettings: { flowRoute = .settings }
             )
         case .wordBook:
             WordBookScreen(
                 viewModel: viewModel,
                 openReview: { flowRoute = .wordReview },
-                openToday: { selectedTab = .today }
+                openToday: { selectedTab = .today },
+                openSettings: { flowRoute = .settings }
             )
         case .parent:
             ParentReportScreen(
                 viewModel: viewModel,
                 entryPoint: parentReportEntryPoint,
-                openSettings: { selectedTab = .settings }
-            )
-        case .settings:
-            SettingsScreen(
-                viewModel: viewModel,
-                localeIdentifier: $localeIdentifier,
-                showPinyin: $showPinyin,
-                readingSize: $readingSize,
-                aiBackendBaseURL: $aiBackendBaseURL,
-                openParent: { selectTab(.parent, parentEntryPoint: .settings) }
+                openSettings: { flowRoute = .settings }
             )
         }
     }
@@ -210,6 +204,26 @@ struct ContentView: View {
                     flowRoute = nil
                 }
             )
+        case .settings:
+            VStack(spacing: 0) {
+                LMCFlowTopBar(
+                    titleKey: "settings_title",
+                    trailingText: nil,
+                    close: { flowRoute = nil }
+                )
+                SettingsScreen(
+                    viewModel: viewModel,
+                    localeIdentifier: $localeIdentifier,
+                    showPinyin: $showPinyin,
+                    readingSize: $readingSize,
+                    aiBackendBaseURL: $aiBackendBaseURL,
+                    openParent: {
+                        flowRoute = nil
+                        selectTab(.parent, parentEntryPoint: .settings)
+                    },
+                    includeTitle: false
+                )
+            }
         }
     }
 
@@ -235,11 +249,27 @@ struct ContentView: View {
             parentReportEntryPoint = parentEntryPoint
         }
         selectedTab = tab
+        flowRoute = nil
+    }
+
+    private static func isChineseLanguageTag(_ tag: String) -> Bool {
+        tag.hasPrefix("zh")
+    }
+
+    private static func defaultAppLocaleIdentifier() -> String {
+        let preferredLanguageTag = Locale.preferredLanguages.first?.lowercased()
+            ?? Locale.current.identifier.lowercased()
+
+        return isChineseLanguageTag(preferredLanguageTag)
+            ? LMCAppLocale.simplifiedChinese.rawValue
+            : LMCAppLocale.english.rawValue
     }
 
     private func loadSettings() async {
         guard let settings = await viewModel.readSettings() else { return }
-        localeIdentifier = settings.language.tag
+        if viewModel.launchGate != .onboarding {
+            localeIdentifier = settings.language.tag
+        }
         showPinyin = settings.showPinyinByDefault
         readingSize = settings.readingTextSize.prefValue
         aiBackendBaseURL = settings.aiBackendBaseUrl
@@ -387,9 +417,39 @@ final class ReaderViewModel: ObservableObject {
     }
 
     func skipOnboarding() async {
-        try? await onboardingService.skip()
-        launchGate = .ready
-        try? await refreshStreak()
+        await skipOnboardingWithDefaults()
+    }
+
+    func skipOnboardingWithDefaults() async {
+        let systemLocaleTag = ReaderViewModel.defaultAppLocaleIdentifier()
+        let language = ReaderLanguage.companion.fromTag(tag: systemLocaleTag)
+
+        do {
+            try await settingsService.setLanguage(language: language)
+            try await onboardingService.skip(
+                preferences: OnboardingPreferences(
+                    completed: true,
+                    skipped: true,
+                    childAgeBand: .age5to8,
+                    language: language,
+                    dailyGoalStories: 1,
+                )
+            )
+            try await streakUseCase.setDailyGoal(dailyGoalStories: 1)
+            try await refreshStreak()
+            launchGate = .ready
+        } catch {
+            loadingState = .failed
+        }
+    }
+
+    private static func defaultAppLocaleIdentifier() -> String {
+        let preferredLanguageTag = Locale.preferredLanguages.first?.lowercased()
+            ?? Locale.current.identifier.lowercased()
+
+        return preferredLanguageTag.hasPrefix("zh")
+            ? LMCAppLocale.simplifiedChinese.rawValue
+            : LMCAppLocale.english.rawValue
     }
 
     func story(id: String) -> Story? {
@@ -1186,7 +1246,6 @@ enum LMCTab: String, CaseIterable {
     case library
     case wordBook
     case parent
-    case settings
 
     var titleKey: LocalizedStringKey {
         switch self {
@@ -1194,7 +1253,6 @@ enum LMCTab: String, CaseIterable {
         case .library: return "nav_library"
         case .wordBook: return "nav_word_book"
         case .parent: return "nav_parent"
-        case .settings: return "nav_settings"
         }
     }
 
@@ -1204,7 +1262,6 @@ enum LMCTab: String, CaseIterable {
         case .library: return "books.vertical.fill"
         case .wordBook: return "textformat.characters"
         case .parent: return "chart.bar.xaxis"
-        case .settings: return "gearshape.fill"
         }
     }
 }
@@ -1214,6 +1271,7 @@ enum LMCFlowRoute {
     case vocabulary(storyId: String, openSource: LMCVocabOpenSource)
     case quiz(storyId: String)
     case wordReview
+    case settings
 }
 
 enum LMCAppOpenType: String {
@@ -2074,6 +2132,7 @@ private struct WordBookScreen: View {
     @ObservedObject var viewModel: ReaderViewModel
     let openReview: () -> Void
     let openToday: () -> Void
+    let openSettings: () -> Void
     @State private var selectedFilter: LMCWordBookFilter = .all
     @State private var didTrackOpen = false
 
@@ -2093,7 +2152,11 @@ private struct WordBookScreen: View {
 
     var body: some View {
         LMCScreen(maxWidth: LMCSpace.gridMaxWidth) {
-            SectionTitle("word_book_title")
+            HStack(spacing: LMCSpace.s3) {
+                SectionTitle("word_book_title")
+                Spacer()
+                IconButton(systemName: "gearshape.fill", labelKey: "nav_settings", action: openSettings)
+            }
 
             HStack(spacing: LMCSpace.s3) {
                 SummaryTile(
@@ -2502,6 +2565,7 @@ private struct CompletionParticle: Identifiable {
 private struct LibraryScreen: View {
     @ObservedObject var viewModel: ReaderViewModel
     let openReading: (Story) -> Void
+    let openSettings: () -> Void
     @State private var selectedLevel: Int?
 
     private var filteredStories: [Story] {
@@ -2511,8 +2575,13 @@ private struct LibraryScreen: View {
     var body: some View {
         GeometryReader { proxy in
             LMCScreen(maxWidth: LMCSpace.gridMaxWidth) {
-                VStack(alignment: .leading, spacing: LMCSpace.s5) {
-                    SectionTitle("library_title")
+                VStack(alignment: .leading, spacing: LMCSpace.s4) {
+                    HStack(spacing: LMCSpace.s3) {
+                        SectionTitle("library_title")
+                        Spacer()
+                        IconButton(systemName: "gearshape.fill", labelKey: "nav_settings", action: openSettings)
+                    }
+
                     filterChips
 
                     if viewModel.loadingState == .failed {
@@ -3372,73 +3441,24 @@ private struct SettingsScreen: View {
     @Binding var readingSize: String
     @Binding var aiBackendBaseURL: String
     let openParent: () -> Void
+    let includeTitle: Bool
     @State private var showPrivacy = false
     @State private var showFeedback = false
     @State private var adultSettingsUnlocked = false
 
     var body: some View {
         LMCScreen(maxWidth: LMCSpace.readingMaxWidth) {
-            SectionTitle("settings_title")
-
-            SettingsSection(titleKey: "settings_language") {
-                VStack(spacing: LMCSpace.s2) {
-                    ForEach(LMCAppLocale.allCases, id: \.rawValue) { locale in
-                        SettingsChoiceRow(
-                            titleKey: locale.labelKey,
-                            isSelected: localeIdentifier == locale.rawValue,
-                            action: { localeIdentifier = locale.rawValue }
-                        )
-                    }
-                }
+            if includeTitle {
+                SectionTitle("settings_title")
             }
 
-            SettingsSection(titleKey: "settings_reading") {
-                Toggle(isOn: $showPinyin) {
-                    Text("settings_pinyin_default")
-                        .font(.system(size: 18))
-                        .foregroundStyle(LMCColor.textPrimary)
-                }
-                .tint(LMCColor.secondary)
-                .frame(minHeight: LMCSpace.minTouch)
-
-                Divider().background(LMCColor.outlineVariant)
-
-                HStack(spacing: LMCSpace.s3) {
-                    Text("reading_font_size")
-                        .font(.system(size: 18))
-                        .foregroundStyle(LMCColor.textPrimary)
-                    Spacer()
-                    LMCSegmentedReadingSize(readingSize: $readingSize)
-                }
-                .frame(minHeight: LMCSpace.minTouch)
-
-                Divider().background(LMCColor.outlineVariant)
-
-                SettingsInfoRow(titleKey: "settings_audio_voice", valueKey: "settings_audio_system")
-            }
-
-            SettingsSection(titleKey: "settings_privacy") {
-                Text("parent_privacy_note")
-                    .font(.system(size: 16))
-                    .foregroundStyle(LMCColor.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                Divider().background(LMCColor.outlineVariant)
-                SettingsNavigationRow(titleKey: "settings_privacy", systemName: "shield.checkered", action: { showPrivacy = true })
-            }
-
-            SettingsSection(titleKey: "settings_grownups") {
-                if adultSettingsUnlocked {
-                    adultSettingsContent
-                } else {
-                    LMCAdultGateCard(messageKey: "settings_grownups_gate_message") {
-                        adultSettingsUnlocked = true
-                    }
+            if adultSettingsUnlocked {
+                settingsContent
+            } else {
+                LMCAdultGateCard(messageKey: "settings_grownups_gate_message") {
+                    adultSettingsUnlocked = true
                 }
             }
-
-            Text("settings_about")
-                .font(.system(size: 14))
-                .foregroundStyle(LMCColor.textSecondary)
         }
         .alert("settings_privacy", isPresented: $showPrivacy) {
             Button("action_ok", role: .cancel) { }
@@ -3450,6 +3470,63 @@ private struct SettingsScreen: View {
                 .environment(\.locale, Locale(identifier: localeIdentifier))
                 .preferredColorScheme(.light)
         }
+    }
+
+    @ViewBuilder
+    private var settingsContent: some View {
+        SettingsSection(titleKey: "settings_language") {
+            VStack(spacing: LMCSpace.s2) {
+                ForEach(LMCAppLocale.allCases, id: \.rawValue) { locale in
+                    SettingsChoiceRow(
+                        titleKey: locale.labelKey,
+                        isSelected: localeIdentifier == locale.rawValue,
+                        action: { localeIdentifier = locale.rawValue }
+                    )
+                }
+            }
+        }
+
+        SettingsSection(titleKey: "settings_reading") {
+            Toggle(isOn: $showPinyin) {
+                Text("settings_pinyin_default")
+                    .font(.system(size: 18))
+                    .foregroundStyle(LMCColor.textPrimary)
+            }
+            .tint(LMCColor.secondary)
+            .frame(minHeight: LMCSpace.minTouch)
+
+            Divider().background(LMCColor.outlineVariant)
+
+            HStack(spacing: LMCSpace.s3) {
+                Text("reading_font_size")
+                    .font(.system(size: 18))
+                    .foregroundStyle(LMCColor.textPrimary)
+                Spacer()
+                LMCSegmentedReadingSize(readingSize: $readingSize)
+            }
+            .frame(minHeight: LMCSpace.minTouch)
+
+            Divider().background(LMCColor.outlineVariant)
+
+            SettingsInfoRow(titleKey: "settings_audio_voice", valueKey: "settings_audio_system")
+        }
+
+        SettingsSection(titleKey: "settings_privacy") {
+            Text("parent_privacy_note")
+                .font(.system(size: 16))
+                .foregroundStyle(LMCColor.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Divider().background(LMCColor.outlineVariant)
+            SettingsNavigationRow(titleKey: "settings_privacy", systemName: "shield.checkered", action: { showPrivacy = true })
+        }
+
+        SettingsSection(titleKey: "settings_grownups") {
+            adultSettingsContent
+        }
+
+        Text("settings_about")
+            .font(.system(size: 14))
+            .foregroundStyle(LMCColor.textSecondary)
     }
 
     private var adultSettingsContent: some View {

@@ -102,6 +102,41 @@ class StreakPresentationTest {
         assertEquals(2, saved.dailyGoalStories)
         assertEquals(2, saved.recommendedLevel)
     }
+
+    @Test
+    fun onboardingSkipPersistsSafeDefaultsWithoutPersonalInformation() = runTest {
+        val service = InMemoryOnboardingService()
+
+        service.skip()
+
+        val saved = service.read()
+        assertTrue(saved.completed)
+        assertTrue(saved.skipped)
+        assertEquals(ChildAgeBand.Age5To8, saved.childAgeBand)
+        assertEquals(ReaderLanguage.English, saved.language)
+        assertEquals(1, saved.dailyGoalStories)
+        assertEquals(1, saved.recommendedLevel)
+    }
+
+    @Test
+    fun onboardingSkipKeepsSystemLanguageButForcesSafeDefaults() = runTest {
+        val service = InMemoryOnboardingService()
+
+        service.skip(
+            OnboardingPreferences(
+                childAgeBand = ChildAgeBand.Age7To8,
+                language = ReaderLanguage.ChineseSimplified,
+                dailyGoalStories = 3,
+            ),
+        )
+
+        val saved = service.read()
+        assertTrue(saved.completed)
+        assertTrue(saved.skipped)
+        assertEquals(ChildAgeBand.Age5To8, saved.childAgeBand)
+        assertEquals(ReaderLanguage.ChineseSimplified, saved.language)
+        assertEquals(1, saved.dailyGoalStories)
+    }
 }
 
 private const val StreakDayMillis: Long = 24L * 60L * 60L * 1_000L

@@ -9,8 +9,23 @@ import kotlinx.serialization.json.Json
 
 @Serializable
 enum class ChildAgeBand(val recommendedLevel: Int) {
+    Age5To8(1),
     Age5To6(1),
     Age7To8(2),
+}
+
+object OnboardingDefaults {
+    const val DailyGoalStories: Int = 1
+    val DefaultChildAgeBand: ChildAgeBand = ChildAgeBand.Age5To8
+
+    fun skippedPreferences(language: ReaderLanguage = ReaderLanguage.English): OnboardingPreferences =
+        OnboardingPreferences(
+            completed = true,
+            skipped = true,
+            childAgeBand = DefaultChildAgeBand,
+            language = language,
+            dailyGoalStories = DailyGoalStories,
+        )
 }
 
 @Serializable
@@ -32,7 +47,7 @@ interface OnboardingService {
 
     suspend fun complete(preferences: OnboardingPreferences)
 
-    suspend fun skip()
+    suspend fun skip(preferences: OnboardingPreferences = OnboardingDefaults.skippedPreferences())
 
     suspend fun clear()
 }
@@ -50,8 +65,8 @@ class InMemoryOnboardingService(
         state.value = preferences.copy(completed = true, skipped = false).normalized()
     }
 
-    override suspend fun skip() {
-        state.value = state.value.copy(completed = true, skipped = true).normalized()
+    override suspend fun skip(preferences: OnboardingPreferences) {
+        state.value = preferences.toSkippedDefaults().normalized()
     }
 
     override suspend fun clear() {
@@ -88,8 +103,8 @@ internal class StoredOnboardingService(
         state.value = updated
     }
 
-    override suspend fun skip() {
-        val updated = read().copy(completed = true, skipped = true).normalized()
+    override suspend fun skip(preferences: OnboardingPreferences) {
+        val updated = preferences.toSkippedDefaults().normalized()
         store.writePreferences(updated)
         state.value = updated
     }
@@ -340,8 +355,20 @@ internal object StreakStateJsonCodec {
     }
 }
 
-private fun OnboardingPreferences.normalized(): OnboardingPreferences =
-    copy(dailyGoalStories = dailyGoalStories.coerceAtLeast(1))
+private fun OnboardingPreferences.normalized(): OnboardingPreferences {
+    val normalizedGoal = dailyGoalStories.coerceAtLeast(OnboardingDefaults.DailyGoalStories)
+    return if (completed && skipped) {
+        copy(
+            childAgeBand = childAgeBand ?: OnboardingDefaults.DefaultChildAgeBand,
+            dailyGoalStories = normalizedGoal,
+        )
+    } else {
+        copy(dailyGoalStories = normalizedGoal)
+    }
+}
+
+private fun OnboardingPreferences.toSkippedDefaults(): OnboardingPreferences =
+    OnboardingDefaults.skippedPreferences(language)
 
 private fun StreakState.normalized(): StreakState =
     copy(

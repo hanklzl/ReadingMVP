@@ -40,7 +40,7 @@ class StoryPresentationUseCases {
     fun selectTodayStories(
         stories: List<Story>,
         completedStoryIds: Set<String>,
-        policy: TodayStorySelectionPolicy,
+        policy: TodayStorySelectionPolicy = TodayStorySelectionPolicy.FirstIncomplete,
     ): TodayStories {
         if (stories.isEmpty()) return TodayStories(null, null)
 

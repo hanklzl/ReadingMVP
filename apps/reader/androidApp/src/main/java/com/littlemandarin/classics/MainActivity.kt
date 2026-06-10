@@ -159,6 +159,7 @@ import com.littlemandarin.classics.shared.presentation.BuildSpeechTextUseCase
 import com.littlemandarin.classics.shared.presentation.ChildAgeBand
 import com.littlemandarin.classics.shared.presentation.FeedbackOption
 import com.littlemandarin.classics.shared.presentation.FeedbackPresentationOptions
+import com.littlemandarin.classics.shared.presentation.OnboardingDefaults
 import com.littlemandarin.classics.shared.presentation.OnboardingPreferences
 import com.littlemandarin.classics.shared.presentation.ParentReportSummary
 import com.littlemandarin.classics.shared.presentation.QuizSessionReducer
@@ -180,7 +181,6 @@ import com.littlemandarin.classics.shared.presentation.StreakSummary
 import com.littlemandarin.classics.shared.presentation.StreakUseCase
 import com.littlemandarin.classics.shared.presentation.StoryPresentationUseCases
 import com.littlemandarin.classics.shared.presentation.StoryProgressStatus
-import com.littlemandarin.classics.shared.presentation.TodayStorySelectionPolicy
 import com.littlemandarin.classics.shared.presentation.VocabReviewAssessment
 import com.littlemandarin.classics.shared.presentation.VocabReviewUseCase
 import com.littlemandarin.classics.shared.presentation.WordBookItem
@@ -297,7 +297,6 @@ private val TopLevelDestinations = listOf(
     TopLevelDestination(ReaderRoutes.Library, R.string.nav_library, LmcIcon.Library),
     TopLevelDestination(ReaderRoutes.WordBook, R.string.nav_word_book, LmcIcon.Book),
     TopLevelDestination(ReaderRoutes.Parent, R.string.nav_parent, LmcIcon.Parent),
-    TopLevelDestination(ReaderRoutes.Settings, R.string.nav_settings, LmcIcon.Settings),
 )
 
 @Composable
@@ -305,6 +304,7 @@ private fun ReaderApp() {
     val baseContext = LocalContext.current
     val settingsService = remember(baseContext.applicationContext) { createPlatformReaderSettingsService() }
     val onboardingService = remember(baseContext.applicationContext) { createPlatformOnboardingService() }
+    val systemLanguage = remember(baseContext) { baseContext.systemReaderLanguage() }
     val appVersion = remember(baseContext.applicationContext) {
         baseContext.applicationContext.appVersionName()
     }
@@ -360,7 +360,9 @@ private fun ReaderApp() {
                     },
                     onOnboardingSkip = {
                         analyticsScope.launch {
-                            onboardingService.skip()
+                            onboardingService.skip(OnboardingDefaults.skippedPreferences(systemLanguage))
+                            settingsService.setLanguage(systemLanguage)
+                            settings = settingsService.read()
                             onboardingPreferences = onboardingService.read()
                         }
                     },
@@ -593,12 +595,16 @@ private fun ReaderAppContent(
                         }
                     },
                     onSkip = {
-                        onOnboardingSkip()
-                        navController.navigate(ReaderRoutes.Today) {
-                            popUpTo(ReaderRoutes.Onboarding) {
-                                inclusive = true
+                        appScope.launch {
+                            streakUseCase.setDailyGoal(OnboardingDefaults.DailyGoalStories)
+                            streakSummary = streakUseCase.summary(System.currentTimeMillis())
+                            onOnboardingSkip()
+                            navController.navigate(ReaderRoutes.Today) {
+                                popUpTo(ReaderRoutes.Onboarding) {
+                                    inclusive = true
+                                }
+                                launchSingleTop = true
                             }
-                            launchSingleTop = true
                         }
                     },
                 )
@@ -654,6 +660,7 @@ private fun ReaderAppContent(
                         ttsService = ttsService,
                         onStartReview = { navController.navigate(ReaderRoutes.WordReview) },
                         onReadToday = { navController.navigateTopLevel(ReaderRoutes.Today) },
+                        onSettings = { navController.navigateTopLevel(ReaderRoutes.Settings) },
                     )
                 }
             }
@@ -995,7 +1002,6 @@ private fun TodayScreen(
         storyPresentationUseCases.selectTodayStories(
             stories = stories,
             completedStoryIds = completedStoryIds,
-            policy = TodayStorySelectionPolicy.CatalogFirst,
         )
     }
     val todayStory = todayStories.todayStory ?: return
@@ -1229,6 +1235,7 @@ private fun WordBookScreen(
     ttsService: TtsService,
     onStartReview: () -> Unit,
     onReadToday: () -> Unit,
+    onSettings: () -> Unit,
 ) {
     var selectedFilter by remember { mutableStateOf(WordBookFilter.All) }
     val scope = rememberCoroutineScope()
@@ -1266,6 +1273,13 @@ private fun WordBookScreen(
             TopLevelHeader(
                 title = stringResource(R.string.word_book_title),
                 subtitle = stringResource(R.string.word_book_subtitle),
+                actions = {
+                    HeaderIconButton(
+                        icon = LmcIcon.Settings,
+                        contentDescription = stringResource(R.string.nav_settings),
+                        onClick = onSettings,
+                    )
+                },
             )
         }
         item {
@@ -2740,43 +2754,48 @@ private fun SettingsScreen(
         item {
             TopLevelHeader(title = stringResource(R.string.settings_title))
         }
-        item {
-            SettingsSection(title = stringResource(R.string.settings_language)) {
-                ReaderLanguage.entries.forEach { language ->
-                    SelectableSettingsRow(
-                        label = stringResource(language.labelRes()),
-                        selected = settings.language == language,
-                        onClick = { onLanguageChange(language) },
-                    )
-                }
-            }
-        }
-        item {
-            SettingsSection(title = stringResource(R.string.settings_reading)) {
-                SettingsSwitchRow(
-                    label = stringResource(R.string.settings_pinyin_default),
-                    checked = settings.showPinyinByDefault,
-                    onCheckedChange = onPinyinDefaultChange,
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                SettingsTextSizeRow(
-                    selectedTextSize = settings.readingTextSize,
-                    onTextSizeChange = onTextSizeChange,
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                SettingsValueRow(
-                    label = stringResource(R.string.settings_audio_voice),
-                    value = stringResource(R.string.settings_audio_system),
-                )
-            }
-        }
-        item {
-            if (!parentGatePassed) {
+        if (!parentGatePassed) {
+            item {
                 Column(verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2)) {
                     SectionTitle(text = stringResource(R.string.settings_grown_ups))
                     ParentGateCard(onPassed = onParentGatePassed)
                 }
-            } else {
+            }
+            item {
+                PrivacyNotice()
+            }
+        } else {
+            item {
+                SettingsSection(title = stringResource(R.string.settings_language)) {
+                    ReaderLanguage.entries.forEach { language ->
+                        SelectableSettingsRow(
+                            label = stringResource(language.labelRes()),
+                            selected = settings.language == language,
+                            onClick = { onLanguageChange(language) },
+                        )
+                    }
+                }
+            }
+            item {
+                SettingsSection(title = stringResource(R.string.settings_reading)) {
+                    SettingsSwitchRow(
+                        label = stringResource(R.string.settings_pinyin_default),
+                        checked = settings.showPinyinByDefault,
+                        onCheckedChange = onPinyinDefaultChange,
+                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    SettingsTextSizeRow(
+                        selectedTextSize = settings.readingTextSize,
+                        onTextSizeChange = onTextSizeChange,
+                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    SettingsValueRow(
+                        label = stringResource(R.string.settings_audio_voice),
+                        value = stringResource(R.string.settings_audio_system),
+                    )
+                }
+            }
+            item {
                 SettingsSection(title = stringResource(R.string.settings_grown_ups)) {
                     SettingsNavigationRow(
                         label = stringResource(R.string.settings_parent_report),
@@ -2797,29 +2816,27 @@ private fun SettingsScreen(
                     )
                 }
             }
-        }
-        if (parentGatePassed && showFeedbackForm) {
-            item {
-                FeedbackForm(
-                    feedbackService = feedbackService,
-                    onSaved = {
-                        feedbackSaved = true
-                        showFeedbackForm = false
-                    },
-                )
+            if (showFeedbackForm) {
+                item {
+                    FeedbackForm(
+                        feedbackService = feedbackService,
+                        onSaved = {
+                            feedbackSaved = true
+                            showFeedbackForm = false
+                        },
+                    )
+                }
             }
-        }
-        if (parentGatePassed && feedbackSaved) {
-            item {
-                Text(
-                    text = stringResource(R.string.settings_feedback_saved),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = LmcColors.Success,
-                    modifier = Modifier.padding(horizontal = LmcSpacing.Space2),
-                )
+            if (feedbackSaved) {
+                item {
+                    Text(
+                        text = stringResource(R.string.settings_feedback_saved),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = LmcColors.Success,
+                        modifier = Modifier.padding(horizontal = LmcSpacing.Space2),
+                    )
+                }
             }
-        }
-        if (parentGatePassed) {
             item {
                 SettingsSection(title = stringResource(R.string.settings_developer)) {
                     AiBackendBaseUrlRow(
@@ -5871,6 +5888,15 @@ private fun Int.toLocalizedInt(): String = rememberNumberFormat().format(this)
 private fun currentLocale(): Locale {
     val configuration = LocalConfiguration.current
     return configuration.locales[0] ?: Locale.getDefault()
+}
+
+private fun Context.systemReaderLanguage(): ReaderLanguage {
+    val locale = resources.configuration.locales[0] ?: Locale.getDefault()
+    return if (locale.language.equals("zh", ignoreCase = true)) {
+        ReaderLanguage.ChineseSimplified
+    } else {
+        ReaderLanguage.English
+    }
 }
 
 private fun NavHostController.navigateTopLevel(route: String) {

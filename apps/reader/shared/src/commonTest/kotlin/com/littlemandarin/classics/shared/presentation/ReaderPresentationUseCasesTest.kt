@@ -159,11 +159,21 @@ class ReaderPresentationUseCasesTest {
             completedStoryIds = setOf("first"),
             policy = TodayStorySelectionPolicy.FirstIncomplete,
         )
+        val defaultSelection = useCases.selectTodayStories(
+            stories = stories,
+            completedStoryIds = setOf("first"),
+        )
+        val allCompletedSelection = useCases.selectTodayStories(
+            stories = stories,
+            completedStoryIds = stories.mapTo(mutableSetOf()) { it.id },
+        )
 
         assertEquals("first", catalogSelection.todayStory?.id)
         assertEquals("second", catalogSelection.upNextStory?.id)
         assertEquals("second", incompleteSelection.todayStory?.id)
         assertEquals("third", incompleteSelection.upNextStory?.id)
+        assertEquals("second", defaultSelection.todayStory?.id)
+        assertEquals("first", allCompletedSelection.todayStory?.id)
 
         val partial = useCases.storyProgress(
             story = stories.first(),
