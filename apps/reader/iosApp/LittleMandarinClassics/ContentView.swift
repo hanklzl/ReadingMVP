@@ -4,10 +4,10 @@ import shared
 
 struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
-    @AppStorage("lmc_locale_identifier") private var localeIdentifier = LMCAppLocale.english.rawValue
-    @AppStorage("lmc_show_pinyin") private var showPinyin = true
-    @AppStorage("lmc_reading_size") private var readingSize = LMCReadingSize.medium.rawValue
-    @AppStorage("lmc_ai_backend_base_url") private var aiBackendBaseURL = LMCAiBackendDefaults.localMock
+    @State private var localeIdentifier = LMCAppLocale.english.rawValue
+    @State private var showPinyin = true
+    @State private var readingSize = LMCReadingSize.medium.rawValue
+    @State private var aiBackendBaseURL = ""
     @StateObject private var viewModel = ReaderViewModel()
     @State private var selectedTab: LMCTab = .today
     @State private var flowRoute: LMCFlowRoute?
@@ -43,6 +43,19 @@ struct ContentView: View {
                 }
             }
             await viewModel.load()
+            await loadSettings()
+        }
+        .onChange(of: localeIdentifier) { newValue in
+            Task { await viewModel.setLanguageTag(newValue) }
+        }
+        .onChange(of: showPinyin) { newValue in
+            Task { await viewModel.setShowPinyinByDefault(newValue) }
+        }
+        .onChange(of: readingSize) { newValue in
+            Task { await viewModel.setReadingSizeValue(newValue) }
+        }
+        .onChange(of: aiBackendBaseURL) { newValue in
+            Task { await viewModel.setAiBackendBaseURL(newValue) }
         }
         .onChange(of: scenePhase) { newPhase in
             switch newPhase {
@@ -80,7 +93,7 @@ struct ContentView: View {
                 },
                 openVocabulary: { flowRoute = .vocabulary(storyId: $0.id, openSource: .todaySummary) },
                 openQuiz: { story in
-                    if viewModel.isCompleted(story) {
+                    if viewModel.canOpenQuiz(story) {
                         flowRoute = .quiz(storyId: story.id)
                     } else {
                         lockedQuizAlert = true
@@ -170,12 +183,21 @@ struct ContentView: View {
         }
         selectedTab = tab
     }
+
+    private func loadSettings() async {
+        guard let settings = await viewModel.readSettings() else { return }
+        localeIdentifier = settings.language.tag
+        showPinyin = settings.showPinyinByDefault
+        readingSize = settings.readingTextSize.prefValue
+        aiBackendBaseURL = settings.aiBackendBaseUrl
+    }
 }
 
 @MainActor
 final class ReaderViewModel: ObservableObject {
     @Published private(set) var stories: [Story] = []
     @Published private(set) var completedStoryIds: Set<String> = []
+    @Published private(set) var readingPositions: [String: Int] = [:]
     @Published private(set) var stats: ProgressStats?
     @Published private(set) var parentReport: ParentProgressReport?
     @Published private(set) var loadingState: LMCLoadingState = .idle
@@ -186,8 +208,13 @@ final class ReaderViewModel: ObservableObject {
         catalog: StoryResourceCatalog.shared.entries
     )
     private let progressService = IosProgressServiceKt.createPlatformProgressService()
+    private let settingsService = IosReaderSettingsServiceKt.createPlatformReaderSettingsService()
     private let ttsService = IosTtsServiceKt.createTtsService()
-    private let scoreQuizUseCase = ScoreQuizUseCase()
+    private let storyPresentationUseCases = StoryPresentationUseCases()
+    private let buildParentReportSummaryUseCase = BuildParentReportSummaryUseCase()
+    private let readingSessionReducer = ReadingSessionReducer()
+    private let quizSessionReducer = QuizSessionReducer(scoreQuizUseCase: ScoreQuizUseCase())
+    private let buildSpeechTextUseCase = BuildSpeechTextUseCase()
     private let analytics = LMCUserDefaultsAnalyticsAdapter()
     private let feedbackRepository = LMCSharedFeedbackRepository()
     private let aiService = LMCAiExplanationAdapter()
@@ -199,14 +226,19 @@ final class ReaderViewModel: ObservableObject {
     private lazy var buildParentReportUseCase = BuildParentReportUseCase(progressService: progressService)
 
     var todayStory: Story? {
-        stories.first { !completedStoryIds.contains($0.id) } ?? stories.first
+        todayShelf.todayStory
     }
 
     var upNextStory: Story? {
-        guard let todayStory, let currentIndex = stories.firstIndex(where: { $0.id == todayStory.id }) else {
-            return stories.dropFirst().first
-        }
-        return stories.dropFirst(currentIndex + 1).first
+        todayShelf.upNextStory
+    }
+
+    private var todayShelf: TodayStories {
+        storyPresentationUseCases.selectTodayStories(
+            stories: stories,
+            completedStoryIds: completedStoryIds,
+            policy: .firstincomplete
+        )
     }
 
     func load() async {
@@ -215,6 +247,7 @@ final class ReaderViewModel: ObservableObject {
         do {
             stories = try await getStoryListUseCase.invoke()
             try await refreshProgress()
+            try await refreshReadingPositions()
             loadingState = .loaded
         } catch {
             loadingState = .failed
@@ -229,22 +262,17 @@ final class ReaderViewModel: ObservableObject {
         completedStoryIds.contains(story.id)
     }
 
-    func score(story: Story, answers: [String: String]) -> QuizScore {
-        scoreQuizUseCase.invoke(story: story, answers: answers)
+    func canOpenQuiz(_ story: Story) -> Bool {
+        storyPresentationUseCases.canOpenQuiz(
+            story: story,
+            completedStoryIds: completedStoryIds
+        )
     }
 
-    func completeStory(_ story: Story, answers: [String: String]) async -> QuizScore {
-        let score = score(story: story, answers: answers)
-        let completedAt = Int64(Date().timeIntervalSince1970 * 1_000)
-        let record = CompletionRecord(
-            storyId: story.id,
-            completedAtEpochMillis: completedAt,
-            vocabCount: Int32(story.vocab.count),
-            correctCount: Int32(score.correctCount),
-            questionCount: Int32(score.totalQuestions)
-        )
+    func completeStory(_ story: Story, quizState: QuizSessionState) async -> QuizScore {
+        let score = quizScore(story, state: quizState)
         do {
-            try await markStoryCompletedUseCase.invoke(record: record)
+            try await markStoryCompletedUseCase.invoke(record: completionRecord(story, state: quizState))
             try await refreshProgress()
             trackStoryComplete(story, quizCompleted: true)
         } catch {
@@ -254,11 +282,11 @@ final class ReaderViewModel: ObservableObject {
     }
 
     func progressValue(for story: Story) -> Double {
-        isCompleted(story) ? 1 : 0
+        storyProgress(for: story).fraction
     }
 
     func progressLabelKey(for story: Story) -> String {
-        isCompleted(story) ? "status_completed" : "status_not_started"
+        storyProgress(for: story).status == .completed ? "status_completed" : "status_not_started"
     }
 
     func speakCurrent(_ text: String) {
@@ -266,7 +294,11 @@ final class ReaderViewModel: ObservableObject {
     }
 
     func speakAll(_ story: Story) {
-        speak(story.paragraphs.map(\.text).joined(separator: "\n"))
+        speak(buildSpeechTextUseCase.story(story: story))
+    }
+
+    func vocabSpeechText(_ word: Vocab) -> String {
+        buildSpeechTextUseCase.vocab(word: word)
     }
 
     func stopSpeaking() {
@@ -278,103 +310,88 @@ final class ReaderViewModel: ObservableObject {
     }
 
     func trackAppOpen(openType: LMCAppOpenType) {
-        analytics.track(.appOpen, properties: analytics.appOpenProperties(openType: openType))
+        analytics.track(analytics.appOpenPayload(openType: openType))
     }
 
     func trackStoryOpen(_ story: Story, openSource: LMCStoryOpenSource) {
         analytics.track(
-            .storyOpen,
-            properties: storyProperties(story).merging([
-                "open_source": openSource.rawValue,
-                "previous_story_status": isCompleted(story) ? "completed" : "not_started",
-            ]) { _, new in new }
+            ReaderAnalyticsEvents.shared.storyOpen(
+                story: story,
+                storyOrder: Int32(storyOrder(for: story)),
+                openSource: openSource.rawValue,
+                previousStoryStatus: storyProgress(for: story).status
+            )
         )
     }
 
     func trackParagraphAudioPlay(_ story: Story, paragraphIndex: Int) {
         analytics.track(
-            .paragraphAudioPlay,
-            properties: [
-                "story_id": story.id,
-                "paragraph_index": "\(paragraphIndex + 1)",
-                "audio_source": "tts",
-            ]
+            ReaderAnalyticsEvents.shared.paragraphAudioPlay(
+                storyId: story.id,
+                paragraphIndex: Int32(paragraphIndex + 1),
+                audioSource: "tts"
+            )
         )
     }
 
     func trackPinyinToggle(_ story: Story, paragraphIndex: Int, enabled: Bool) {
         analytics.track(
-            .pinyinToggle,
-            properties: [
-                "story_id": story.id,
-                "enabled": enabled ? "true" : "false",
-                "surface": "reading",
-                "paragraph_index": "\(paragraphIndex + 1)",
-            ]
+            ReaderAnalyticsEvents.shared.pinyinToggle(
+                storyId: story.id,
+                enabled: enabled,
+                surface: "reading",
+                paragraphIndex: KotlinInt(int: Int32(paragraphIndex + 1))
+            )
         )
     }
 
     func trackVocabOpen(_ story: Story, wordIndex: Int, openSource: LMCVocabOpenSource) {
         guard story.vocab.indices.contains(wordIndex) else { return }
         analytics.track(
-            .vocabOpen,
-            properties: [
-                "story_id": story.id,
-                "vocab_id": "\(story.id):\(wordIndex + 1)",
-                "open_source": openSource.rawValue,
-                "content_level": "\(story.level)",
-            ]
+            ReaderAnalyticsEvents.shared.vocabOpen(
+                story: story,
+                vocabIndex: Int32(wordIndex),
+                openSource: openSource.rawValue
+            )
         )
     }
 
     func trackQuizStart(_ story: Story) {
         analytics.track(
-            .quizStart,
-            properties: [
-                "story_id": story.id,
-                "question_count": "\(story.questions.count)",
-                "attempt_number": "1",
-            ]
+            ReaderAnalyticsEvents.shared.quizStart(story: story)
         )
     }
 
     func trackQuizComplete(_ story: Story, score: QuizScore) {
         analytics.track(
-            .quizComplete,
-            properties: [
-                "story_id": story.id,
-                "question_count": "\(score.totalQuestions)",
-                "correct_count": "\(score.correctCount)",
-                "attempt_number": "1",
-            ]
+            ReaderAnalyticsEvents.shared.quizComplete(story: story, score: score)
         )
     }
 
     func trackParentReportOpen(entryPoint: LMCParentReportEntryPoint) {
         analytics.track(
-            .parentReportOpen,
-            properties: [
-                "entry_point": entryPoint.rawValue,
-                "report_period": "week",
-            ]
+            ReaderAnalyticsEvents.shared.parentReportOpen(
+                entryPoint: entryPoint.rawValue,
+                reportPeriod: "week"
+            )
         )
     }
 
     func askAboutParagraph(story: Story, paragraphIndex: Int, selectedText: String, baseURL: String) async -> LMCAiAskState {
+        let questionType = AiQuestionTypes.shared.ExplainSentence
         let result = await aiService.explain(
             storyId: story.id,
             selectedText: selectedText,
-            questionType: .explainSentence,
+            questionType: questionType,
             baseURL: baseURL
         )
         analytics.track(
-            .aiExplainRequest,
-            properties: [
-                "story_id": story.id,
-                "request_type": LMCAiQuestionType.explainSentence.rawValue,
-                "safety_outcome": result.analyticsOutcome.rawValue,
-                "target_type": "paragraph",
-            ]
+            ReaderAnalyticsEvents.shared.aiExplainRequest(
+                storyId: story.id,
+                requestType: questionType,
+                safetyOutcome: result.analyticsOutcome.rawValue,
+                targetType: "paragraph"
+            )
         )
         switch result {
         case .answer(let answer, _):
@@ -388,6 +405,102 @@ final class ReaderViewModel: ObservableObject {
         try await feedbackRepository.save(draft)
     }
 
+    func readSettings() async -> ReaderSettings? {
+        try? await settingsService.read()
+    }
+
+    func setLanguageTag(_ tag: String) async {
+        try? await settingsService.setLanguage(
+            language: ReaderLanguage.companion.fromTag(tag: tag)
+        )
+    }
+
+    func setShowPinyinByDefault(_ enabled: Bool) async {
+        try? await settingsService.setShowPinyinByDefault(showPinyin: enabled)
+    }
+
+    func setReadingSizeValue(_ value: String) async {
+        try? await settingsService.setReadingTextSize(
+            textSize: ReadingTextSize.companion.fromPrefValue(value: value)
+        )
+    }
+
+    func setAiBackendBaseURL(_ value: String) async {
+        try? await settingsService.setAiBackendBaseUrl(baseUrl: value)
+    }
+
+    func resetAiBackendBaseURL() async -> String {
+        try? await settingsService.setAiBackendBaseUrl(baseUrl: "")
+        return (try? await settingsService.read().aiBackendBaseUrl) ?? ""
+    }
+
+    func savedReadingParagraphIndex(for story: Story) async -> Int {
+        let saved = (try? await settingsService.readReadingParagraphIndex(storyId: story.id)) ?? -1
+        return Int(readingSessionReducer.initialState(story: story, savedParagraphIndex: Int32(saved)).paragraphIndex)
+    }
+
+    func saveReadingParagraphIndex(_ index: Int, for story: Story) {
+        readingPositions[story.id] = index
+        Task { try? await settingsService.setReadingParagraphIndex(storyId: story.id, paragraphIndex: Int32(index)) }
+    }
+
+    func readingState(for story: Story, paragraphIndex: Int) -> ReadingSessionState {
+        readingSessionReducer.stateFor(story: story, paragraphIndex: Int32(paragraphIndex))
+    }
+
+    func previousReadingState(_ story: Story, state: ReadingSessionState) -> ReadingSessionState {
+        readingSessionReducer.previous(story: story, state: state)
+    }
+
+    func nextReadingTransition(_ story: Story, state: ReadingSessionState) -> ReadingSessionTransition {
+        readingSessionReducer.next(story: story, state: state)
+    }
+
+    func filteredStories(level selectedLevel: Int?) -> [Story] {
+        storyPresentationUseCases.filterStoriesByLevel(
+            stories: stories,
+            selectedLevel: selectedLevel.map { KotlinInt(int: Int32($0)) }
+        )
+    }
+
+    func initialQuizState(_ story: Story) -> QuizSessionState {
+        quizSessionReducer.initialState(story: story)
+    }
+
+    func quizQuestionState(_ story: Story, state: QuizSessionState) -> QuizQuestionState {
+        quizSessionReducer.questionState(story: story, state: state)
+    }
+
+    func selectQuizAnswer(_ story: Story, state: QuizSessionState, answer: String) -> QuizSessionState {
+        quizSessionReducer.selectAnswer(story: story, state: state, answer: answer)
+    }
+
+    func submitOrAdvanceQuiz(_ story: Story, state: QuizSessionState) -> QuizSessionState {
+        quizSessionReducer.submitOrAdvance(story: story, state: state)
+    }
+
+    func quizScore(_ story: Story, state: QuizSessionState) -> QuizScore {
+        quizSessionReducer.score(story: story, state: state)
+    }
+
+    func completionRecord(_ story: Story, state: QuizSessionState) -> CompletionRecord {
+        quizSessionReducer.completionRecord(
+            story: story,
+            state: state,
+            nowEpochMillis: Int64(Date().timeIntervalSince1970 * 1_000)
+        )
+    }
+
+    func parentReportSummary() -> ParentReportSummary? {
+        guard let parentReport, let stats else { return nil }
+        return buildParentReportSummaryUseCase.invoke(
+            report: parentReport,
+            stats: stats,
+            nowEpochMillis: Int64(Date().timeIntervalSince1970 * 1_000),
+            weekWindowMillis: LMCSevenDaysMillis
+        )
+    }
+
     private func speak(_ text: String) {
         speechTask?.cancel()
         speechTask = Task { @MainActor in
@@ -398,7 +511,7 @@ final class ReaderViewModel: ObservableObject {
 
     private func refreshProgress() async throws {
         let records = try await progressService.getRecords()
-        completedStoryIds = Set(records.map(\.storyId))
+        completedStoryIds = storyPresentationUseCases.completedStoryIds(records: records)
         stats = try await getProgressStatsUseCase.invoke()
         parentReport = try await buildParentReportUseCase.invoke(
             nowEpochMillis: Int64(Date().timeIntervalSince1970 * 1_000),
@@ -406,31 +519,34 @@ final class ReaderViewModel: ObservableObject {
         )
     }
 
-    private func trackStoryComplete(_ story: Story, quizCompleted: Bool) {
-        analytics.track(
-            .storyComplete,
-            properties: [
-                "story_id": story.id,
-                "story_order": "\(storyOrder(for: story))",
-                "content_level": "\(story.level)",
-                "quiz_completed": quizCompleted ? "true" : "false",
-            ]
-        )
+    private func refreshReadingPositions() async throws {
+        var positions: [String: Int] = [:]
+        for story in stories {
+            positions[story.id] = Int(try await settingsService.readReadingParagraphIndex(storyId: story.id))
+        }
+        readingPositions = positions
     }
 
-    private func storyProperties(_ story: Story) -> [String: String] {
-        [
-            "story_id": story.id,
-            "story_order": "\(storyOrder(for: story))",
-            "content_level": "\(Int(story.level))",
-            "paragraph_count": "\(story.paragraphs.count)",
-            "vocab_count": "\(story.vocab.count)",
-            "question_count": "\(story.questions.count)",
-        ]
+    private func trackStoryComplete(_ story: Story, quizCompleted: Bool) {
+        analytics.track(
+            ReaderAnalyticsEvents.shared.storyComplete(
+                story: story,
+                storyOrder: Int32(storyOrder(for: story)),
+                quizCompleted: quizCompleted
+            )
+        )
     }
 
     private func storyOrder(for story: Story) -> Int {
         (stories.firstIndex { $0.id == story.id } ?? 0) + 1
+    }
+
+    private func storyProgress(for story: Story) -> StoryProgress {
+        storyPresentationUseCases.storyProgress(
+            story: story,
+            completedStoryIds: completedStoryIds,
+            savedParagraphIndex: Int32(readingPositions[story.id] ?? -1)
+        )
     }
 }
 
@@ -568,68 +684,6 @@ enum LMCReadingSize: String, CaseIterable {
     }
 }
 
-enum LMCAnalyticsEventName: String {
-    case appOpen = "app_open"
-    case storyOpen = "story_open"
-    case paragraphAudioPlay = "paragraph_audio_play"
-    case pinyinToggle = "pinyin_toggle"
-    case vocabOpen = "vocab_open"
-    case quizStart = "quiz_start"
-    case quizComplete = "quiz_complete"
-    case aiExplainRequest = "ai_explain_request"
-    case storyComplete = "story_complete"
-    case parentReportOpen = "parent_report_open"
-}
-
-private extension LMCAnalyticsEventName {
-    var sharedValue: AnalyticsEventName {
-        switch self {
-        case .appOpen: return AnalyticsEventName.appopen
-        case .storyOpen: return AnalyticsEventName.storyopen
-        case .paragraphAudioPlay: return AnalyticsEventName.paragraphaudioplay
-        case .pinyinToggle: return AnalyticsEventName.pinyintoggle
-        case .vocabOpen: return AnalyticsEventName.vocabopen
-        case .quizStart: return AnalyticsEventName.quizstart
-        case .quizComplete: return AnalyticsEventName.quizcomplete
-        case .aiExplainRequest: return AnalyticsEventName.aiexplainrequest
-        case .storyComplete: return AnalyticsEventName.storycomplete
-        case .parentReportOpen: return AnalyticsEventName.parentreportopen
-        }
-    }
-}
-
-private let LMCIntegerAnalyticsKeys: Set<String> = [
-    "story_order",
-    "content_level",
-    "paragraph_index",
-    "question_count",
-    "attempt_number",
-    "correct_count",
-    "days_since_first_open",
-]
-
-private let LMCBooleanAnalyticsKeys: Set<String> = [
-    "is_first_open",
-    "enabled",
-    "quiz_completed",
-]
-
-private extension Dictionary where Key == String, Value == String {
-    func sharedAnalyticsProperties() -> [String: Kotlinx_serialization_jsonJsonElement] {
-        var converted: [String: Kotlinx_serialization_jsonJsonElement] = [:]
-        forEach { key, value in
-            if LMCIntegerAnalyticsKeys.contains(key), let intValue = Int32(value) {
-                converted[key] = AnalyticsProperties.shared.int(value: intValue)
-            } else if LMCBooleanAnalyticsKeys.contains(key), let boolValue = Bool(value) {
-                converted[key] = AnalyticsProperties.shared.boolean(value: boolValue)
-            } else {
-                converted[key] = AnalyticsProperties.shared.string(value: value)
-            }
-        }
-        return converted
-    }
-}
-
 struct LMCUserDefaultsAnalyticsAdapter {
     private static let firstOpenEpochKey = "lmc_first_open_epoch_seconds"
 
@@ -644,7 +698,7 @@ struct LMCUserDefaultsAnalyticsAdapter {
         )
     }
 
-    func appOpenProperties(openType: LMCAppOpenType) -> [String: String] {
+    func appOpenPayload(openType: LMCAppOpenType) -> AnalyticsEventPayload {
         let now = Date()
         let firstOpenEpoch = defaults.double(forKey: Self.firstOpenEpochKey)
         let isFirstOpen = firstOpenEpoch == 0
@@ -653,27 +707,19 @@ struct LMCUserDefaultsAnalyticsAdapter {
         }
         let firstOpenDate = Date(timeIntervalSince1970: isFirstOpen ? now.timeIntervalSince1970 : firstOpenEpoch)
         let daysSinceFirstOpen = Calendar.current.dateComponents([.day], from: firstOpenDate, to: now).day ?? 0
-        return [
-            "open_type": openType.rawValue,
-            "is_first_open": isFirstOpen ? "true" : "false",
-            "days_since_first_open": "\(max(0, daysSinceFirstOpen))",
-        ]
+        return ReaderAnalyticsEvents.shared.appOpen(
+            openType: openType.rawValue,
+            isFirstOpen: KotlinBoolean(bool: isFirstOpen),
+            daysSinceFirstOpen: KotlinInt(int: Int32(max(0, daysSinceFirstOpen)))
+        )
     }
 
-    func track(_ event: LMCAnalyticsEventName, properties: [String: String]) {
+    func track(_ payload: AnalyticsEventPayload) {
         service.track(
-            eventName: event.sharedValue,
-            properties: properties.sharedAnalyticsProperties()
+            eventName: payload.eventName,
+            properties: payload.properties
         ) { _, _ in }
     }
-}
-
-enum LMCAiBackendDefaults {
-    static let localMock = "local/mock"
-}
-
-enum LMCAiQuestionType: String {
-    case explainSentence = "explain_sentence"
 }
 
 enum LMCAiSafetyOutcome: String {
@@ -703,31 +749,38 @@ enum LMCAiExplanationResult {
 
 struct LMCAiExplanationAdapter {
     private let backendClient = LMCSharedAiBackendClient()
+    private let buildRequest = BuildAiExplanationRequestUseCase()
 
-    func explain(storyId: String, selectedText: String, questionType: LMCAiQuestionType, baseURL: String) async -> LMCAiExplanationResult {
+    func explain(storyId: String, selectedText: String, questionType: String, baseURL: String) async -> LMCAiExplanationResult {
         let trimmedBaseURL = baseURL.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !storyId.isEmpty, !selectedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            return .answer(LMCStrings.localized("ai_out_of_scope").lmcLimited(to: 100), .outOfScope)
+        guard let request = buildRequest.forSelectedText(
+            storyId: storyId,
+            selectedText: selectedText,
+            questionType: questionType,
+            childAge: 6
+        ) else {
+            let outOfScope = LMCStrings.localized("ai_out_of_scope")
+            let answer = AiExplanationResponse(
+                answer: outOfScope,
+                messageKey: AiMessageKeys.shared.OutOfScope
+            ).toLimitedDisplayText(
+                stubText: LMCStrings.localized("ai_mock_answer"),
+                outOfScopeText: outOfScope
+            )
+            return .answer(answer, .outOfScope)
         }
 
-        let useMock = trimmedBaseURL.isEmpty || trimmedBaseURL == LMCAiBackendDefaults.localMock
+        let useMock = ReaderSettingsKt.isMockAiBackend(trimmedBaseURL)
         let config = AiServiceConfig(
             baseUrl: useMock ? nil : trimmedBaseURL,
             apiKey: nil,
-            maxSelectedTextLength: 120,
-            maxAnswerLength: 100
+            maxSelectedTextLength: AiPresentationKt.AiSelectedTextMaxChars,
+            maxAnswerLength: AiPresentationKt.AiAnswerMaxChars
         )
         let service = AiServiceKt.createAiService(
             config: config,
             backendClient: useMock ? nil : backendClient
         )
-        let request = AiExplanationRequest(
-            storyId: storyId,
-            selectedText: selectedText.lmcLimited(to: 120),
-            questionType: questionType.rawValue,
-            childAge: 6
-        )
-
         do {
             let response = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<AiExplanationResponse, Error>) in
                 service.explain(request: request) { response, error in
@@ -741,10 +794,10 @@ struct LMCAiExplanationAdapter {
                 }
             }
             let outOfScope = LMCStrings.localized("ai_out_of_scope")
-            let answer = response.toDisplayText(
+            let answer = response.toLimitedDisplayText(
                 stubText: LMCStrings.localized("ai_mock_answer"),
                 outOfScopeText: outOfScope
-            ).lmcLimited(to: 100)
+            )
             let outcome = response.safetyOutcome(displayedAnswer: answer, outOfScopeText: outOfScope) == "out_of_scope"
                 ? LMCAiSafetyOutcome.outOfScope
                 : .allowed
@@ -803,18 +856,18 @@ final class LMCSharedAiBackendClient: NSObject, AiExplainBackendClient {
         let decoded = try JSONDecoder().decode(LMCBackendAiExplainResponse.self, from: data)
         if decoded.messageKey == "ai_out_of_scope" {
             return AiExplanationResponse(
-                answer: LMCStrings.localized("ai_out_of_scope").lmcLimited(to: 100),
+                answer: LMCStrings.localized("ai_out_of_scope"),
                 messageKey: "ai_out_of_scope"
             )
         }
         if let messageKey = decoded.messageKey, !messageKey.isEmpty {
             return AiExplanationResponse(
-                answer: LMCStrings.localized(messageKey).lmcLimited(to: 100),
+                answer: LMCStrings.localized(messageKey),
                 messageKey: messageKey
             )
         }
         if let answer = decoded.answer?.trimmingCharacters(in: .whitespacesAndNewlines), !answer.isEmpty {
-            return AiExplanationResponse(answer: answer.lmcLimited(to: 100), messageKey: nil)
+            return AiExplanationResponse(answer: answer, messageKey: nil)
         }
 
         throw LMCSharedAiBackendError.emptyResponse
@@ -867,7 +920,7 @@ struct LMCFeedbackDraft {
     var parentContact = ""
 
     var canSubmit: Bool {
-        !suggestion.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        BuildFeedbackSubmissionUseCase().canSubmit(suggestion: suggestion)
     }
 }
 
@@ -958,19 +1011,19 @@ enum LMCFeedbackSaveState {
 
 struct LMCSharedFeedbackRepository {
     private let service: FeedbackService
+    private let buildSubmission = BuildFeedbackSubmissionUseCase()
 
     init(service: FeedbackService = IosFeedbackServiceKt.createPlatformFeedbackService()) {
         self.service = service
     }
 
     func save(_ draft: LMCFeedbackDraft) async throws {
-        let trimmedContact = draft.parentContact.trimmingCharacters(in: .whitespacesAndNewlines)
-        let submission = FeedbackSubmission(
+        let submission = buildSubmission.invoke(
             satisfaction: draft.satisfaction.sharedValue,
             childAgeBand: draft.childAgeBand.sharedValue,
             issueType: draft.issueType.sharedValue,
-            suggestion: draft.suggestion.trimmingCharacters(in: .whitespacesAndNewlines),
-            parentContact: trimmedContact.isEmpty ? nil : trimmedContact
+            suggestion: draft.suggestion,
+            parentContact: draft.parentContact
         )
 
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
@@ -997,14 +1050,6 @@ enum LMCISO8601 {
         formatter.timeZone = TimeZone(secondsFromGMT: 0)
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         return formatter.string(from: date)
-    }
-}
-
-private extension String {
-    func lmcLimited(to maxCount: Int) -> String {
-        let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
-        guard trimmed.count > maxCount else { return trimmed }
-        return String(trimmed.prefix(maxCount))
     }
 }
 
@@ -1145,8 +1190,7 @@ private struct LibraryScreen: View {
     @State private var selectedLevel: Int?
 
     private var filteredStories: [Story] {
-        guard let selectedLevel else { return viewModel.stories }
-        return viewModel.stories.filter { Int($0.level) == selectedLevel }
+        viewModel.filteredStories(level: selectedLevel)
     }
 
     var body: some View {
@@ -1220,8 +1264,12 @@ private struct ReadingScreen: View {
     @State private var paragraphIndex = 0
     @State private var askState: LMCAiAskState = .idle
 
+    private var readingState: ReadingSessionState {
+        viewModel.readingState(for: story, paragraphIndex: paragraphIndex)
+    }
+
     private var currentParagraph: Paragraph {
-        story.paragraphs[max(0, min(paragraphIndex, story.paragraphs.count - 1))]
+        readingState.currentParagraph ?? story.paragraphs[max(0, min(paragraphIndex, story.paragraphs.count - 1))]
     }
 
     private var size: LMCReadingSize {
@@ -1230,11 +1278,11 @@ private struct ReadingScreen: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ReadingTopBar(
-                story: story,
-                progress: progress,
-                countText: "\(paragraphIndex + 1) / \(max(story.paragraphs.count, 1))",
-                isSpeaking: viewModel.isSpeaking,
+                ReadingTopBar(
+                    story: story,
+                    progress: progress,
+                    countText: "\(Int(readingState.paragraphIndex) + 1) / \(Int(readingState.paragraphCount))",
+                    isSpeaking: viewModel.isSpeaking,
                 close: {
                     viewModel.stopSpeaking()
                     close()
@@ -1275,31 +1323,36 @@ private struct ReadingScreen: View {
             }
 
             ReadingBottomBar(
-                canGoBack: paragraphIndex > 0,
-                isLast: paragraphIndex >= story.paragraphs.count - 1,
-                previous: { paragraphIndex = max(0, paragraphIndex - 1) },
+                canGoBack: readingState.canGoPrevious,
+                isLast: readingState.isLastParagraph,
+                previous: {
+                    paragraphIndex = Int(viewModel.previousReadingState(story, state: readingState).paragraphIndex)
+                },
                 next: {
-                    if paragraphIndex >= story.paragraphs.count - 1 {
+                    let transition = viewModel.nextReadingTransition(story, state: readingState)
+                    paragraphIndex = Int(transition.state.paragraphIndex)
+                    if transition.shouldOpenVocabulary {
                         viewModel.stopSpeaking()
                         openVocabulary()
-                    } else {
-                        paragraphIndex += 1
                     }
                 }
             )
         }
         .background(LMCColor.background.ignoresSafeArea())
+        .task(id: story.id) {
+            paragraphIndex = await viewModel.savedReadingParagraphIndex(for: story)
+        }
         .onChange(of: showPinyin) { enabled in
             viewModel.trackPinyinToggle(story, paragraphIndex: paragraphIndex, enabled: enabled)
         }
         .onChange(of: paragraphIndex) { _ in
             askState = .idle
+            viewModel.saveReadingParagraphIndex(paragraphIndex, for: story)
         }
     }
 
     private var progress: Double {
-        guard !story.paragraphs.isEmpty else { return 0 }
-        return Double(paragraphIndex + 1) / Double(story.paragraphs.count)
+        readingState.progressFraction
     }
 
     private var readingControls: some View {
@@ -1433,7 +1486,7 @@ private struct VocabularyScreen: View {
                         LMCEmptyState(titleKey: "vocab_empty_title", messageKey: "vocab_empty_message")
                     } else {
                         VocabularyCard(word: currentWord) {
-                            viewModel.speakCurrent([currentWord.word, currentWord.example].compactMap { $0 }.joined(separator: "。"))
+                            viewModel.speakCurrent(viewModel.vocabSpeechText(currentWord))
                         }
 
                         StepDots(count: story.vocab.count, index: wordIndex)
@@ -1486,22 +1539,26 @@ private struct QuizScreen: View {
     let readAgain: () -> Void
     let done: () -> Void
 
-    @State private var questionIndex = 0
-    @State private var selectedAnswer: String?
-    @State private var submittedAnswer: String?
-    @State private var answers: [String: String] = [:]
-    @State private var isComplete = false
+    @State private var quizState: QuizSessionState?
     @State private var completionScore: QuizScore?
     @State private var didMarkComplete = false
     @State private var didTrackQuizStart = false
 
+    private var activeQuizState: QuizSessionState {
+        quizState ?? viewModel.initialQuizState(story)
+    }
+
+    private var questionState: QuizQuestionState {
+        viewModel.quizQuestionState(story, state: activeQuizState)
+    }
+
     private var question: Question {
-        story.questions[max(0, min(questionIndex, story.questions.count - 1))]
+        questionState.question ?? story.questions[max(0, min(Int(questionState.questionIndex), story.questions.count - 1))]
     }
 
     var body: some View {
         VStack(spacing: 0) {
-            if isComplete {
+            if activeQuizState.isComplete {
                 completionView
             } else {
                 quizQuestionView
@@ -1513,13 +1570,13 @@ private struct QuizScreen: View {
             didTrackQuizStart = true
             viewModel.trackQuizStart(story)
         }
-        .task(id: isComplete) {
-            guard isComplete, !didMarkComplete else { return }
+        .task(id: activeQuizState.isComplete) {
+            guard activeQuizState.isComplete, !didMarkComplete else { return }
             didMarkComplete = true
-            let score = viewModel.score(story: story, answers: answers)
+            let score = viewModel.quizScore(story, state: activeQuizState)
             completionScore = score
             viewModel.trackQuizComplete(story, score: score)
-            _ = await viewModel.completeStory(story, answers: answers)
+            _ = await viewModel.completeStory(story, quizState: activeQuizState)
         }
     }
 
@@ -1527,7 +1584,7 @@ private struct QuizScreen: View {
         VStack(spacing: 0) {
             LMCFlowTopBar(
                 titleKey: "quiz_title",
-                trailingText: "\(questionIndex + 1) / \(max(story.questions.count, 1))",
+                trailingText: "\(Int(questionState.questionIndex) + 1) / \(Int(questionState.questionCount))",
                 close: close
             )
             LMCProgressBar(value: progress)
@@ -1544,21 +1601,20 @@ private struct QuizScreen: View {
                     VStack(spacing: LMCSpace.s3) {
                         ForEach(question.options, id: \.self) { option in
                             QuizOptionRow(
-                                option: option,
-                                isSelected: selectedAnswer == option,
-                                isSubmitted: submittedAnswer != nil,
-                                isCorrectAnswer: option == question.answer,
-                                isSubmittedAnswer: submittedAnswer == option,
-                                action: {
-                                    guard submittedAnswer == nil else { return }
-                                    selectedAnswer = option
-                                }
-                            )
+		                                option: option,
+		                                isSelected: questionState.selectedAnswer == option,
+		                                isSubmitted: questionState.submitted,
+		                                isCorrectAnswer: option == questionState.result?.correctAnswer,
+		                                isSubmittedAnswer: questionState.selectedAnswer == option,
+	                                action: {
+	                                    quizState = viewModel.selectQuizAnswer(story, state: activeQuizState, answer: option)
+	                                }
+	                            )
                         }
                     }
 
-                    if submittedAnswer != nil {
-                        FeedbackMessage(isCorrect: submittedAnswer == question.answer, explanation: question.explanation)
+                    if questionState.submitted, let result = questionState.result {
+                        FeedbackMessage(isCorrect: result.isCorrect, explanation: question.explanation)
                     }
                 }
                 .padding(LMCSpace.s4)
@@ -1569,22 +1625,12 @@ private struct QuizScreen: View {
             LMCBottomActionBar {
                 Spacer()
                 Button {
-                    if submittedAnswer == nil {
-                        guard let selectedAnswer else { return }
-                        submittedAnswer = selectedAnswer
-                        answers[question.id] = selectedAnswer
-                    } else if questionIndex >= story.questions.count - 1 {
-                        isComplete = true
-                    } else {
-                        questionIndex += 1
-                        selectedAnswer = nil
-                        submittedAnswer = nil
-                    }
+                    quizState = viewModel.submitOrAdvanceQuiz(story, state: activeQuizState)
                 } label: {
                     Text(LocalizedStringKey(quizActionKey))
                 }
                 .buttonStyle(LMCPrimaryButtonStyle())
-                .disabled(submittedAnswer == nil && selectedAnswer == nil)
+                .disabled(!questionState.canSubmitOrAdvance)
             }
         }
     }
@@ -1635,17 +1681,16 @@ private struct QuizScreen: View {
     }
 
     private var progress: Double {
-        guard !story.questions.isEmpty else { return 0 }
-        return Double(questionIndex + 1) / Double(story.questions.count)
+        questionState.progressFraction
     }
 
     private var quizActionKey: String {
-        if submittedAnswer == nil { return "action_submit" }
-        return questionIndex >= story.questions.count - 1 ? "quiz_show_result" : "action_next"
+        if !questionState.submitted { return "action_submit" }
+        return questionState.isLastQuestion ? "quiz_show_result" : "action_next"
     }
 
     private var scoreText: String {
-        let score = completionScore ?? viewModel.score(story: story, answers: answers)
+        let score = completionScore ?? viewModel.quizScore(story, state: activeQuizState)
         return "\(score.correctCount) / \(score.totalQuestions)"
     }
 }
@@ -1692,12 +1737,12 @@ private struct ParentReportScreen: View {
 
     private var reportContent: some View {
         VStack(alignment: .leading, spacing: LMCSpace.s6) {
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: LMCSpace.s3) {
-                MetricTile(titleKey: "parent_stories_read", value: "\(viewModel.stats?.completedCount ?? 0)")
-                MetricTile(titleKey: "parent_reading_days", value: "\(readingDays)")
-                MetricTile(titleKey: "parent_quiz_correct", value: quizCorrectText)
-                MetricTile(titleKey: "parent_words_reviewed", value: "\(viewModel.stats?.vocabLearnedCount ?? 0)")
-            }
+	            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: LMCSpace.s3) {
+	                MetricTile(titleKey: "parent_stories_read", value: "\(summary?.storiesCompletedThisWeek ?? 0)")
+	                MetricTile(titleKey: "parent_reading_days", value: "\(readingDays)")
+	                MetricTile(titleKey: "parent_quiz_correct", value: quizCorrectText)
+	                MetricTile(titleKey: "parent_words_reviewed", value: "\(summary?.vocabLearnedThisWeek ?? 0)")
+	            }
 
             VStack(alignment: .leading, spacing: LMCSpace.s3) {
                 SectionTitle("parent_story_progress")
@@ -1724,17 +1769,16 @@ private struct ParentReportScreen: View {
     }
 
     private var quizCorrectText: String {
-        guard let stats = viewModel.stats else { return "0 / 0" }
-        return "\(stats.correctCount) / \(stats.questionCount)"
+        guard let summary else { return "0 / 0" }
+        return "\(summary.correctCount) / \(summary.questionCount)"
     }
 
     private var readingDays: Int {
-        guard let completions = viewModel.parentReport?.recentCompletions else { return 0 }
-        let calendar = Calendar.current
-        let days = completions.map {
-            calendar.startOfDay(for: Date(timeIntervalSince1970: Double($0.completedAtEpochMillis) / 1_000))
-        }
-        return Set(days).count
+        Int(summary?.readingDaysThisWeek ?? 0)
+    }
+
+    private var summary: ParentReportSummary? {
+        viewModel.parentReportSummary()
     }
 }
 
@@ -1807,7 +1851,9 @@ private struct SettingsScreen: View {
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
 
                     Button("settings_ai_use_mock") {
-                        aiBackendBaseURL = LMCAiBackendDefaults.localMock
+                        Task {
+                            aiBackendBaseURL = await viewModel.resetAiBackendBaseURL()
+                        }
                     }
                     .buttonStyle(LMCSecondaryButtonStyle())
                 }
