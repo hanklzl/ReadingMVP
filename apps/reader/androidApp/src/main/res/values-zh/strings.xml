@@ -32,6 +32,7 @@
     <!-- Navigation -->
     <string name="nav_today">今日</string>
     <string name="nav_library">故事库</string>
+    <string name="nav_word_book">生字本</string>
     <string name="nav_parent">家长</string>
     <string name="nav_settings">设置</string>
     <string name="nav_back">返回</string>
@@ -67,6 +68,33 @@
     <string name="action_view_words">生字</string>
     <string name="action_view_quiz">小测验</string>
     <string name="action_got_it">知道了</string>
+    <string name="action_skip">跳过</string>
+    <string name="action_start_review">开始复习</string>
+    <string name="action_show_answer">显示答案</string>
+    <string name="action_still_learning">再学学</string>
+
+    <!-- Onboarding + streak -->
+    <string name="onboarding_title">欢迎</string>
+    <string name="onboarding_subtitle">一起建立轻松的每日阅读习惯。</string>
+    <string name="onboarding_age_title">阅读等级</string>
+    <string name="onboarding_age_5_6">5-6 岁</string>
+    <string name="onboarding_age_7_8">7-8 岁</string>
+    <string name="onboarding_language_title">界面语言</string>
+    <string name="onboarding_goal_title">每日目标</string>
+    <string name="onboarding_goal_one_story">每天 1 篇</string>
+    <string name="onboarding_goal_two_stories">每天 2 篇</string>
+    <string name="onboarding_day_one_title">连续第 1 天</string>
+    <string name="onboarding_day_one_body">读完今日故事，就完成第一天。</string>
+    <string name="onboarding_privacy_note">不需要填写儿童姓名、生日、学校、照片或位置。</string>
+    <string name="onboarding_get_started">开始今日阅读</string>
+    <string name="streak_day_count">第 %1$d 天</string>
+    <string name="streak_progress_format">今日 %1$s / %2$s 篇</string>
+    <string name="streak_goal_complete">已达成</string>
+    <string name="streak_goal_continue">继续阅读</string>
+    <string name="completion_milestone_goal_title">今日目标完成</string>
+    <string name="completion_milestone_streak_title">连续 %1$d 天</string>
+    <string name="completion_milestone_goal_body">今日已读 %1$d / %2$d 篇</string>
+    <string name="completion_milestone_keep_going">明天还有新的故事等着你。</string>
 
     <!-- Today -->
     <string name="today_title">今日</string>
@@ -133,6 +161,31 @@
     <string name="vocab_next_word">下一个生字</string>
     <string name="vocab_complete_title">生字复习完成</string>
     <string name="vocab_complete_body">可以开始小测验了。</string>
+
+    <!-- Word book -->
+    <string name="word_book_title">生字本</string>
+    <string name="word_book_subtitle">复习已完成故事里的生字。</string>
+    <string name="word_book_learned_count">已学</string>
+    <string name="word_book_due_count">今日复习</string>
+    <string name="word_book_filter_all">全部</string>
+    <string name="word_book_filter_due">今日</string>
+    <string name="word_book_filter_learning">学习中</string>
+    <string name="word_book_filter_known">认识了</string>
+    <string name="word_book_empty_title">还没有生字</string>
+    <string name="word_book_empty_body">完成一篇故事后，生字会出现在这里。</string>
+    <string name="word_book_no_due_title">今天都复习好了</string>
+    <string name="word_book_no_due_body">现在没有到期的生字，明天再轻松复习。</string>
+    <string name="word_book_source_story">来自《%1$s》</string>
+    <string name="word_book_status_due">今日</string>
+    <string name="word_book_status_learning">学习中</string>
+    <string name="word_book_status_known">认识了</string>
+    <string name="word_review_title">生字复习</string>
+    <string name="word_review_progress_count">%1$d / %2$d</string>
+    <string name="word_review_prompt">先想一想这个字词，再显示答案。</string>
+    <string name="word_review_no_due_title">现在不用复习</string>
+    <string name="word_review_no_due_body">今天的生字已经复习好了。</string>
+    <string name="word_review_complete_title">复习完成</string>
+    <string name="word_review_complete_body">已复习 %1$d 个生字。</string>
 
     <!-- Quiz -->
     <string name="quiz_title">小测验</string>

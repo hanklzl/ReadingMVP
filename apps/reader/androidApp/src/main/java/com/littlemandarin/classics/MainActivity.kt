@@ -121,13 +121,17 @@ import com.littlemandarin.classics.shared.feedback.FeedbackService
 import com.littlemandarin.classics.shared.feedback.FeedbackSatisfaction as SharedFeedbackSatisfaction
 import com.littlemandarin.classics.shared.feedback.createPlatformFeedbackService
 import com.littlemandarin.classics.shared.presentation.AnalyticsEventPayload
+import com.littlemandarin.classics.shared.presentation.AndroidEngagementServiceProvider
 import com.littlemandarin.classics.shared.presentation.AndroidReaderSettingsServiceProvider
+import com.littlemandarin.classics.shared.presentation.AndroidVocabReviewServiceProvider
 import com.littlemandarin.classics.shared.presentation.BuildAiExplanationRequestUseCase
 import com.littlemandarin.classics.shared.presentation.BuildFeedbackSubmissionUseCase
 import com.littlemandarin.classics.shared.presentation.BuildParentReportSummaryUseCase
 import com.littlemandarin.classics.shared.presentation.BuildSpeechTextUseCase
+import com.littlemandarin.classics.shared.presentation.ChildAgeBand
 import com.littlemandarin.classics.shared.presentation.FeedbackOption
 import com.littlemandarin.classics.shared.presentation.FeedbackPresentationOptions
+import com.littlemandarin.classics.shared.presentation.OnboardingPreferences
 import com.littlemandarin.classics.shared.presentation.ParentReportSummary
 import com.littlemandarin.classics.shared.presentation.QuizSessionReducer
 import com.littlemandarin.classics.shared.presentation.ReaderAnalyticsEvents
@@ -136,10 +140,19 @@ import com.littlemandarin.classics.shared.presentation.ReaderSettings
 import com.littlemandarin.classics.shared.presentation.ReaderSettingsService
 import com.littlemandarin.classics.shared.presentation.ReadingSessionReducer
 import com.littlemandarin.classics.shared.presentation.ReadingTextSize
+import com.littlemandarin.classics.shared.presentation.StreakSummary
+import com.littlemandarin.classics.shared.presentation.StreakUseCase
 import com.littlemandarin.classics.shared.presentation.StoryPresentationUseCases
 import com.littlemandarin.classics.shared.presentation.StoryProgressStatus
 import com.littlemandarin.classics.shared.presentation.TodayStorySelectionPolicy
+import com.littlemandarin.classics.shared.presentation.VocabReviewAssessment
+import com.littlemandarin.classics.shared.presentation.VocabReviewUseCase
+import com.littlemandarin.classics.shared.presentation.WordBookItem
+import com.littlemandarin.classics.shared.presentation.WordBookSummary
+import com.littlemandarin.classics.shared.presentation.createPlatformOnboardingService
 import com.littlemandarin.classics.shared.presentation.createPlatformReaderSettingsService
+import com.littlemandarin.classics.shared.presentation.createPlatformStreakService
+import com.littlemandarin.classics.shared.presentation.createPlatformVocabReviewService
 import com.littlemandarin.classics.shared.presentation.isMockAiBackend
 import com.littlemandarin.classics.shared.presentation.toLimitedDisplayText
 import com.littlemandarin.classics.shared.progress.AndroidProgressServiceProvider
@@ -188,6 +201,8 @@ class MainActivity : ComponentActivity() {
         AndroidFeedbackServiceProvider.initialize(applicationContext)
         AndroidProgressServiceProvider.initialize(applicationContext)
         AndroidReaderSettingsServiceProvider.initialize(applicationContext)
+        AndroidEngagementServiceProvider.initialize(applicationContext)
+        AndroidVocabReviewServiceProvider.initialize(applicationContext)
         AndroidTtsServiceProvider.initialize(applicationContext)
 
         setContent {
@@ -197,14 +212,17 @@ class MainActivity : ComponentActivity() {
 }
 
 private object ReaderRoutes {
+    const val Onboarding = "onboarding"
     const val Today = "today"
     const val Library = "library"
+    const val WordBook = "word_book"
     const val Parent = "parent"
     const val Settings = "settings"
 
     const val Reading = "story/{storyId}/read"
     const val Vocabulary = "story/{storyId}/vocabulary"
     const val Quiz = "story/{storyId}/quiz"
+    const val WordReview = "word_book/review"
 
     fun reading(storyId: String): String = "story/$storyId/read"
 
@@ -212,7 +230,10 @@ private object ReaderRoutes {
 
     fun quiz(storyId: String): String = "story/$storyId/quiz"
 
-    fun isReadingFlow(route: String?): Boolean = route?.startsWith("story/") == true
+    fun isFocusedFlow(route: String?): Boolean =
+        route == Onboarding ||
+            route == WordReview ||
+            route?.startsWith("story/") == true
 }
 
 private data class TopLevelDestination(
@@ -224,6 +245,7 @@ private data class TopLevelDestination(
 private val TopLevelDestinations = listOf(
     TopLevelDestination(ReaderRoutes.Today, R.string.nav_today, LmcIcon.Today),
     TopLevelDestination(ReaderRoutes.Library, R.string.nav_library, LmcIcon.Library),
+    TopLevelDestination(ReaderRoutes.WordBook, R.string.nav_word_book, LmcIcon.Book),
     TopLevelDestination(ReaderRoutes.Parent, R.string.nav_parent, LmcIcon.Parent),
     TopLevelDestination(ReaderRoutes.Settings, R.string.nav_settings, LmcIcon.Settings),
 )
@@ -232,10 +254,13 @@ private val TopLevelDestinations = listOf(
 private fun ReaderApp() {
     val baseContext = LocalContext.current
     val settingsService = remember(baseContext.applicationContext) { createPlatformReaderSettingsService() }
+    val onboardingService = remember(baseContext.applicationContext) { createPlatformOnboardingService() }
     val appVersion = remember(baseContext.applicationContext) {
         baseContext.applicationContext.appVersionName()
     }
     var settings by remember { mutableStateOf(ReaderSettings()) }
+    var onboardingPreferences by remember { mutableStateOf(OnboardingPreferences()) }
+    var appInitialized by remember { mutableStateOf(false) }
     val analyticsScope = rememberCoroutineScope()
     val analytics = remember(baseContext.applicationContext, appVersion, settings.language, analyticsScope) {
         ReaderAnalytics(
@@ -254,8 +279,10 @@ private fun ReaderApp() {
         baseContext.localizedEnvironment(settings.language)
     }
 
-    LaunchedEffect(settingsService) {
+    LaunchedEffect(settingsService, onboardingService) {
         settings = settingsService.read()
+        onboardingPreferences = onboardingService.read()
+        appInitialized = true
     }
 
     CompositionLocalProvider(
@@ -263,43 +290,62 @@ private fun ReaderApp() {
         LocalConfiguration provides localizedEnvironment.configuration,
     ) {
         LittleMandarinClassicsTheme {
-            ReaderAppContent(
-                settings = settings,
-                settingsService = settingsService,
-                analytics = analytics,
-                feedbackService = feedbackService,
-                readingProgressVersion = readingProgressVersion,
-                onLanguageChange = { language ->
-                    analyticsScope.launch {
-                        settingsService.setLanguage(language)
-                        settings = settingsService.read()
-                    }
-                },
-                onPinyinDefaultChange = { showPinyin ->
-                    analyticsScope.launch {
-                        settingsService.setShowPinyinByDefault(showPinyin)
-                        settings = settingsService.read()
-                    }
-                },
-                onTextSizeChange = { textSize ->
-                    analyticsScope.launch {
-                        settingsService.setReadingTextSize(textSize)
-                        settings = settingsService.read()
-                    }
-                },
-                onAiBackendBaseUrlChange = { baseUrl ->
-                    analyticsScope.launch {
-                        settingsService.setAiBackendBaseUrl(baseUrl)
-                        settings = settingsService.read()
-                    }
-                },
-                onReadingPositionChange = { storyId, paragraphIndex ->
-                    analyticsScope.launch {
-                        settingsService.setReadingParagraphIndex(storyId, paragraphIndex)
-                        readingProgressVersion += 1
-                    }
-                },
-            )
+            if (!appInitialized) {
+                LoadingScreen()
+            } else {
+                ReaderAppContent(
+                    settings = settings,
+                    settingsService = settingsService,
+                    onboardingPreferences = onboardingPreferences,
+                    analytics = analytics,
+                    feedbackService = feedbackService,
+                    readingProgressVersion = readingProgressVersion,
+                    onOnboardingComplete = { preferences ->
+                        analyticsScope.launch {
+                            settingsService.setLanguage(preferences.language)
+                            onboardingService.complete(preferences)
+                            settings = settingsService.read()
+                            onboardingPreferences = onboardingService.read()
+                        }
+                    },
+                    onOnboardingSkip = {
+                        analyticsScope.launch {
+                            onboardingService.skip()
+                            onboardingPreferences = onboardingService.read()
+                        }
+                    },
+                    onLanguageChange = { language ->
+                        analyticsScope.launch {
+                            settingsService.setLanguage(language)
+                            settings = settingsService.read()
+                        }
+                    },
+                    onPinyinDefaultChange = { showPinyin ->
+                        analyticsScope.launch {
+                            settingsService.setShowPinyinByDefault(showPinyin)
+                            settings = settingsService.read()
+                        }
+                    },
+                    onTextSizeChange = { textSize ->
+                        analyticsScope.launch {
+                            settingsService.setReadingTextSize(textSize)
+                            settings = settingsService.read()
+                        }
+                    },
+                    onAiBackendBaseUrlChange = { baseUrl ->
+                        analyticsScope.launch {
+                            settingsService.setAiBackendBaseUrl(baseUrl)
+                            settings = settingsService.read()
+                        }
+                    },
+                    onReadingPositionChange = { storyId, paragraphIndex ->
+                        analyticsScope.launch {
+                            settingsService.setReadingParagraphIndex(storyId, paragraphIndex)
+                            readingProgressVersion += 1
+                        }
+                    },
+                )
+            }
         }
     }
 }
@@ -308,9 +354,12 @@ private fun ReaderApp() {
 private fun ReaderAppContent(
     settings: ReaderSettings,
     settingsService: ReaderSettingsService,
+    onboardingPreferences: OnboardingPreferences,
     analytics: ReaderAnalytics,
     feedbackService: FeedbackService,
     readingProgressVersion: Int,
+    onOnboardingComplete: (OnboardingPreferences) -> Unit,
+    onOnboardingSkip: () -> Unit,
     onLanguageChange: (ReaderLanguage) -> Unit,
     onPinyinDefaultChange: (Boolean) -> Unit,
     onTextSizeChange: (ReadingTextSize) -> Unit,
@@ -321,8 +370,18 @@ private fun ReaderAppContent(
     val appInfo = remember { GetAppInfoUseCase().invoke() }
     val repository = remember { DefaultStoryRepository() }
     val progressService = remember { createPlatformProgressService() }
+    val streakService = remember { createPlatformStreakService() }
+    val vocabReviewService = remember { createPlatformVocabReviewService() }
     val ttsService = remember { createTtsService() }
     val storyPresentationUseCases = remember { StoryPresentationUseCases() }
+    val streakUseCase = remember(streakService) { StreakUseCase(streakService) }
+    val vocabReviewUseCase = remember(repository, progressService, vocabReviewService) {
+        VocabReviewUseCase(
+            storyRepository = repository,
+            progressService = progressService,
+            reviewService = vocabReviewService,
+        )
+    }
     val aiService = remember(settings.aiBackendBaseUrl) {
         createAiService(
             config = AiServiceConfig(
@@ -371,6 +430,22 @@ private fun ReaderAppContent(
     var readingPositions by remember {
         mutableStateOf<Map<String, Int>>(emptyMap())
     }
+    var wordReviewVersion by remember { mutableIntStateOf(0) }
+    var wordBookSummary by remember {
+        mutableStateOf(WordBookSummary(totalWords = 0, dueCount = 0, items = emptyList()))
+    }
+    var streakSummary by remember {
+        mutableStateOf(
+            StreakSummary(
+                currentStreakDays = 0,
+                longestStreakDays = 0,
+                todayCompletedStories = 0,
+                dailyGoalStories = onboardingPreferences.dailyGoalStories,
+                todayProgressFraction = 0.0,
+                todayGoalMet = false,
+            ),
+        )
+    }
 
     LaunchedEffect(repository) {
         storiesState = runCatching {
@@ -394,6 +469,7 @@ private fun ReaderAppContent(
             stats = progressStats,
             nowEpochMillis = System.currentTimeMillis(),
         )
+        streakSummary = streakUseCase.summary(todayEpochMillis = System.currentTimeMillis())
     }
 
     LaunchedEffect(storiesState, readingProgressVersion) {
@@ -403,10 +479,24 @@ private fun ReaderAppContent(
         }
     }
 
+    LaunchedEffect(storiesState, progressRecords, wordReviewVersion) {
+        if (storiesState !is StoriesState.Ready) return@LaunchedEffect
+        val now = System.currentTimeMillis()
+        vocabReviewUseCase.syncLearnedWords(todayEpochMillis = now)
+        wordBookSummary = vocabReviewUseCase.wordBook(todayEpochMillis = now)
+        streakSummary = streakUseCase.summary(todayEpochMillis = now)
+    }
+
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
-    val showBottomBar = !ReaderRoutes.isReadingFlow(currentRoute)
+    val showBottomBar = !ReaderRoutes.isFocusedFlow(currentRoute)
     val snackbarHostState = remember { SnackbarHostState() }
+    val appScope = rememberCoroutineScope()
+    val startDestination = if (onboardingPreferences.completed) {
+        ReaderRoutes.Today
+    } else {
+        ReaderRoutes.Onboarding
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -428,18 +518,46 @@ private fun ReaderAppContent(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = ReaderRoutes.Today,
+            startDestination = startDestination,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
                 .consumeWindowInsets(innerPadding),
         ) {
+            composable(ReaderRoutes.Onboarding) {
+                OnboardingScreen(
+                    initialLanguage = settings.language,
+                    onComplete = { preferences ->
+                        appScope.launch {
+                            streakUseCase.setDailyGoal(preferences.dailyGoalStories)
+                            streakSummary = streakUseCase.summary(System.currentTimeMillis())
+                        }
+                        onOnboardingComplete(preferences)
+                        navController.navigate(ReaderRoutes.Today) {
+                            popUpTo(ReaderRoutes.Onboarding) {
+                                inclusive = true
+                            }
+                            launchSingleTop = true
+                        }
+                    },
+                    onSkip = {
+                        onOnboardingSkip()
+                        navController.navigate(ReaderRoutes.Today) {
+                            popUpTo(ReaderRoutes.Onboarding) {
+                                inclusive = true
+                            }
+                            launchSingleTop = true
+                        }
+                    },
+                )
+            }
             composable(ReaderRoutes.Today) {
                 StoryStateContent(storiesState = storiesState) { stories ->
                     TodayScreen(
                         appInfo = appInfo,
                         stories = stories,
                         progressStats = progressStats,
+                        streakSummary = streakSummary,
                         progressRecords = progressRecords,
                         readingPositions = readingPositions,
                         storyPresentationUseCases = storyPresentationUseCases,
@@ -472,6 +590,18 @@ private fun ReaderAppContent(
                             navController.navigate(ReaderRoutes.reading(storyId))
                         },
                         onSettings = { navController.navigateTopLevel(ReaderRoutes.Settings) },
+                    )
+                }
+            }
+            composable(ReaderRoutes.WordBook) {
+                StoryStateContent(storiesState = storiesState) { stories ->
+                    WordBookScreen(
+                        wordBookSummary = wordBookSummary,
+                        stories = stories,
+                        analytics = analytics,
+                        ttsService = ttsService,
+                        onStartReview = { navController.navigate(ReaderRoutes.WordReview) },
+                        onReadToday = { navController.navigateTopLevel(ReaderRoutes.Today) },
                     )
                 }
             }
@@ -561,7 +691,12 @@ private fun ReaderAppContent(
                         storyOrder = storyOrder,
                         analytics = analytics,
                         progressService = progressService,
+                        streakUseCase = streakUseCase,
+                        vocabReviewUseCase = vocabReviewUseCase,
                         onBack = { navController.popBackStack() },
+                        onCompletionRecorded = {
+                            wordReviewVersion += 1
+                        },
                         onReadAgain = {
                             analytics.trackStoryOpen(
                                 story = story,
@@ -582,6 +717,20 @@ private fun ReaderAppContent(
                         },
                     )
                 }
+            }
+            composable(ReaderRoutes.WordReview) {
+                WordReviewScreen(
+                    initialItems = wordBookSummary.items.filter { it.due },
+                    analytics = analytics,
+                    ttsService = ttsService,
+                    vocabReviewUseCase = vocabReviewUseCase,
+                    onReviewChanged = {
+                        wordReviewVersion += 1
+                    },
+                    onClose = {
+                        navController.navigateTopLevel(ReaderRoutes.WordBook)
+                    },
+                )
             }
         }
     }
@@ -627,10 +776,147 @@ private fun StoryRouteContent(
 }
 
 @Composable
+private fun OnboardingScreen(
+    initialLanguage: ReaderLanguage,
+    onComplete: (OnboardingPreferences) -> Unit,
+    onSkip: () -> Unit,
+) {
+    var selectedAgeBand by remember { mutableStateOf(ChildAgeBand.Age5To6) }
+    var selectedLanguage by remember(initialLanguage) { mutableStateOf(initialLanguage) }
+    var dailyGoalStories by remember { mutableIntStateOf(1) }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+        contentPadding = PaddingValues(
+            horizontal = LmcSpacing.ScreenPadding,
+            vertical = LmcSpacing.Space6,
+        ),
+        verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space5),
+    ) {
+        item {
+            TopLevelHeader(
+                title = stringResource(R.string.onboarding_title),
+                subtitle = stringResource(R.string.onboarding_subtitle),
+            )
+        }
+        item {
+            SettingsSection(title = stringResource(R.string.onboarding_age_title)) {
+                SelectableSettingsRow(
+                    label = stringResource(R.string.onboarding_age_5_6),
+                    selected = selectedAgeBand == ChildAgeBand.Age5To6,
+                    onClick = { selectedAgeBand = ChildAgeBand.Age5To6 },
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                SelectableSettingsRow(
+                    label = stringResource(R.string.onboarding_age_7_8),
+                    selected = selectedAgeBand == ChildAgeBand.Age7To8,
+                    onClick = { selectedAgeBand = ChildAgeBand.Age7To8 },
+                )
+            }
+        }
+        item {
+            SettingsSection(title = stringResource(R.string.onboarding_language_title)) {
+                ReaderLanguage.entries.forEachIndexed { index, language ->
+                    SelectableSettingsRow(
+                        label = stringResource(language.labelRes()),
+                        selected = selectedLanguage == language,
+                        onClick = { selectedLanguage = language },
+                    )
+                    if (index < ReaderLanguage.entries.lastIndex) {
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    }
+                }
+            }
+        }
+        item {
+            SettingsSection(title = stringResource(R.string.onboarding_goal_title)) {
+                SelectableSettingsRow(
+                    label = stringResource(R.string.onboarding_goal_one_story),
+                    selected = dailyGoalStories == 1,
+                    onClick = { dailyGoalStories = 1 },
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                SelectableSettingsRow(
+                    label = stringResource(R.string.onboarding_goal_two_stories),
+                    selected = dailyGoalStories == 2,
+                    onClick = { dailyGoalStories = 2 },
+                )
+            }
+        }
+        item {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+                color = MaterialTheme.colorScheme.tertiaryContainer,
+            ) {
+                Column(
+                    modifier = Modifier.padding(LmcSpacing.CardPadding),
+                    verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+                ) {
+                    Text(
+                        text = stringResource(R.string.onboarding_day_one_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                    )
+                    Text(
+                        text = stringResource(R.string.onboarding_day_one_body),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                    )
+                }
+            }
+        }
+        item {
+            Text(
+                text = stringResource(R.string.onboarding_privacy_note),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space3),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TextButton(
+                    onClick = onSkip,
+                    modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
+                ) {
+                    Text(text = stringResource(R.string.action_skip))
+                }
+                Button(
+                    onClick = {
+                        onComplete(
+                            OnboardingPreferences(
+                                completed = true,
+                                skipped = false,
+                                childAgeBand = selectedAgeBand,
+                                language = selectedLanguage,
+                                dailyGoalStories = dailyGoalStories,
+                            ),
+                        )
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = LmcSpacing.ButtonPrimaryHeight),
+                    shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+                ) {
+                    Text(text = stringResource(R.string.onboarding_get_started))
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun TodayScreen(
     appInfo: AppInfo,
     stories: List<Story>,
     progressStats: ProgressStats,
+    streakSummary: StreakSummary,
     progressRecords: List<CompletionRecord>,
     readingPositions: Map<String, Int>,
     storyPresentationUseCases: StoryPresentationUseCases,
@@ -699,6 +985,9 @@ private fun TodayScreen(
                 progress = todayProgress.fraction.toFloat(),
                 onClick = { onRead(todayStory.id) },
             )
+        }
+        item {
+            DailyGoalStreakCard(streakSummary = streakSummary)
         }
         item {
             Row(
@@ -865,6 +1154,297 @@ private fun AdaptiveStoryList(
 	                        ).fraction.toFloat(),
 	                        onClick = { onRead(story.id) },
 	                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WordBookScreen(
+    wordBookSummary: WordBookSummary,
+    stories: List<Story>,
+    analytics: ReaderAnalytics,
+    ttsService: TtsService,
+    onStartReview: () -> Unit,
+    onReadToday: () -> Unit,
+) {
+    var selectedFilter by remember { mutableStateOf(WordBookFilter.All) }
+    val scope = rememberCoroutineScope()
+    val storyTitles = remember(stories) { stories.associate { it.id to it.titleZh } }
+    val filteredItems = remember(wordBookSummary.items, selectedFilter) {
+        wordBookSummary.items.filter { item ->
+            when (selectedFilter) {
+                WordBookFilter.All -> true
+                WordBookFilter.Due -> item.due
+                WordBookFilter.Learning -> !item.due && item.reps < 2
+                WordBookFilter.Known -> item.reps >= 2
+            }
+        }
+    }
+
+    LaunchedEffect(wordBookSummary.totalWords, wordBookSummary.dueCount) {
+        analytics.track(
+            ReaderAnalyticsEvents.wordBookOpen(
+                entryPoint = "bottom_navigation",
+                learnedCount = wordBookSummary.totalWords,
+                dueCount = wordBookSummary.dueCount,
+            ),
+        )
+    }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(
+            horizontal = LmcSpacing.ScreenPadding,
+            vertical = LmcSpacing.Space4,
+        ),
+        verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space4),
+    ) {
+        item {
+            TopLevelHeader(
+                title = stringResource(R.string.word_book_title),
+                subtitle = stringResource(R.string.word_book_subtitle),
+            )
+        }
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space3),
+            ) {
+                SummaryTile(
+                    label = stringResource(R.string.word_book_learned_count),
+                    value = wordBookSummary.totalWords.toLocalizedInt(),
+                    modifier = Modifier.weight(1f),
+                    onClick = { selectedFilter = WordBookFilter.All },
+                )
+                SummaryTile(
+                    label = stringResource(R.string.word_book_due_count),
+                    value = wordBookSummary.dueCount.toLocalizedInt(),
+                    modifier = Modifier.weight(1f),
+                    onClick = { selectedFilter = WordBookFilter.Due },
+                )
+            }
+        }
+        item {
+            Button(
+                enabled = wordBookSummary.dueCount > 0,
+                onClick = onStartReview,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = LmcSpacing.ButtonPrimaryHeight),
+                shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+            ) {
+                Text(text = stringResource(R.string.action_start_review))
+            }
+        }
+        item {
+            WordBookFilterRow(
+                selectedFilter = selectedFilter,
+                onSelectedFilterChange = { selectedFilter = it },
+            )
+        }
+        if (wordBookSummary.totalWords == 0) {
+            item {
+                WordBookEmptyState(
+                    title = stringResource(R.string.word_book_empty_title),
+                    body = stringResource(R.string.word_book_empty_body),
+                    actionLabel = stringResource(R.string.action_start_reading),
+                    onAction = onReadToday,
+                )
+            }
+        } else if (filteredItems.isEmpty()) {
+            item {
+                WordBookEmptyState(
+                    title = stringResource(R.string.word_book_no_due_title),
+                    body = stringResource(R.string.word_book_no_due_body),
+                    actionLabel = null,
+                    onAction = null,
+                )
+            }
+        } else {
+            items(filteredItems, key = { it.word }) { item ->
+                LearnedWordRow(
+                    item = item,
+                    sourceTitle = item.sourceStoryIds.firstOrNull()?.let { storyTitles[it] },
+                    onAudioClick = {
+                        scope.launch {
+                            ttsService.speak(listOfNotNull(item.word, item.example).joinToString(separator = " "))
+                        }
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WordReviewScreen(
+    initialItems: List<WordBookItem>,
+    analytics: ReaderAnalytics,
+    ttsService: TtsService,
+    vocabReviewUseCase: VocabReviewUseCase,
+    onReviewChanged: () -> Unit,
+    onClose: () -> Unit,
+) {
+    val reviewItems = remember { initialItems }
+    var wordIndex by remember { mutableIntStateOf(0) }
+    var answerRevealed by remember { mutableStateOf(false) }
+    var knownCount by remember { mutableIntStateOf(0) }
+    var needsPracticeCount by remember { mutableIntStateOf(0) }
+    var complete by remember { mutableStateOf(reviewItems.isEmpty()) }
+    val scope = rememberCoroutineScope()
+    val currentItem = reviewItems.getOrNull(wordIndex)
+    val progress = if (reviewItems.isEmpty()) 1f else wordIndex.toFloat() / reviewItems.size.toFloat()
+
+    LaunchedEffect(complete) {
+        if (complete && reviewItems.isNotEmpty()) {
+            analytics.track(
+                ReaderAnalyticsEvents.wordReviewComplete(
+                    sessionSize = reviewItems.size,
+                    reviewedCount = knownCount + needsPracticeCount,
+                    knownCount = knownCount,
+                    needsPracticeCount = needsPracticeCount,
+                ),
+            )
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+    ) {
+        FlowTopBar(
+            title = stringResource(R.string.word_review_title),
+            trailing = if (reviewItems.isEmpty()) {
+                null
+            } else {
+                stringResource(
+                    R.string.word_review_progress_count,
+                    (wordIndex + 1).coerceAtMost(reviewItems.size),
+                    reviewItems.size,
+                )
+            },
+            onBack = onClose,
+        )
+        LmcProgressBar(
+            progress = if (complete) 1f else progress,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = LmcSpacing.ScreenPadding),
+        )
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+            contentAlignment = Alignment.TopCenter,
+        ) {
+            if (complete) {
+                WordReviewCompleteContent(
+                    reviewedCount = knownCount + needsPracticeCount,
+                    onDone = onClose,
+                )
+            } else if (currentItem == null) {
+                WordBookEmptyState(
+                    title = stringResource(R.string.word_review_no_due_title),
+                    body = stringResource(R.string.word_review_no_due_body),
+                    actionLabel = stringResource(R.string.action_done),
+                    onAction = onClose,
+                )
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .widthIn(max = LmcSpacing.ReadingMaxWidth)
+                        .verticalScroll(rememberScrollState())
+                        .padding(LmcSpacing.ScreenPadding),
+                    verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space5),
+                ) {
+                    ReviewWordCard(
+                        item = currentItem,
+                        answerRevealed = answerRevealed,
+                        onReveal = { answerRevealed = true },
+                        onAudioClick = {
+                            scope.launch {
+                                ttsService.speak(listOfNotNull(currentItem.word, currentItem.example).joinToString(separator = " "))
+                            }
+                        },
+                    )
+                }
+            }
+        }
+        if (!complete && currentItem != null) {
+            BottomActionRow {
+                if (!answerRevealed) {
+                    Spacer(modifier = Modifier.weight(1f))
+                    Button(
+                        onClick = { answerRevealed = true },
+                        modifier = Modifier.heightIn(min = LmcSpacing.ButtonPrimaryHeight),
+                        shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+                    ) {
+                        Text(text = stringResource(R.string.action_show_answer))
+                    }
+                } else {
+                    OutlinedButton(
+                        onClick = {
+                            scope.launch {
+                                vocabReviewUseCase.review(
+                                    word = currentItem.word,
+                                    assessment = VocabReviewAssessment.NeedsPractice,
+                                    todayEpochMillis = System.currentTimeMillis(),
+                                )
+                                needsPracticeCount += 1
+                                analytics.trackWordReviewAnswer(
+                                    item = currentItem,
+                                    rating = "needs_practice",
+                                    reviewIndex = wordIndex + 1,
+                                )
+                                if (wordIndex >= reviewItems.lastIndex) {
+                                    complete = true
+                                } else {
+                                    wordIndex += 1
+                                    answerRevealed = false
+                                }
+                                onReviewChanged()
+                            }
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .heightIn(min = LmcSpacing.ButtonSecondaryHeight),
+                    ) {
+                        Text(text = stringResource(R.string.action_still_learning))
+                    }
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                vocabReviewUseCase.review(
+                                    word = currentItem.word,
+                                    assessment = VocabReviewAssessment.Known,
+                                    todayEpochMillis = System.currentTimeMillis(),
+                                )
+                                knownCount += 1
+                                analytics.trackWordReviewAnswer(
+                                    item = currentItem,
+                                    rating = "known",
+                                    reviewIndex = wordIndex + 1,
+                                )
+                                if (wordIndex >= reviewItems.lastIndex) {
+                                    complete = true
+                                } else {
+                                    wordIndex += 1
+                                    answerRevealed = false
+                                }
+                                onReviewChanged()
+                            }
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .heightIn(min = LmcSpacing.ButtonPrimaryHeight),
+                        shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+                    ) {
+                        Text(text = stringResource(R.string.action_got_it))
+                    }
                 }
             }
         }
@@ -1195,7 +1775,10 @@ private fun QuizScreen(
     storyOrder: Int,
     analytics: ReaderAnalytics,
     progressService: ProgressService,
+    streakUseCase: StreakUseCase,
+    vocabReviewUseCase: VocabReviewUseCase,
     onBack: () -> Unit,
+    onCompletionRecorded: () -> Unit,
     onReadAgain: () -> Unit,
     onDone: () -> Unit,
 ) {
@@ -1209,20 +1792,32 @@ private fun QuizScreen(
     val score = remember(story.id, quizState.answers) {
         quizSessionReducer.score(story, quizState)
     }
+    var completionHandled by remember(story.id) { mutableStateOf(false) }
+    var completionStreakSummary by remember(story.id) { mutableStateOf<StreakSummary?>(null) }
 
     LaunchedEffect(story.id) {
         analytics.track(ReaderAnalyticsEvents.quizStart(story))
     }
 
     LaunchedEffect(quizState.isComplete) {
-        if (quizState.isComplete) {
+        if (quizState.isComplete && !completionHandled) {
+            completionHandled = true
+            val now = System.currentTimeMillis()
+            val wasAlreadyCompleted = progressService.getRecords().any { it.storyId == story.id }
             MarkStoryCompletedUseCase(progressService).invoke(
                 quizSessionReducer.completionRecord(
                     story = story,
                     state = quizState,
-                    nowEpochMillis = System.currentTimeMillis(),
+                    nowEpochMillis = now,
                 ),
             )
+            vocabReviewUseCase.syncLearnedWords(todayEpochMillis = now)
+            completionStreakSummary = if (wasAlreadyCompleted) {
+                streakUseCase.summary(todayEpochMillis = now)
+            } else {
+                streakUseCase.recordStoryCompleted(nowEpochMillis = now)
+            }
+            onCompletionRecorded()
             analytics.track(ReaderAnalyticsEvents.quizComplete(story, score))
             analytics.track(
                 ReaderAnalyticsEvents.storyComplete(
@@ -1239,6 +1834,7 @@ private fun QuizScreen(
             story = story,
             correctCount = score.correctCount,
             totalQuestions = score.totalQuestions,
+            streakSummary = completionStreakSummary,
             onReadAgain = onReadAgain,
             onDone = onDone,
         )
@@ -2112,6 +2708,83 @@ private fun ProgressSummaryBanner(text: String) {
 }
 
 @Composable
+private fun DailyGoalStreakCard(
+    streakSummary: StreakSummary,
+) {
+    val numberFormat = rememberNumberFormat()
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+        color = if (streakSummary.todayGoalMet) {
+            LmcColors.SuccessContainer
+        } else {
+            MaterialTheme.colorScheme.tertiaryContainer
+        },
+    ) {
+        Row(
+            modifier = Modifier.padding(LmcSpacing.CardPadding),
+            horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space3),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Surface(
+                modifier = Modifier.size(56.dp),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surface,
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    LmcCanvasIcon(
+                        icon = LmcIcon.Check,
+                        color = if (streakSummary.todayGoalMet) {
+                            LmcColors.Success
+                        } else {
+                            MaterialTheme.colorScheme.tertiary
+                        },
+                    )
+                }
+            }
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space1),
+            ) {
+                Text(
+                    text = stringResource(
+                        R.string.streak_day_count,
+                        streakSummary.currentStreakDays.coerceAtLeast(1),
+                    ),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = stringResource(
+                        R.string.streak_progress_format,
+                        numberFormat.format(streakSummary.todayCompletedStories),
+                        numberFormat.format(streakSummary.dailyGoalStories),
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Text(
+                text = stringResource(
+                    if (streakSummary.todayGoalMet) {
+                        R.string.streak_goal_complete
+                    } else {
+                        R.string.streak_goal_continue
+                    },
+                ),
+                style = MaterialTheme.typography.labelLarge,
+                color = if (streakSummary.todayGoalMet) {
+                    LmcColors.Success
+                } else {
+                    MaterialTheme.colorScheme.tertiary
+                },
+                textAlign = TextAlign.End,
+            )
+        }
+    }
+}
+
+@Composable
 private fun LevelFilterRow(
     selectedLevel: Int?,
     availableLevels: List<Int>,
@@ -2353,6 +3026,274 @@ private fun VocabularyCard(
 }
 
 @Composable
+private fun WordBookFilterRow(
+    selectedFilter: WordBookFilter,
+    onSelectedFilterChange: (WordBookFilter) -> Unit,
+) {
+    Row(
+        modifier = Modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+    ) {
+        WordBookFilter.entries.forEach { filter ->
+            FilterChip(
+                selected = selectedFilter == filter,
+                onClick = { onSelectedFilterChange(filter) },
+                label = { Text(text = stringResource(filter.labelRes())) },
+                modifier = Modifier.heightIn(min = LmcSpacing.ChipHeight),
+                colors = lmcFilterChipColors(),
+            )
+        }
+    }
+}
+
+@Composable
+private fun LearnedWordRow(
+    item: WordBookItem,
+    sourceTitle: String?,
+    onAudioClick: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(LmcSpacing.CardRadius),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = LmcSpacing.CardElevation,
+    ) {
+        Row(
+            modifier = Modifier.padding(LmcSpacing.CardPadding),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space3),
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space1),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+                ) {
+                    Text(
+                        text = item.word,
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    WordStatusChip(item = item)
+                }
+                Text(
+                    text = item.pinyin,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.secondary,
+                )
+                Text(
+                    text = item.meaning,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                if (sourceTitle != null) {
+                    Text(
+                        text = stringResource(R.string.word_book_source_story, sourceTitle),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            HeaderIconButton(
+                icon = LmcIcon.Audio,
+                contentDescription = stringResource(R.string.action_play_audio),
+                onClick = onAudioClick,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ReviewWordCard(
+    item: WordBookItem,
+    answerRevealed: Boolean,
+    onReveal: () -> Unit,
+    onAudioClick: () -> Unit,
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = !answerRevealed, onClick = onReveal),
+        shape = RoundedCornerShape(LmcSpacing.CardRadius),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = LmcSpacing.CardElevation),
+    ) {
+        Column(
+            modifier = Modifier.padding(LmcSpacing.CardPadding),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space4),
+        ) {
+            Text(
+                text = item.word,
+                style = MaterialTheme.typography.displaySmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+            )
+            HeaderIconButton(
+                icon = LmcIcon.Audio,
+                contentDescription = stringResource(R.string.action_play_audio),
+                onClick = onAudioClick,
+            )
+            if (answerRevealed) {
+                Text(
+                    text = item.pinyin,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.secondary,
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    text = item.meaning,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                )
+                item.example?.let { example ->
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(LmcSpacing.RadiusMd),
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                    ) {
+                        Text(
+                            text = example,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(LmcSpacing.CardPadding),
+                        )
+                    }
+                }
+            } else {
+                Text(
+                    text = stringResource(R.string.word_review_prompt),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WordReviewCompleteContent(
+    reviewedCount: Int,
+    onDone: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .widthIn(max = LmcSpacing.ReadingMaxWidth)
+            .padding(LmcSpacing.ScreenPadding),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space5),
+    ) {
+        Spacer(modifier = Modifier.height(LmcSpacing.Space8))
+        Surface(
+            modifier = Modifier.size(88.dp),
+            shape = CircleShape,
+            color = LmcColors.SuccessContainer,
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                LmcCanvasIcon(
+                    icon = LmcIcon.Check,
+                    color = LmcColors.Success,
+                    modifier = Modifier.size(40.dp),
+                )
+            }
+        }
+        Text(
+            text = stringResource(R.string.word_review_complete_title),
+            style = MaterialTheme.typography.headlineLarge,
+            color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center,
+        )
+        Text(
+            text = stringResource(R.string.word_review_complete_body, reviewedCount),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+        Button(
+            onClick = onDone,
+            modifier = Modifier.heightIn(min = LmcSpacing.ButtonPrimaryHeight),
+            shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+        ) {
+            Text(text = stringResource(R.string.action_done))
+        }
+    }
+}
+
+@Composable
+private fun WordBookEmptyState(
+    title: String,
+    body: String,
+    actionLabel: String?,
+    onAction: (() -> Unit)?,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+    ) {
+        Column(
+            modifier = Modifier.padding(LmcSpacing.CardPadding),
+            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space3),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = body,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (actionLabel != null && onAction != null) {
+                Button(
+                    onClick = onAction,
+                    modifier = Modifier.heightIn(min = LmcSpacing.ButtonPrimaryHeight),
+                    shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+                ) {
+                    Text(text = actionLabel)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WordStatusChip(item: WordBookItem) {
+    val labelRes = when {
+        item.due -> R.string.word_book_status_due
+        item.reps >= 2 -> R.string.word_book_status_known
+        else -> R.string.word_book_status_learning
+    }
+    val containerColor = when {
+        item.due -> MaterialTheme.colorScheme.primaryContainer
+        item.reps >= 2 -> LmcColors.SuccessContainer
+        else -> MaterialTheme.colorScheme.tertiaryContainer
+    }
+    val contentColor = when {
+        item.due -> MaterialTheme.colorScheme.onPrimaryContainer
+        item.reps >= 2 -> LmcColors.Success
+        else -> MaterialTheme.colorScheme.onTertiaryContainer
+    }
+    Surface(
+        shape = CircleShape,
+        color = containerColor,
+    ) {
+        Text(
+            text = stringResource(labelRes),
+            style = MaterialTheme.typography.labelMedium,
+            color = contentColor,
+            modifier = Modifier.padding(horizontal = LmcSpacing.Space2, vertical = LmcSpacing.Space1),
+        )
+    }
+}
+
+@Composable
 private fun QuizQuestionBody(
     question: Question,
     selectedAnswer: String?,
@@ -2494,6 +3435,7 @@ private fun QuizCompletionScreen(
     story: Story,
     correctCount: Int,
     totalQuestions: Int,
+    streakSummary: StreakSummary?,
     onReadAgain: () -> Unit,
     onDone: () -> Unit,
 ) {
@@ -2530,6 +3472,9 @@ private fun QuizCompletionScreen(
             style = MaterialTheme.typography.displaySmall,
             color = MaterialTheme.colorScheme.primary,
         )
+        if (streakSummary != null) {
+            CompletionMilestoneBanner(streakSummary = streakSummary)
+        }
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(LmcSpacing.RadiusLg),
@@ -2574,6 +3519,50 @@ private fun QuizCompletionScreen(
                 shape = RoundedCornerShape(LmcSpacing.RadiusLg),
             ) {
                 Text(text = stringResource(R.string.action_done))
+            }
+        }
+    }
+}
+
+@Composable
+private fun CompletionMilestoneBanner(
+    streakSummary: StreakSummary,
+) {
+    val title = streakSummary.newMilestoneDays?.let { milestone ->
+        stringResource(R.string.completion_milestone_streak_title, milestone)
+    } ?: stringResource(R.string.completion_milestone_goal_title)
+    val body = if (streakSummary.todayGoalMet) {
+        stringResource(
+            R.string.completion_milestone_goal_body,
+            streakSummary.todayCompletedStories,
+            streakSummary.dailyGoalStories,
+        )
+    } else {
+        stringResource(R.string.completion_milestone_keep_going)
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+        color = LmcColors.SuccessContainer,
+    ) {
+        Row(
+            modifier = Modifier.padding(LmcSpacing.CardPadding),
+            horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space3),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            LmcCanvasIcon(icon = LmcIcon.Check, color = LmcColors.Success)
+            Column(verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space1)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = body,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }
@@ -3359,6 +4348,21 @@ private fun ReadingTextSize.labelRes(): Int = when (this) {
     ReadingTextSize.Large -> R.string.reading_text_size_large
 }
 
+private enum class WordBookFilter {
+    All,
+    Due,
+    Learning,
+    Known,
+}
+
+@StringRes
+private fun WordBookFilter.labelRes(): Int = when (this) {
+    WordBookFilter.All -> R.string.word_book_filter_all
+    WordBookFilter.Due -> R.string.word_book_filter_due
+    WordBookFilter.Learning -> R.string.word_book_filter_learning
+    WordBookFilter.Known -> R.string.word_book_filter_known
+}
+
 private sealed interface StoriesState {
     data object Loading : StoriesState
     data object Error : StoriesState
@@ -3426,6 +4430,23 @@ private fun ReaderAnalytics.trackStoryOpen(
             story = story,
             storyOrder = storyOrder,
             openSource = openSource,
+        ),
+    )
+}
+
+private fun ReaderAnalytics.trackWordReviewAnswer(
+    item: WordBookItem,
+    rating: String,
+    reviewIndex: Int,
+) {
+    val storyId = item.sourceStoryIds.firstOrNull().orEmpty()
+    track(
+        ReaderAnalyticsEvents.wordReviewAnswer(
+            storyId = storyId,
+            vocabId = "$storyId:word_book",
+            rating = rating,
+            reviewIndex = reviewIndex,
+            nextIntervalDays = item.intervalDays,
         ),
     )
 }

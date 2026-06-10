@@ -1853,6 +1853,328 @@
           }
         }
       }
+    },
+    "action_show_answer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Show answer" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "显示答案" } }
+      }
+    },
+    "action_skip" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Skip" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "跳过" } }
+      }
+    },
+    "action_start_review" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Start review" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开始复习" } }
+      }
+    },
+    "action_still_learning" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Still learning" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "再学学" } }
+      }
+    },
+    "completion_milestone_goal_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%d / %d stories today" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "今日已读 %d / %d 篇" } }
+      }
+    },
+    "completion_milestone_goal_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Today goal complete" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "今日目标完成" } }
+      }
+    },
+    "completion_milestone_streak_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%d-day streak" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "连续 %d 天" } }
+      }
+    },
+    "nav_word_book" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Words" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "生字本" } }
+      }
+    },
+    "onboarding_age_5_6" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Age 5-6" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "5-6 岁" } }
+      }
+    },
+    "onboarding_age_7_8" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Age 7-8" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "7-8 岁" } }
+      }
+    },
+    "onboarding_age_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reading level" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "阅读等级" } }
+      }
+    },
+    "onboarding_day_one_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Finish today story to complete the first day." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "读完今日故事，就完成第一天。" } }
+      }
+    },
+    "onboarding_day_one_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Streak Day 1" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "连续第 1 天" } }
+      }
+    },
+    "onboarding_get_started" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Start today" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开始今日阅读" } }
+      }
+    },
+    "onboarding_goal_one_story" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "1 story a day" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "每天 1 篇" } }
+      }
+    },
+    "onboarding_goal_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Daily goal" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "每日目标" } }
+      }
+    },
+    "onboarding_goal_two_stories" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "2 stories a day" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "每天 2 篇" } }
+      }
+    },
+    "onboarding_language_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Interface language" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "界面语言" } }
+      }
+    },
+    "onboarding_privacy_note" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No child name, birthday, school, photo, or location is needed." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "不需要填写儿童姓名、生日、学校、照片或位置。" } }
+      }
+    },
+    "onboarding_subtitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Set up a gentle daily reading habit." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "一起建立轻松的每日阅读习惯。" } }
+      }
+    },
+    "onboarding_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Welcome" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "欢迎" } }
+      }
+    },
+    "streak_day_count" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Day %d" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "第 %d 天" } }
+      }
+    },
+    "streak_goal_complete" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Goal met" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已达成" } }
+      }
+    },
+    "streak_goal_continue" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Keep reading" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "继续阅读" } }
+      }
+    },
+    "streak_progress_format" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%d / %d stories today" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "今日 %d / %d 篇" } }
+      }
+    },
+    "word_book_due_count" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Due today" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "今日复习" } }
+      }
+    },
+    "word_book_empty_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Finish a story to add its new words here." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "完成一篇故事后，生字会出现在这里。" } }
+      }
+    },
+    "word_book_empty_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No words yet" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "还没有生字" } }
+      }
+    },
+    "word_book_filter_all" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "All" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "全部" } }
+      }
+    },
+    "word_book_filter_due" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Due" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "今日" } }
+      }
+    },
+    "word_book_filter_known" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Known" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "认识了" } }
+      }
+    },
+    "word_book_filter_learning" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Learning" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "学习中" } }
+      }
+    },
+    "word_book_learned_count" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Learned" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已学" } }
+      }
+    },
+    "word_book_no_due_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No words are due right now. Tomorrow will bring a gentle review." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "现在没有到期的生字，明天再轻松复习。" } }
+      }
+    },
+    "word_book_no_due_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "All caught up" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "今天都复习好了" } }
+      }
+    },
+    "word_book_source_story" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "From %@" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "来自《%@》" } }
+      }
+    },
+    "word_book_status_due" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Due" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "今日" } }
+      }
+    },
+    "word_book_status_known" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Known" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "认识了" } }
+      }
+    },
+    "word_book_status_learning" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Learning" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "学习中" } }
+      }
+    },
+    "word_book_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Word Book" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "生字本" } }
+      }
+    },
+    "word_review_complete_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%d words reviewed." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已复习 %d 个生字。" } }
+      }
+    },
+    "word_review_complete_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Review complete" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "复习完成" } }
+      }
+    },
+    "word_review_no_due_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "You are caught up for today." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "今天的生字已经复习好了。" } }
+      }
+    },
+    "word_review_no_due_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No review now" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "现在不用复习" } }
+      }
+    },
+    "word_review_prompt" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Think about the word, then show the answer." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "先想一想这个字词，再显示答案。" } }
+      }
+    },
+    "word_review_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Word Review" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "生字复习" } }
+      }
     }
   },
   "version" : "1.0"

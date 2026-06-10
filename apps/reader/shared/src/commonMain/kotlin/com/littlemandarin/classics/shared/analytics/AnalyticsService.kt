@@ -31,6 +31,15 @@ enum class AnalyticsEventName(val wireName: String) {
     @SerialName("vocab_open")
     VocabOpen("vocab_open"),
 
+    @SerialName("word_book_open")
+    WordBookOpen("word_book_open"),
+
+    @SerialName("word_review_answer")
+    WordReviewAnswer("word_review_answer"),
+
+    @SerialName("word_review_complete")
+    WordReviewComplete("word_review_complete"),
+
     @SerialName("quiz_start")
     QuizStart("quiz_start"),
 
@@ -426,6 +435,32 @@ private val EventSchemas: Map<AnalyticsEventName, AnalyticsEventSchema> = mapOf(
         ),
         optional = mapOf(
             "content_level" to AnalyticsPropertyType.IntValue,
+        ),
+    ),
+    AnalyticsEventName.WordBookOpen to AnalyticsEventSchema(
+        required = mapOf(
+            "entry_point" to AnalyticsPropertyType.StringValue,
+            "learned_count" to AnalyticsPropertyType.IntValue,
+            "due_count" to AnalyticsPropertyType.IntValue,
+        ),
+    ),
+    AnalyticsEventName.WordReviewAnswer to AnalyticsEventSchema(
+        required = mapOf(
+            "story_id" to AnalyticsPropertyType.StringValue,
+            "vocab_id" to AnalyticsPropertyType.StringValue,
+            "rating" to AnalyticsPropertyType.StringValue,
+            "review_index" to AnalyticsPropertyType.IntValue,
+        ),
+        optional = mapOf(
+            "next_interval_days" to AnalyticsPropertyType.IntValue,
+        ),
+    ),
+    AnalyticsEventName.WordReviewComplete to AnalyticsEventSchema(
+        required = mapOf(
+            "session_size" to AnalyticsPropertyType.IntValue,
+            "reviewed_count" to AnalyticsPropertyType.IntValue,
+            "known_count" to AnalyticsPropertyType.IntValue,
+            "needs_practice_count" to AnalyticsPropertyType.IntValue,
         ),
     ),
     AnalyticsEventName.QuizStart to AnalyticsEventSchema(

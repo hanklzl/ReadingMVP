@@ -21,13 +21,38 @@ struct ContentView: View {
         ZStack {
             LMCColor.background.ignoresSafeArea()
 
-            if let flowRoute {
-                flowView(for: flowRoute)
+            if viewModel.launchGate == .loading {
+                LMCLoadingView()
+                    .padding(LMCSpace.s4)
+            } else if viewModel.launchGate == .onboarding {
+                OnboardingFlow(
+                    initialLocaleIdentifier: localeIdentifier,
+                    complete: { ageBand, languageTag, dailyGoal in
+                        localeIdentifier = languageTag
+                        await viewModel.finishOnboarding(
+                            ageBand: ageBand,
+                            languageTag: languageTag,
+                            dailyGoalStories: dailyGoal
+                        )
+                        selectedTab = .today
+                        flowRoute = nil
+                        await loadSettings()
+                    },
+                    skip: {
+                        await viewModel.skipOnboarding()
+                        selectedTab = .today
+                        flowRoute = nil
+                    }
+                )
             } else {
-                VStack(spacing: 0) {
-                    topLevelView
-                    LMCBottomNavigation(selectedTab: $selectedTab) { tab in
-                        selectTab(tab, parentEntryPoint: .bottomNavigation)
+                if let flowRoute {
+                    flowView(for: flowRoute)
+                } else {
+                    VStack(spacing: 0) {
+                        topLevelView
+                        LMCBottomNavigation(selectedTab: $selectedTab) { tab in
+                            selectTab(tab, parentEntryPoint: .bottomNavigation)
+                        }
                     }
                 }
             }
@@ -44,6 +69,7 @@ struct ContentView: View {
             }
             await viewModel.load()
             await loadSettings()
+            await viewModel.loadLaunchState()
         }
         .onChange(of: localeIdentifier) { newValue in
             Task { await viewModel.setLanguageTag(newValue) }
@@ -107,6 +133,12 @@ struct ContentView: View {
                 viewModel: viewModel,
                 openReading: { openStory($0, source: .library) }
             )
+        case .wordBook:
+            WordBookScreen(
+                viewModel: viewModel,
+                openReview: { flowRoute = .wordReview },
+                openToday: { selectedTab = .today }
+            )
         case .parent:
             ParentReportScreen(
                 viewModel: viewModel,
@@ -169,6 +201,14 @@ struct ContentView: View {
             } else {
                 LMCMissingStoryView(close: { flowRoute = nil })
             }
+        case .wordReview:
+            WordReviewScreen(
+                viewModel: viewModel,
+                close: {
+                    selectedTab = .wordBook
+                    flowRoute = nil
+                }
+            )
         }
     }
 
@@ -202,6 +242,10 @@ final class ReaderViewModel: ObservableObject {
     @Published private(set) var parentReport: ParentProgressReport?
     @Published private(set) var loadingState: LMCLoadingState = .idle
     @Published private(set) var isSpeaking = false
+    @Published private(set) var launchGate: LMCLaunchGate = .loading
+    @Published private(set) var wordBookSummary: WordBookSummary?
+    @Published private(set) var streakSummary: StreakSummary?
+    @Published private(set) var lastCompletionStreakSummary: StreakSummary?
 
     private let repository = DefaultStoryRepository(
         resourceReader: IosStoryResourceReaderKt.defaultStoryResourceReader(),
@@ -209,6 +253,9 @@ final class ReaderViewModel: ObservableObject {
     )
     private let progressService = IosProgressServiceKt.createPlatformProgressService()
     private let settingsService = IosReaderSettingsServiceKt.createPlatformReaderSettingsService()
+    private let onboardingService = IosEngagementServicesKt.createPlatformOnboardingService()
+    private let streakService = IosEngagementServicesKt.createPlatformStreakService()
+    private let vocabReviewService = IosVocabReviewServiceKt.createPlatformVocabReviewService()
     private let ttsService = IosTtsServiceKt.createTtsService()
     private let storyPresentationUseCases = StoryPresentationUseCases()
     private let buildParentReportSummaryUseCase = BuildParentReportSummaryUseCase()
@@ -224,6 +271,13 @@ final class ReaderViewModel: ObservableObject {
     private lazy var markStoryCompletedUseCase = MarkStoryCompletedUseCase(progressService: progressService)
     private lazy var getProgressStatsUseCase = GetProgressStatsUseCase(progressService: progressService)
     private lazy var buildParentReportUseCase = BuildParentReportUseCase(progressService: progressService)
+    private lazy var streakUseCase = StreakUseCase(streakService: streakService)
+    private lazy var vocabReviewUseCase = VocabReviewUseCase(
+        storyRepository: repository,
+        progressService: progressService,
+        reviewService: vocabReviewService,
+        scheduler: SrsScheduler()
+    )
 
     var todayStory: Story? {
         todayShelf.todayStory
@@ -248,10 +302,50 @@ final class ReaderViewModel: ObservableObject {
             stories = try await getStoryListUseCase.invoke()
             try await refreshProgress()
             try await refreshReadingPositions()
+            try await refreshWordBook()
+            try await refreshStreak()
             loadingState = .loaded
         } catch {
             loadingState = .failed
         }
+    }
+
+    func loadLaunchState() async {
+        let preferences = try? await onboardingService.read()
+        if let preferences, preferences.completed {
+            try? await streakUseCase.setDailyGoal(dailyGoalStories: preferences.dailyGoalStories)
+            launchGate = .ready
+        } else {
+            launchGate = .onboarding
+        }
+        try? await refreshStreak()
+    }
+
+    func finishOnboarding(ageBand: LMCOnboardingAgeBand, languageTag: String, dailyGoalStories: Int) async {
+        do {
+            let language = ReaderLanguage.companion.fromTag(tag: languageTag)
+            try await settingsService.setLanguage(language: language)
+            try await onboardingService.complete(
+                preferences: OnboardingPreferences(
+                    completed: true,
+                    skipped: false,
+                    childAgeBand: ageBand.sharedValue,
+                    language: language,
+                    dailyGoalStories: Int32(dailyGoalStories)
+                )
+            )
+            try await streakUseCase.setDailyGoal(dailyGoalStories: Int32(dailyGoalStories))
+            try await refreshStreak()
+            launchGate = .ready
+        } catch {
+            loadingState = .failed
+        }
+    }
+
+    func skipOnboarding() async {
+        try? await onboardingService.skip()
+        launchGate = .ready
+        try? await refreshStreak()
     }
 
     func story(id: String) -> Story? {
@@ -272,8 +366,18 @@ final class ReaderViewModel: ObservableObject {
     func completeStory(_ story: Story, quizState: QuizSessionState) async -> QuizScore {
         let score = quizScore(story, state: quizState)
         do {
+            let now = Int64(Date().timeIntervalSince1970 * 1_000)
+            let wasAlreadyCompleted = try await progressService.getRecords().contains { $0.storyId == story.id }
             try await markStoryCompletedUseCase.invoke(record: completionRecord(story, state: quizState))
+            try await vocabReviewUseCase.syncLearnedWords(todayEpochMillis: now)
+            if wasAlreadyCompleted {
+                lastCompletionStreakSummary = try await streakUseCase.summary(todayEpochMillis: now)
+            } else {
+                lastCompletionStreakSummary = try await streakUseCase.recordStoryCompleted(nowEpochMillis: now)
+            }
             try await refreshProgress()
+            try await refreshWordBook()
+            try await refreshStreak()
             trackStoryComplete(story, quizCompleted: true)
         } catch {
             loadingState = .failed
@@ -375,6 +479,54 @@ final class ReaderViewModel: ObservableObject {
                 reportPeriod: "week"
             )
         )
+    }
+
+    func trackWordBookOpen() {
+        let summary = wordBookSummary
+        analytics.track(
+            ReaderAnalyticsEvents.shared.wordBookOpen(
+                entryPoint: "bottom_navigation",
+                learnedCount: Int32(summary?.totalWords ?? 0),
+                dueCount: Int32(summary?.dueCount ?? 0)
+            )
+        )
+    }
+
+    func trackWordReviewAnswer(item: WordBookItem, rating: String, reviewIndex: Int) {
+        let storyId = item.sourceStoryIds.first as? String ?? ""
+        analytics.track(
+            ReaderAnalyticsEvents.shared.wordReviewAnswer(
+                storyId: storyId,
+                vocabId: "\(storyId):word_book",
+                rating: rating,
+                reviewIndex: Int32(reviewIndex),
+                nextIntervalDays: Int32(item.intervalDays)
+            )
+        )
+    }
+
+    func trackWordReviewComplete(sessionSize: Int, reviewedCount: Int, knownCount: Int, needsPracticeCount: Int) {
+        analytics.track(
+            ReaderAnalyticsEvents.shared.wordReviewComplete(
+                sessionSize: Int32(sessionSize),
+                reviewedCount: Int32(reviewedCount),
+                knownCount: Int32(knownCount),
+                needsPracticeCount: Int32(needsPracticeCount)
+            )
+        )
+    }
+
+    func wordReviewItemsDueToday() -> [WordBookItem] {
+        (wordBookSummary?.items ?? []).filter { $0.due }
+    }
+
+    func recordWordReview(item: WordBookItem, assessment: VocabReviewAssessment) async {
+        _ = try? await vocabReviewUseCase.review(
+            word: item.word,
+            assessment: assessment,
+            todayEpochMillis: Int64(Date().timeIntervalSince1970 * 1_000)
+        )
+        try? await refreshWordBook()
     }
 
     func askAboutParagraph(story: Story, paragraphIndex: Int, selectedText: String, baseURL: String) async -> LMCAiAskState {
@@ -519,6 +671,21 @@ final class ReaderViewModel: ObservableObject {
         )
     }
 
+    private func refreshWordBook() async throws {
+        try await vocabReviewUseCase.syncLearnedWords(
+            todayEpochMillis: Int64(Date().timeIntervalSince1970 * 1_000)
+        )
+        wordBookSummary = try await vocabReviewUseCase.wordBook(
+            todayEpochMillis: Int64(Date().timeIntervalSince1970 * 1_000)
+        )
+    }
+
+    private func refreshStreak() async throws {
+        streakSummary = try await streakUseCase.summary(
+            todayEpochMillis: Int64(Date().timeIntervalSince1970 * 1_000)
+        )
+    }
+
     private func refreshReadingPositions() async throws {
         var positions: [String: Int] = [:]
         for story in stories {
@@ -559,9 +726,16 @@ enum LMCLoadingState {
     case failed
 }
 
+enum LMCLaunchGate {
+    case loading
+    case onboarding
+    case ready
+}
+
 enum LMCTab: String, CaseIterable {
     case today
     case library
+    case wordBook
     case parent
     case settings
 
@@ -569,6 +743,7 @@ enum LMCTab: String, CaseIterable {
         switch self {
         case .today: return "nav_today"
         case .library: return "nav_library"
+        case .wordBook: return "nav_word_book"
         case .parent: return "nav_parent"
         case .settings: return "nav_settings"
         }
@@ -578,6 +753,7 @@ enum LMCTab: String, CaseIterable {
         switch self {
         case .today: return "sun.max.fill"
         case .library: return "books.vertical.fill"
+        case .wordBook: return "textformat.characters"
         case .parent: return "chart.bar.xaxis"
         case .settings: return "gearshape.fill"
         }
@@ -588,6 +764,7 @@ enum LMCFlowRoute {
     case reading(storyId: String)
     case vocabulary(storyId: String, openSource: LMCVocabOpenSource)
     case quiz(storyId: String)
+    case wordReview
 }
 
 enum LMCAppOpenType: String {
@@ -614,6 +791,22 @@ enum LMCParentReportEntryPoint: String {
     case settings
 }
 
+enum LMCWordBookFilter: String, CaseIterable {
+    case all
+    case due
+    case learning
+    case known
+
+    var titleKey: LocalizedStringKey {
+        switch self {
+        case .all: return "word_book_filter_all"
+        case .due: return "word_book_filter_due"
+        case .learning: return "word_book_filter_learning"
+        case .known: return "word_book_filter_known"
+        }
+    }
+}
+
 enum LMCAppLocale: String, CaseIterable {
     case english = "en"
     case simplifiedChinese = "zh-Hans"
@@ -622,6 +815,25 @@ enum LMCAppLocale: String, CaseIterable {
         switch self {
         case .english: return "settings_language_english"
         case .simplifiedChinese: return "settings_language_chinese"
+        }
+    }
+}
+
+enum LMCOnboardingAgeBand: String, CaseIterable {
+    case age5To6
+    case age7To8
+
+    var titleKey: LocalizedStringKey {
+        switch self {
+        case .age5To6: return "onboarding_age_5_6"
+        case .age7To8: return "onboarding_age_7_8"
+        }
+    }
+
+    var sharedValue: ChildAgeBand {
+        switch self {
+        case .age5To6: return .age5to6
+        case .age7To8: return .age7to8
         }
     }
 }
@@ -1121,6 +1333,7 @@ private struct TodayScreen: View {
             case .loaded:
                 if let story = viewModel.todayStory {
                     VStack(alignment: .leading, spacing: LMCSpace.s6) {
+                        StreakCard(summary: viewModel.streakSummary)
                         SectionTitle("today_title")
                         StoryHeroCard(
                             story: story,
@@ -1181,6 +1394,390 @@ private struct TodayScreen: View {
             IconButton(systemName: "person.2.fill", labelKey: "nav_parent", action: openParent)
             IconButton(systemName: "gearshape.fill", labelKey: "nav_settings", action: openSettings)
         }
+    }
+}
+
+private struct OnboardingFlow: View {
+    let initialLocaleIdentifier: String
+    let complete: (LMCOnboardingAgeBand, String, Int) async -> Void
+    let skip: () async -> Void
+
+    @State private var selectedAgeBand: LMCOnboardingAgeBand = .age5To6
+    @State private var selectedLanguage: LMCAppLocale = .english
+    @State private var dailyGoal = 1
+
+    var body: some View {
+        LMCScreen(maxWidth: LMCSpace.readingMaxWidth) {
+            VStack(alignment: .leading, spacing: LMCSpace.s2) {
+                Text("onboarding_title")
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundStyle(LMCColor.textPrimary)
+                Text("onboarding_subtitle")
+                    .font(.system(size: 16))
+                    .foregroundStyle(LMCColor.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            SettingsSection(titleKey: "onboarding_age_title") {
+                ForEach(LMCOnboardingAgeBand.allCases, id: \.rawValue) { ageBand in
+                    SettingsChoiceRow(
+                        titleKey: ageBand.titleKey,
+                        isSelected: selectedAgeBand == ageBand,
+                        action: { selectedAgeBand = ageBand }
+                    )
+                }
+            }
+
+            SettingsSection(titleKey: "onboarding_language_title") {
+                ForEach(LMCAppLocale.allCases, id: \.rawValue) { locale in
+                    SettingsChoiceRow(
+                        titleKey: locale.labelKey,
+                        isSelected: selectedLanguage == locale,
+                        action: { selectedLanguage = locale }
+                    )
+                }
+            }
+
+            SettingsSection(titleKey: "onboarding_goal_title") {
+                SettingsChoiceRow(
+                    titleKey: "onboarding_goal_one_story",
+                    isSelected: dailyGoal == 1,
+                    action: { dailyGoal = 1 }
+                )
+                SettingsChoiceRow(
+                    titleKey: "onboarding_goal_two_stories",
+                    isSelected: dailyGoal == 2,
+                    action: { dailyGoal = 2 }
+                )
+            }
+
+            VStack(alignment: .leading, spacing: LMCSpace.s2) {
+                Label("onboarding_day_one_title", systemImage: "seal.fill")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(LMCColor.tertiary)
+                Text("onboarding_day_one_body")
+                    .font(.system(size: 16))
+                    .foregroundStyle(LMCColor.textPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(LMCSpace.s4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(LMCColor.tertiaryContainer)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+            Text("onboarding_privacy_note")
+                .font(.system(size: 15))
+                .foregroundStyle(LMCColor.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            HStack(spacing: LMCSpace.s3) {
+                Button("action_skip") {
+                    Task { await skip() }
+                }
+                .buttonStyle(LMCSecondaryButtonStyle())
+
+                Button("onboarding_get_started") {
+                    Task {
+                        await complete(selectedAgeBand, selectedLanguage.rawValue, dailyGoal)
+                    }
+                }
+                .buttonStyle(LMCPrimaryButtonStyle())
+            }
+        }
+        .background(LMCColor.background.ignoresSafeArea())
+        .onAppear {
+            selectedLanguage = LMCAppLocale(rawValue: initialLocaleIdentifier) ?? .english
+        }
+    }
+}
+
+private struct StreakCard: View {
+    let summary: StreakSummary?
+
+    var body: some View {
+        let dayCount = Int(summary?.currentStreakDays ?? 0)
+        let todayCount = Int(summary?.todayCompletedStories ?? 0)
+        let goal = max(1, Int(summary?.dailyGoalStories ?? 1))
+        let isComplete = summary?.todayGoalMet ?? false
+
+        HStack(spacing: LMCSpace.s3) {
+            Image(systemName: isComplete ? "checkmark.seal.fill" : "calendar.badge.checkmark")
+                .font(.system(size: 28, weight: .bold))
+                .foregroundStyle(isComplete ? LMCColor.success : LMCColor.tertiary)
+                .frame(width: 48, height: 48)
+                .background(LMCColor.surface)
+                .clipShape(Circle())
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: LMCSpace.s1) {
+                Text(LMCStrings.format("streak_day_count", max(1, dayCount)))
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(LMCColor.textPrimary)
+                Text(LMCStrings.format("streak_progress_format", todayCount, goal))
+                    .font(.system(size: 15))
+                    .foregroundStyle(LMCColor.textSecondary)
+            }
+
+            Spacer()
+
+            Text(LocalizedStringKey(isComplete ? "streak_goal_complete" : "streak_goal_continue"))
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(isComplete ? LMCColor.success : LMCColor.tertiary)
+        }
+        .padding(LMCSpace.s4)
+        .background(isComplete ? LMCColor.successContainer : LMCColor.tertiaryContainer)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+}
+
+private struct WordBookScreen: View {
+    @ObservedObject var viewModel: ReaderViewModel
+    let openReview: () -> Void
+    let openToday: () -> Void
+    @State private var selectedFilter: LMCWordBookFilter = .all
+    @State private var didTrackOpen = false
+
+    private var items: [WordBookItem] {
+        let allItems = viewModel.wordBookSummary?.items ?? []
+        switch selectedFilter {
+        case .all:
+            return allItems
+        case .due:
+            return allItems.filter { $0.due }
+        case .learning:
+            return allItems.filter { !$0.due && $0.reps < 2 }
+        case .known:
+            return allItems.filter { $0.reps >= 2 }
+        }
+    }
+
+    var body: some View {
+        LMCScreen(maxWidth: LMCSpace.gridMaxWidth) {
+            SectionTitle("word_book_title")
+
+            HStack(spacing: LMCSpace.s3) {
+                SummaryTile(
+                    icon: "textformat.characters",
+                    titleKey: "word_book_learned_count",
+                    value: "\(viewModel.wordBookSummary?.totalWords ?? 0)",
+                    action: { selectedFilter = .all }
+                )
+                SummaryTile(
+                    icon: "calendar.badge.checkmark",
+                    titleKey: "word_book_due_count",
+                    value: "\(viewModel.wordBookSummary?.dueCount ?? 0)",
+                    action: { selectedFilter = .due }
+                )
+            }
+
+            Button("action_start_review", action: openReview)
+                .buttonStyle(LMCPrimaryButtonStyle())
+                .disabled((viewModel.wordBookSummary?.dueCount ?? 0) == 0)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: LMCSpace.s2) {
+                    ForEach(LMCWordBookFilter.allCases, id: \.rawValue) { filter in
+                        FilterChip(
+                            titleKey: filter.titleKey,
+                            isSelected: selectedFilter == filter,
+                            action: { selectedFilter = filter }
+                        )
+                    }
+                }
+            }
+
+            if (viewModel.wordBookSummary?.totalWords ?? 0) == 0 {
+                LMCEmptyState(titleKey: "word_book_empty_title", messageKey: "word_book_empty_body")
+                Button("action_start_reading", action: openToday)
+                    .buttonStyle(LMCPrimaryButtonStyle())
+            } else if items.isEmpty {
+                LMCEmptyState(titleKey: "word_book_no_due_title", messageKey: "word_book_no_due_body")
+            } else {
+                LazyVStack(spacing: LMCSpace.s3) {
+                    ForEach(items, id: \.word) { item in
+                        WordBookRow(item: item, sourceTitle: sourceTitle(for: item)) {
+                            viewModel.speakCurrent([item.word, item.example ?? ""].filter { !$0.isEmpty }.joined(separator: " "))
+                        }
+                    }
+                }
+            }
+        }
+        .onAppear {
+            guard !didTrackOpen else { return }
+            didTrackOpen = true
+            viewModel.trackWordBookOpen()
+        }
+    }
+
+    private func sourceTitle(for item: WordBookItem) -> String? {
+        guard let storyId = item.sourceStoryIds.first as? String else { return nil }
+        return viewModel.story(id: storyId)?.titleZh
+    }
+}
+
+private struct WordReviewScreen: View {
+    @ObservedObject var viewModel: ReaderViewModel
+    let close: () -> Void
+
+    @State private var items: [WordBookItem] = []
+    @State private var wordIndex = 0
+    @State private var answerRevealed = false
+    @State private var knownCount = 0
+    @State private var needsPracticeCount = 0
+    @State private var didComplete = false
+
+    private var currentItem: WordBookItem? {
+        guard items.indices.contains(wordIndex) else { return nil }
+        return items[wordIndex]
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            LMCFlowTopBar(
+                titleKey: "word_review_title",
+                trailingText: items.isEmpty ? nil : "\(min(wordIndex + 1, items.count)) / \(items.count)",
+                close: close
+            )
+
+            LMCProgressBar(value: didComplete ? 1 : progress)
+                .padding(.horizontal, LMCSpace.s4)
+
+            if didComplete {
+                reviewComplete
+            } else if let currentItem {
+                reviewCard(currentItem)
+            } else {
+                VStack(spacing: LMCSpace.s4) {
+                    LMCEmptyState(titleKey: "word_review_no_due_title", messageKey: "word_review_no_due_body")
+                    Button("action_done", action: close)
+                        .buttonStyle(LMCPrimaryButtonStyle())
+                }
+                .padding(LMCSpace.s4)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .background(LMCColor.background.ignoresSafeArea())
+        .onAppear {
+            if items.isEmpty {
+                items = viewModel.wordReviewItemsDueToday()
+            }
+        }
+    }
+
+    private func reviewCard(_ item: WordBookItem) -> some View {
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(spacing: LMCSpace.s5) {
+                    VocabularyCard(word: item.asVocab) {
+                        viewModel.speakCurrent([item.word, item.example ?? ""].filter { !$0.isEmpty }.joined(separator: " "))
+                    }
+                    .blur(radius: answerRevealed ? 0 : 0)
+
+                    if !answerRevealed {
+                        Text("word_review_prompt")
+                            .font(.system(size: 16))
+                            .foregroundStyle(LMCColor.textSecondary)
+                    }
+                }
+                .padding(LMCSpace.s4)
+                .frame(maxWidth: LMCSpace.readingMaxWidth)
+                .frame(maxWidth: .infinity)
+            }
+
+            LMCBottomActionBar {
+                if answerRevealed {
+                    Button("action_still_learning") {
+                        Task { await submit(item, assessment: .needspractice, rating: "needs_practice") }
+                    }
+                    .buttonStyle(LMCSecondaryButtonStyle())
+
+                    Button("action_got_it") {
+                        Task { await submit(item, assessment: .known, rating: "known") }
+                    }
+                    .buttonStyle(LMCPrimaryButtonStyle())
+                } else {
+                    Spacer()
+                    Button("action_show_answer") {
+                        answerRevealed = true
+                    }
+                    .buttonStyle(LMCPrimaryButtonStyle())
+                }
+            }
+        }
+    }
+
+    private var reviewComplete: some View {
+        VStack(spacing: LMCSpace.s5) {
+            Spacer()
+            Image(systemName: "checkmark.seal.fill")
+                .font(.system(size: 64, weight: .bold))
+                .foregroundStyle(LMCColor.success)
+                .accessibilityHidden(true)
+            Text("word_review_complete_title")
+                .font(.system(size: 28, weight: .bold))
+                .foregroundStyle(LMCColor.textPrimary)
+            Text(LMCStrings.format("word_review_complete_body", knownCount + needsPracticeCount))
+                .font(.system(size: 18))
+                .foregroundStyle(LMCColor.textSecondary)
+            Button("action_done", action: close)
+                .buttonStyle(LMCPrimaryButtonStyle())
+            Spacer()
+        }
+        .padding(LMCSpace.s4)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var progress: Double {
+        guard !items.isEmpty else { return 1 }
+        return Double(wordIndex) / Double(items.count)
+    }
+
+    private func submit(_ item: WordBookItem, assessment: VocabReviewAssessment, rating: String) async {
+        await viewModel.recordWordReview(item: item, assessment: assessment)
+        viewModel.trackWordReviewAnswer(item: item, rating: rating, reviewIndex: wordIndex + 1)
+        if assessment == .known {
+            knownCount += 1
+        } else {
+            needsPracticeCount += 1
+        }
+        if wordIndex >= items.count - 1 {
+            didComplete = true
+            viewModel.trackWordReviewComplete(
+                sessionSize: items.count,
+                reviewedCount: knownCount + needsPracticeCount,
+                knownCount: knownCount,
+                needsPracticeCount: needsPracticeCount
+            )
+        } else {
+            wordIndex += 1
+            answerRevealed = false
+        }
+    }
+}
+
+private struct CompletionMilestoneBanner: View {
+    let summary: StreakSummary
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: LMCSpace.s2) {
+            Label(titleText, systemImage: "seal.fill")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(LMCColor.success)
+            Text(LMCStrings.format("completion_milestone_goal_body", Int(summary.todayCompletedStories), Int(summary.dailyGoalStories)))
+                .font(.system(size: 16))
+                .foregroundStyle(LMCColor.textPrimary)
+        }
+        .padding(LMCSpace.s4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(LMCColor.successContainer)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    private var titleText: LocalizedStringKey {
+        if let milestone = summary.newMilestoneDays {
+            return LocalizedStringKey(LMCStrings.format("completion_milestone_streak_title", Int(milestone)))
+        }
+        return "completion_milestone_goal_title"
     }
 }
 
@@ -1601,15 +2198,15 @@ private struct QuizScreen: View {
                     VStack(spacing: LMCSpace.s3) {
                         ForEach(question.options, id: \.self) { option in
                             QuizOptionRow(
-		                                option: option,
-		                                isSelected: questionState.selectedAnswer == option,
-		                                isSubmitted: questionState.submitted,
-		                                isCorrectAnswer: option == questionState.result?.correctAnswer,
-		                                isSubmittedAnswer: questionState.selectedAnswer == option,
-	                                action: {
-	                                    quizState = viewModel.selectQuizAnswer(story, state: activeQuizState, answer: option)
-	                                }
-	                            )
+                                option: option,
+                                isSelected: questionState.selectedAnswer == option,
+                                isSubmitted: questionState.submitted,
+                                isCorrectAnswer: option == questionState.result?.correctAnswer,
+                                isSubmittedAnswer: questionState.selectedAnswer == option,
+                                action: {
+                                    quizState = viewModel.selectQuizAnswer(story, state: activeQuizState, answer: option)
+                                }
+                            )
                         }
                     }
 
@@ -1652,6 +2249,10 @@ private struct QuizScreen: View {
                         Text("quiz_score_label")
                             .font(.system(size: 16))
                             .foregroundStyle(LMCColor.textSecondary)
+                    }
+
+                    if let streak = viewModel.lastCompletionStreakSummary {
+                        CompletionMilestoneBanner(summary: streak)
                     }
 
                     VStack(alignment: .leading, spacing: LMCSpace.s3) {
@@ -2502,6 +3103,76 @@ private struct VocabularyCard: View {
     }
 }
 
+private struct WordBookRow: View {
+    let item: WordBookItem
+    let sourceTitle: String?
+    let playAudio: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: LMCSpace.s3) {
+            VStack(alignment: .leading, spacing: LMCSpace.s1) {
+                HStack(spacing: LMCSpace.s2) {
+                    Text(item.word)
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundStyle(LMCColor.textPrimary)
+                    WordStatusChip(item: item)
+                }
+                Text(item.pinyin)
+                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                    .foregroundStyle(LMCColor.secondary)
+                Text(item.meaning)
+                    .font(.system(size: 18))
+                    .foregroundStyle(LMCColor.textPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let sourceTitle {
+                    Text(LMCStrings.format("word_book_source_story", sourceTitle))
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(LMCColor.textSecondary)
+                }
+            }
+            Spacer()
+            IconButton(systemName: "speaker.wave.2.fill", labelKey: "reading_audio", action: playAudio)
+        }
+        .padding(LMCSpace.s4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(LMCColor.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 1)
+    }
+}
+
+private struct WordStatusChip: View {
+    let item: WordBookItem
+
+    var body: some View {
+        Text(titleKey)
+            .font(.system(size: 12, weight: .bold))
+            .foregroundStyle(foreground)
+            .padding(.horizontal, LMCSpace.s2)
+            .padding(.vertical, LMCSpace.s1)
+            .background(background)
+            .clipShape(Capsule())
+    }
+
+    private var titleKey: LocalizedStringKey {
+        if item.due { return "word_book_status_due" }
+        if item.reps >= 2 { return "word_book_status_known" }
+        return "word_book_status_learning"
+    }
+
+    private var foreground: Color {
+        if item.due { return LMCColor.primary }
+        if item.reps >= 2 { return LMCColor.success }
+        return LMCColor.tertiary
+    }
+
+    private var background: Color {
+        if item.due { return LMCColor.primaryContainer }
+        if item.reps >= 2 { return LMCColor.successContainer }
+        return LMCColor.tertiaryContainer
+    }
+}
+
 private struct QuizOptionRow: View {
     let option: String
     let isSelected: Bool
@@ -3050,6 +3721,12 @@ enum LMCStrings {
             }
         }
         return Bundle.main.localizedString(forKey: key, value: nil, table: nil)
+    }
+}
+
+private extension WordBookItem {
+    var asVocab: Vocab {
+        Vocab(word: word, pinyin: pinyin, meaning: meaning, example: example)
     }
 }
 

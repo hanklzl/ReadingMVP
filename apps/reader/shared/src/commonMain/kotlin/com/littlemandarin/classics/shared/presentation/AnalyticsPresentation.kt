@@ -85,6 +85,51 @@ object ReaderAnalyticsEvents {
         ),
     )
 
+    fun wordBookOpen(
+        entryPoint: String,
+        learnedCount: Int,
+        dueCount: Int,
+    ): AnalyticsEventPayload = payload(
+        eventName = AnalyticsEventName.WordBookOpen,
+        properties = mapOf(
+            "entry_point" to AnalyticsProperties.string(entryPoint),
+            "learned_count" to AnalyticsProperties.int(learnedCount),
+            "due_count" to AnalyticsProperties.int(dueCount),
+        ),
+    )
+
+    fun wordReviewAnswer(
+        storyId: String,
+        vocabId: String,
+        rating: String,
+        reviewIndex: Int,
+        nextIntervalDays: Int,
+    ): AnalyticsEventPayload = payload(
+        eventName = AnalyticsEventName.WordReviewAnswer,
+        properties = mapOf(
+            "story_id" to AnalyticsProperties.string(storyId),
+            "vocab_id" to AnalyticsProperties.string(vocabId),
+            "rating" to AnalyticsProperties.string(rating),
+            "review_index" to AnalyticsProperties.int(reviewIndex),
+            "next_interval_days" to AnalyticsProperties.int(nextIntervalDays),
+        ),
+    )
+
+    fun wordReviewComplete(
+        sessionSize: Int,
+        reviewedCount: Int,
+        knownCount: Int,
+        needsPracticeCount: Int,
+    ): AnalyticsEventPayload = payload(
+        eventName = AnalyticsEventName.WordReviewComplete,
+        properties = mapOf(
+            "session_size" to AnalyticsProperties.int(sessionSize),
+            "reviewed_count" to AnalyticsProperties.int(reviewedCount),
+            "known_count" to AnalyticsProperties.int(knownCount),
+            "needs_practice_count" to AnalyticsProperties.int(needsPracticeCount),
+        ),
+    )
+
     fun quizStart(story: Story): AnalyticsEventPayload = payload(
         eventName = AnalyticsEventName.QuizStart,
         properties = mapOf(
