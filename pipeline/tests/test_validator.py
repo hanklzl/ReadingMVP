@@ -298,9 +298,9 @@ class PolyphoneLintTest(unittest.TestCase):
         self.assertFlags("我的书", {1: "dì"}, "neutral-tone 'de'")
 
     def test_does_not_flag_legitimate_full_tone_words(self):
-        self.assertClean("觉得奇怪", {1: "dé"})
-        self.assertClean("记得恩情", {1: "dé"})
-        self.assertClean("懂得照顾", {1: "dé"})
+        self.assertClean("得到帮助", {0: "dé"})
+        self.assertClean("获得信任", {1: "dé"})
+        self.assertClean("总得去看", {1: "děi"})
 
     def test_does_not_flag_di_noun_readings(self):
         self.assertClean("有地方", {1: "dì"})
@@ -311,6 +311,25 @@ class PolyphoneLintTest(unittest.TestCase):
         self.assertClean("大家走得很慢", {3: "de"})
         self.assertClean("一下一下地扫", {4: "de"})
         self.assertClean("长叹一声", {0: "cháng"})
+
+    def test_flags_guarded_current_story_polyphones(self):
+        self.assertFlags("盼着风浪早点过去", {1: "zháo"}, "着")
+        self.assertFlags("箭如数送到", {2: "shǔ"}, "如数")
+        self.assertFlags("一向重信用", {2: "chóng"}, "重信用")
+        self.assertFlags("二字的分量", {3: "fēn"}, "分量")
+        self.assertFlags("为百姓着想", {0: "wéi"}, "为百姓")
+        self.assertFlags("为百姓着想", {3: "zhe"}, "着想")
+        self.assertFlags("沉着和判断", {1: "zhe"}, "沉着")
+        self.assertFlags("请教贤人", {1: "jiāo"}, "请教")
+
+    def test_does_not_flag_guarded_current_story_polyphones_when_correct(self):
+        self.assertClean("盼着风浪早点过去", {1: "zhe"})
+        self.assertClean("箭如数送到", {2: "shù"})
+        self.assertClean("一向重信用", {2: "zhòng"})
+        self.assertClean("二字的分量", {3: "fèn"})
+        self.assertClean("为百姓着想", {0: "wèi", 3: "zhuó"})
+        self.assertClean("沉着和判断", {1: "zhuó"})
+        self.assertClean("请教贤人", {1: "jiào"})
 
 
 if __name__ == "__main__":

@@ -1,6 +1,8 @@
 import tempfile
 import unittest
 import wave
+import json
+from unittest import mock
 from pathlib import Path
 
 from transformer import generate
@@ -38,6 +40,63 @@ class TransformerTest(unittest.TestCase):
             ],
             cells,
         )
+
+    def test_polyphone_overrides_win_over_backend_output(self):
+        wrong_backend_tokens = [
+            "dà",
+            "jiā",
+            "zǒu",
+            "dé",
+            "hěn",
+            "màn",
+            "，",
+            "màn",
+            "màn",
+            "dì",
+            "shuō",
+            "huà",
+            "，",
+            "wǒ",
+            "dí",
+            "shū",
+            "，",
+            "zhǎng",
+            "bǎn",
+            "pō",
+        ]
+        text = "大家走得很慢，慢慢地说话，我的书，长坂坡"
+
+        with mock.patch.object(generate, "_backend_tokens_for_text", return_value=wrong_backend_tokens):
+            cells = generate.pinyin_cells_for_text(text)
+
+        by_char = [(cell["c"], cell["p"]) for cell in cells]
+        self.assertIn(("得", "de"), by_char)
+        self.assertIn(("地", "de"), by_char)
+        self.assertIn(("的", "de"), by_char)
+        self.assertEqual("cháng", cells[text.index("长")]["p"])
+
+    def test_pinyin_overrides_handle_de_di_de_particles(self):
+        examples = [
+            ("大家走得很慢", "得", "de"),
+            ("桃花开得正好", "得", "de"),
+            ("恭恭敬敬地说明", "地", "de"),
+            ("有礼貌地坚持", "地", "de"),
+            ("我的书", "的", "de"),
+            ("扫地的人", "地", "dì"),
+            ("地方很大", "地", "dì"),
+            ("记得恩情", "得", "de"),
+            ("得到帮助", "得", "dé"),
+        ]
+
+        for text, char, expected in examples:
+            with self.subTest(text=text):
+                cells = generate.pinyin_cells_for_text(text)
+                self.assertEqual(expected, cells[text.index(char)]["p"])
+
+    def test_pinyin_cells_raise_when_backend_token_count_mismatches_text(self):
+        with mock.patch.object(generate, "_backend_tokens_for_text", return_value=["táo"]):
+            with self.assertRaisesRegex(ValueError, "pinyin token count 1 does not match text length 2"):
+                generate.pinyin_cells_for_text("桃园")
 
     def test_build_story_includes_cells_for_each_paragraph(self):
         story = build_story(STORY_DRAFTS[0])
@@ -173,7 +232,48 @@ class CharTimingTest(unittest.TestCase):
                 self.assertEqual([c for c in entry["text"]], [cell["c"] for cell in chars])
                 # stub's signature timing: chars[i] -> startMs=i, endMs=i+1 (clamped)
                 self.assertEqual(0, chars[0]["startMs"])
-                self.assertEqual(2, chars[1]["endMs"])
+            self.assertEqual(2, chars[1]["endMs"])
+
+
+class TransformerCliTest(unittest.TestCase):
+    def test_sync_app_resources_pure_copy_does_not_rewrite_story_json(self):
+        with tempfile.TemporaryDirectory() as raw_dir:
+            root = Path(raw_dir)
+            stories_dir = root / "content" / "stories"
+            app_stories_dir = root / "app" / "resources" / "stories"
+            story_dir = stories_dir / "sample-story"
+            audio_dir = story_dir / "audio"
+            audio_dir.mkdir(parents=True)
+            source_story = {"id": "sample-story", "sentinel": "hand-fixed-pinyin"}
+            source_story_bytes = json.dumps(source_story, ensure_ascii=False, indent=2).encode("utf-8") + b"\n"
+            (story_dir / "story.json").write_bytes(source_story_bytes)
+            (story_dir / "audio.json").write_text('{"sentences": []}\n', encoding="utf-8")
+            (audio_dir / "p1_s1.wav").write_bytes(b"wav-bytes")
+
+            target_dir = app_stories_dir / "sample-story"
+            target_dir.mkdir(parents=True)
+            (target_dir / "story.json").write_text('{"id":"sample-story","sentinel":"stale"}\n', encoding="utf-8")
+            (target_dir / "audio").mkdir()
+            (target_dir / "audio" / "old.wav").write_bytes(b"old")
+
+            with mock.patch.object(generate, "generate_all", side_effect=AssertionError("sync must not regenerate")):
+                exit_code = generate.main(
+                    [
+                        "--sync-app-resources",
+                        "--stories-dir",
+                        str(stories_dir),
+                        "--app-stories-dir",
+                        str(app_stories_dir),
+                        "--ids",
+                        "sample-story",
+                    ]
+                )
+
+            self.assertEqual(0, exit_code)
+            self.assertEqual(source_story_bytes, (story_dir / "story.json").read_bytes())
+            self.assertEqual(source_story_bytes, (target_dir / "story.json").read_bytes())
+            self.assertEqual(b"wav-bytes", (target_dir / "audio" / "p1_s1.wav").read_bytes())
+            self.assertFalse((target_dir / "audio" / "old.wav").exists())
 
 
 if __name__ == "__main__":

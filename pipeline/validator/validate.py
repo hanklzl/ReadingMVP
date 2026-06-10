@@ -10,6 +10,13 @@ from typing import Any, Iterable
 from jsonschema import Draft202012Validator
 
 from transformer.audio import build_sentence_plan, read_audio_manifest
+from transformer.polyphone_overrides import (
+    DE_FULL_TONE_WORDS as _DE_FULL_TONE_WORDS,
+    DE_MUST_WORDS as _DE_MUST_WORDS,
+    DE_NEUTRAL_WORDS as _DE_NEUTRAL_WORDS,
+    DI_NOUN_WORDS as _DI_NOUN_WORDS,
+    phrase_guardrail_errors,
+)
 
 
 HANZI_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]")
@@ -56,21 +63,6 @@ _NEUTRAL_PARTICLE_READINGS = {
     "着": {"zhe", "zháo", "zhāo", "zhuó"},
 }
 
-# Two-character words where 得 legitimately keeps a full tone (dé / děi).
-_DE_FULL_TONE_WORDS = {
-    "得到", "得意", "得力", "得知", "得胜", "得分", "得当", "获得", "取得", "记得",
-    "懂得", "舍得", "觉得", "值得", "显得", "晓得", "免得", "落得", "难得", "心得",
-    "得失", "得罪", "所得", "求得", "赢得", "博得", "使得", "省得", "怪不得",
-    "只得", "乐得", "非得", "总得",
-}
-# Words where 地 keeps the noun reading dì (not the adverbial particle de).
-_DI_NOUN_WORDS = {
-    "地方", "地上", "地下", "地面", "地里", "地点", "土地", "天地", "大地", "当地",
-    "各地", "本地", "此地", "那地", "这地", "地区", "地图", "地球", "地位", "地步",
-    "田地", "境地", "余地", "阵地", "地名", "地址", "扫地", "种地", "落地", "倒地",
-    "遍地", "就地", "平地", "空地", "外地", "产地", "基地", "陆地", "草地", "园地",
-}
-
 
 def lint_polyphone_readings(para_index: int, cells: list[Any]) -> list[str]:
     """Flag high-confidence polyphone (多音字) reading mistakes.
@@ -79,11 +71,14 @@ def lint_polyphone_readings(para_index: int, cells: list[Any]) -> list[str]:
     - 的 must be neutral-tone ``de``.
     - 长 in the place name 长坂 must read ``cháng``.
     - 得 between a verb/adjective and its complement (V得C) must read ``de``;
-      a full tone is only allowed inside a known 得-word (得到/觉得/记得 …).
+      a full tone is only allowed inside a narrow known word list (得到/获得 …).
     - 地 used as the adverbial particle (X地V, i.e. preceded by a hanzi and
       followed by a hanzi, and not part of a 地-noun word) must read ``de``.
     """
     errors: list[str] = []
+    text = "".join(str(cell.get("c", "")) if isinstance(cell, dict) else "" for cell in cells)
+    readings = [str(cell.get("p", "")) if isinstance(cell, dict) else "" for cell in cells]
+    errors.extend(phrase_guardrail_errors(para_index=para_index, text=text, readings=readings))
 
     def cell_char(i: int) -> str:
         if 0 <= i < len(cells) and isinstance(cells[i], dict):
@@ -110,12 +105,32 @@ def lint_polyphone_readings(para_index: int, cells: list[Any]) -> list[str]:
                 f"paragraph {para_index} cell {i + 1} 长 in place name 长坂 should read 'cháng', got '{reading}'"
             )
 
-        elif char == "得" and reading in {"dé", "děi"}:
+        elif char == "得":
             word_prev = prev_char + char
             word_next = char + next_char
-            in_known_word = word_prev in _DE_FULL_TONE_WORDS or word_next in _DE_FULL_TONE_WORDS
+            in_neutral_word = word_prev in _DE_NEUTRAL_WORDS or word_next in _DE_NEUTRAL_WORDS
+            in_must_word = word_prev in _DE_MUST_WORDS or word_next in _DE_MUST_WORDS
+            in_full_tone_word = word_prev in _DE_FULL_TONE_WORDS or word_next in _DE_FULL_TONE_WORDS
+
+            if in_neutral_word and reading != "de":
+                errors.append(
+                    f"paragraph {para_index} cell {i + 1} 得 in neutral-tone word should read 'de', "
+                    f"got '{reading}' (context: …{prev_char}得{next_char}…)"
+                )
+            elif in_must_word:
+                if reading != "děi":
+                    errors.append(
+                        f"paragraph {para_index} cell {i + 1} 得 meaning 'must' should read 'děi', "
+                        f"got '{reading}' (context: …{prev_char}得{next_char}…)"
+                    )
+            elif in_full_tone_word:
+                if reading != "dé":
+                    errors.append(
+                        f"paragraph {para_index} cell {i + 1} 得 in full-tone word should read 'dé', "
+                        f"got '{reading}' (context: …{prev_char}得{next_char}…)"
+                    )
             # V得C structural-complement pattern: hanzi 得 hanzi, not a known 得-word.
-            if prev_is_hanzi and next_is_hanzi and not in_known_word:
+            elif reading in {"dé", "děi"} and prev_is_hanzi and next_is_hanzi:
                 errors.append(
                     f"paragraph {para_index} cell {i + 1} 得 in V得C complement should read neutral-tone 'de', "
                     f"got '{reading}' (context: …{prev_char}得{next_char}…)"

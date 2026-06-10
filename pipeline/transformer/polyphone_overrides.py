@@ -1,0 +1,306 @@
+from __future__ import annotations
+
+from typing import Callable
+
+
+PhraseReadings = dict[str, tuple[str, ...]]
+
+
+# Proper names and fixed corpus phrases. This table is intentionally plain data:
+# add new phrases here first, then extend validator tests when a regression needs
+# to become a guardrail.
+PROPER_NAME_READINGS: PhraseReadings = {
+    "长坂坡": ("cháng", "bǎn", "pō"),
+    "华容道": ("huá", "róng", "dào"),
+    "诸葛亮": ("zhū", "gě", "liàng"),
+    "刘备": ("liú", "bèi"),
+    "关羽": ("guān", "yǔ"),
+    "张飞": ("zhāng", "fēi"),
+    "吕布": ("lǚ", "bù"),
+    "鲁肃": ("lǔ", "sù"),
+    "周瑜": ("zhōu", "yú"),
+    "孟获": ("mèng", "huò"),
+    "司马懿": ("sī", "mǎ", "yì"),
+    "曹操": ("cáo", "cāo"),
+    "赵云": ("zhào", "yún"),
+    "孙权": ("sūn", "quán"),
+    "黄盖": ("huáng", "gài"),
+    "涿县": ("zhuō", "xiàn"),
+    "虎牢关": ("hǔ", "láo", "guān"),
+    "隆中": ("lóng", "zhōng"),
+    "赤壁": ("chì", "bì"),
+}
+
+
+CORPUS_PHRASE_READINGS: PhraseReadings = {
+    "长叹": ("cháng", "tàn"),
+    "路又长": ("lù", "yòu", "cháng"),
+    "结为兄弟": ("jié", "wéi", "xiōng", "dì"),
+    "为百姓着想": ("wèi", "bǎi", "xìng", "zhuó", "xiǎng"),
+    "请教": ("qǐng", "jiào"),
+    "扎满": ("zā", "mǎn"),
+    "扎满草把": ("zā", "mǎn", "cǎo", "bǎ"),
+    "这个": ("zhè", "ge"),
+    "如数": ("rú", "shù"),
+    "分量": ("fèn", "liàng"),
+    "重信用": ("zhòng", "xìn", "yòng"),
+    "地方": ("dì", "fāng"),
+    "商量": ("shāng", "liáng"),
+    "弹琴": ("tán", "qín"),
+    "为了": ("wèi", "le"),
+    "因为": ("yīn", "wèi"),
+    "更难": ("gèng", "nán"),
+    "仿佛": ("fǎng", "fú"),
+    "会儿": ("huì", "er"),
+    "谁": ("shuí",),
+    "船只": ("chuán", "zhī"),
+    "日子": ("rì", "zi"),
+    "旗子": ("qí", "zi"),
+    "梅子": ("méi", "zi"),
+    "架子": ("jià", "zi"),
+    "孩子": ("hái", "zi"),
+    "一下子": ("yī", "xià", "zi"),
+    "盼着": ("pàn", "zhe"),
+    "着急": ("zháo", "jí"),
+    "着想": ("zhuó", "xiǎng"),
+    "沉着": ("chén", "zhuó"),
+    "一向": ("yí", "xiàng"),
+    "开得": ("kāi", "de"),
+    "吹得": ("chuī", "de"),
+    "走得": ("zǒu", "de"),
+    "排得": ("pái", "de"),
+    "说得": ("shuō", "de"),
+    "不由得": ("bù", "yóu", "de"),
+    "觉得": ("jué", "de"),
+    "记得": ("jì", "de"),
+    "懂得": ("dǒng", "de"),
+    "显得": ("xiǎn", "de"),
+    "恭恭敬敬地": ("gōng", "gōng", "jìng", "jìng", "de"),
+    "有礼貌地": ("yǒu", "lǐ", "mào", "de"),
+    "一下一下地": ("yī", "xià", "yī", "xià", "de"),
+    "慢慢地": ("màn", "màn", "de"),
+    "扫地": ("sǎo", "dì"),
+    "得到": ("dé", "dào"),
+}
+
+
+PINYIN_PHRASE_OVERRIDES: PhraseReadings = {
+    **PROPER_NAME_READINGS,
+    **CORPUS_PHRASE_READINGS,
+}
+
+
+# Words where 得 keeps a full tone. Keep this narrow; many common 得 compounds
+# in this children corpus are neutral-tone lexical words (觉得/记得/懂得).
+DE_FULL_TONE_WORDS = {
+    "得到",
+    "得意",
+    "得力",
+    "得知",
+    "得胜",
+    "得分",
+    "得当",
+    "获得",
+    "取得",
+    "赢得",
+    "博得",
+    "求得",
+    "所得",
+    "得失",
+}
+
+DE_NEUTRAL_WORDS = {
+    "觉得",
+    "记得",
+    "懂得",
+    "显得",
+    "晓得",
+    "舍得",
+    "免得",
+    "不由得",
+    "怪不得",
+    "使得",
+    "省得",
+}
+
+DE_MUST_WORDS = {
+    "非得",
+    "总得",
+    "得要",
+    "得先",
+    "得去",
+}
+
+DI_NOUN_WORDS = {
+    "地方",
+    "地上",
+    "地下",
+    "地面",
+    "地里",
+    "地点",
+    "土地",
+    "天地",
+    "大地",
+    "当地",
+    "各地",
+    "本地",
+    "此地",
+    "那地",
+    "这地",
+    "地区",
+    "地图",
+    "地球",
+    "地位",
+    "地步",
+    "田地",
+    "境地",
+    "余地",
+    "阵地",
+    "地名",
+    "地址",
+    "扫地",
+    "种地",
+    "落地",
+    "倒地",
+    "遍地",
+    "就地",
+    "平地",
+    "空地",
+    "外地",
+    "产地",
+    "基地",
+    "陆地",
+    "草地",
+    "园地",
+}
+
+
+POLYPHONE_GUARDRAIL_PHRASES: PhraseReadings = {
+    key: PINYIN_PHRASE_OVERRIDES[key]
+    for key in (
+        "长坂坡",
+        "长叹",
+        "华容道",
+        "诸葛亮",
+        "黄盖",
+        "路又长",
+        "如数",
+        "分量",
+        "重信用",
+        "为百姓着想",
+        "请教",
+        "盼着",
+        "着急",
+        "着想",
+        "沉着",
+        "觉得",
+        "记得",
+        "懂得",
+        "显得",
+    )
+}
+
+
+def _find_phrase_starts(text: str, phrase: str) -> list[int]:
+    starts: list[int] = []
+    start = text.find(phrase)
+    while start >= 0:
+        starts.append(start)
+        start = text.find(phrase, start + 1)
+    return starts
+
+
+def apply_phrase_readings(
+    text: str,
+    tokens: list[str],
+    phrase_readings: PhraseReadings = PINYIN_PHRASE_OVERRIDES,
+) -> list[bool]:
+    locked = [False] * len(tokens)
+    for phrase, readings in sorted(phrase_readings.items(), key=lambda item: len(item[0]), reverse=True):
+        if len(phrase) != len(readings):
+            raise ValueError(f"phrase override {phrase!r} has {len(readings)} readings for {len(phrase)} chars")
+        for start in _find_phrase_starts(text, phrase):
+            for offset, reading in enumerate(readings):
+                index = start + offset
+                tokens[index] = reading
+                locked[index] = True
+    return locked
+
+
+def _context_words(text: str, index: int) -> tuple[str, str]:
+    prev_char = text[index - 1] if index > 0 else ""
+    next_char = text[index + 1] if index + 1 < len(text) else ""
+    char = text[index]
+    return prev_char + char, char + next_char
+
+
+def apply_contextual_readings(
+    text: str,
+    tokens: list[str],
+    locked: list[bool],
+    *,
+    is_hanzi_char: Callable[[str], bool],
+) -> None:
+    for index, char in enumerate(text):
+        prev_char = text[index - 1] if index > 0 else ""
+        next_char = text[index + 1] if index + 1 < len(text) else ""
+        prev_is_hanzi = is_hanzi_char(prev_char)
+        next_is_hanzi = is_hanzi_char(next_char)
+        word_prev, word_next = _context_words(text, index)
+
+        if char == "的":
+            tokens[index] = "de"
+            continue
+
+        if locked[index]:
+            continue
+
+        if char == "得":
+            if word_prev in DE_MUST_WORDS or word_next in DE_MUST_WORDS:
+                tokens[index] = "děi"
+            elif word_prev in DE_NEUTRAL_WORDS or word_next in DE_NEUTRAL_WORDS:
+                tokens[index] = "de"
+            elif word_prev in DE_FULL_TONE_WORDS or word_next in DE_FULL_TONE_WORDS:
+                tokens[index] = "dé"
+            elif prev_is_hanzi and next_is_hanzi:
+                tokens[index] = "de"
+
+        elif char == "地":
+            in_noun_word = word_prev in DI_NOUN_WORDS or word_next in DI_NOUN_WORDS
+            if prev_is_hanzi and next_is_hanzi and not in_noun_word and next_char != "的":
+                tokens[index] = "de"
+
+
+def apply_polyphone_overrides(
+    text: str,
+    tokens: list[str],
+    *,
+    is_hanzi_char: Callable[[str], bool],
+) -> list[str]:
+    calibrated = list(tokens)
+    locked = apply_phrase_readings(text, calibrated)
+    apply_contextual_readings(text, calibrated, locked, is_hanzi_char=is_hanzi_char)
+    return calibrated
+
+
+def phrase_guardrail_errors(
+    *,
+    para_index: int,
+    text: str,
+    readings: list[str],
+    phrase_readings: PhraseReadings = POLYPHONE_GUARDRAIL_PHRASES,
+) -> list[str]:
+    errors: list[str] = []
+    for phrase, expected_readings in sorted(phrase_readings.items(), key=lambda item: len(item[0]), reverse=True):
+        for start in _find_phrase_starts(text, phrase):
+            for offset, expected in enumerate(expected_readings):
+                index = start + offset
+                if not expected:
+                    continue
+                actual = readings[index] if index < len(readings) else ""
+                if actual and actual != expected:
+                    errors.append(
+                        f"paragraph {para_index} cell {index + 1} {text[index]} in {phrase} "
+                        f"should read '{expected}', got '{actual}'"
+                    )
+    return errors

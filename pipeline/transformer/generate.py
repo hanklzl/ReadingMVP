@@ -2,16 +2,21 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
+import os
+import signal
 from pathlib import Path
 from typing import Any
 
 import shutil
 
-from pypinyin import Style, load_phrases_dict, pinyin
+from pypinyin import Style, pinyin
+from pypinyin.contrib.tone_convert import to_tone
 
 from source_catalog import SOURCE_RECORDS, STORY_IDS
 from transformer.story_data import STORY_DRAFTS
 from transformer.audio import align_audio_manifest, generate_audio_manifest
+from transformer.polyphone_overrides import apply_polyphone_overrides
 
 
 SOURCE_NOTE_DEFAULT = "Based on public-domain 《三国演义》, rewritten for children."
@@ -22,28 +27,6 @@ COVER_STYLE = (
     "no blood, no scary imagery, 1024x1024 square."
 )
 
-
-load_phrases_dict(
-    {
-        "长坂坡": [["cháng"], ["bǎn"], ["pō"]],
-        "长叹": [["cháng"], ["tàn"]],
-        "华容道": [["huá"], ["róng"], ["dào"]],
-        "诸葛亮": [["zhū"], ["gě"], ["liàng"]],
-        "刘备": [["liú"], ["bèi"]],
-        "关羽": [["guān"], ["yǔ"]],
-        "张飞": [["zhāng"], ["fēi"]],
-        "吕布": [["lǚ"], ["bù"]],
-        "结为兄弟": [["jié"], ["wéi"], ["xiōng"], ["dì"]],
-        "扎满": [["zā"], ["mǎn"]],
-        "扎满草把": [["zā"], ["mǎn"], ["cǎo"], ["bǎ"]],
-        "鲁肃": [["lǔ"], ["sù"]],
-        "周瑜": [["zhōu"], ["yú"]],
-        "孟获": [["mèng"], ["huò"]],
-        "司马懿": [["sī"], ["mǎ"], ["yì"]],
-    }
-)
-
-
 NO_SPACE_BEFORE = set("，。！？；：、）》”’]")
 NO_SPACE_AFTER = set("《（“‘[")
 HANZI_RANGES = (
@@ -51,6 +34,8 @@ HANZI_RANGES = (
     (0x4E00, 0x9FFF),
     (0xF900, 0xFAFF),
 )
+LOGGER = logging.getLogger(__name__)
+_G2P_BACKEND: "_Backend | None" = None
 
 
 def is_hanzi_char(char: str) -> bool:
@@ -60,7 +45,75 @@ def is_hanzi_char(char: str) -> bool:
     return any(start <= codepoint <= end for start, end in HANZI_RANGES)
 
 
-def pinyin_tokens_for_text(text: str) -> list[str]:
+class _Backend:
+    name = "base"
+
+    def tokens(self, text: str) -> list[str]:
+        raise NotImplementedError
+
+
+class _PypinyinBackend(_Backend):
+    name = "pypinyin"
+
+    def tokens(self, text: str) -> list[str]:
+        return _pypinyin_tokens_for_text(text)
+
+
+class _G2PWBackend(_Backend):
+    name = "g2pw"
+
+    def __init__(self) -> None:
+        from pypinyin_g2pw import G2PWPinyin
+
+        model_dir = Path(
+            os.environ.get(
+                "LMC_G2PW_MODEL_DIR",
+                str(Path.home() / ".cache" / "little-mandarin-classics" / "g2pw" / "G2PWModel"),
+            )
+        )
+        model_dir.parent.mkdir(parents=True, exist_ok=True)
+        model_source = os.environ.get("LMC_G2PW_MODEL_SOURCE") or None
+        self._pinyin = G2PWPinyin(
+            model_dir=str(model_dir),
+            model_source=model_source,
+            neutral_tone_with_five=False,
+            tone_sandhi=True,
+        )
+
+    def tokens(self, text: str) -> list[str]:
+        return [
+            item[0]
+            for item in self._pinyin.pinyin(
+                text,
+                style=Style.TONE,
+                heteronym=False,
+                neutral_tone_with_five=False,
+                strict=False,
+                errors=lambda chars: list(chars),
+            )
+        ]
+
+
+class _G2PMBackend(_Backend):
+    name = "g2pm"
+
+    def __init__(self) -> None:
+        from g2pM import G2pM
+
+        self._g2pm = G2pM()
+
+    def tokens(self, text: str) -> list[str]:
+        raw_tokens = self._g2pm(text, char_split=True, tone=True)
+        return [_tone_number_to_mark(token) for token in raw_tokens]
+
+
+def _tone_number_to_mark(token: str) -> str:
+    if len(token) > 1 and token[-1].isdigit():
+        return to_tone(token)
+    return token
+
+
+def _pypinyin_tokens_for_text(text: str) -> list[str]:
     return [
         item[0]
         for item in pinyin(
@@ -72,6 +125,107 @@ def pinyin_tokens_for_text(text: str) -> list[str]:
             errors=lambda chars: list(chars),
         )
     ]
+
+
+def _call_with_timeout(callback, seconds: float):
+    if seconds <= 0 or not hasattr(signal, "SIGALRM"):
+        return callback()
+
+    def _timeout_handler(signum, frame):
+        raise TimeoutError(f"timed out after {seconds:g}s")
+
+    try:
+        previous_handler = signal.getsignal(signal.SIGALRM)
+        previous_timer = signal.setitimer(signal.ITIMER_REAL, seconds)
+        signal.signal(signal.SIGALRM, _timeout_handler)
+    except (ValueError, AttributeError):
+        return callback()
+
+    try:
+        return callback()
+    finally:
+        signal.signal(signal.SIGALRM, previous_handler)
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        if previous_timer[0] > 0:
+            signal.setitimer(signal.ITIMER_REAL, previous_timer[0], previous_timer[1])
+
+
+def _backend_order() -> list[str]:
+    requested = os.environ.get("LMC_G2P_BACKEND", "auto").strip().lower()
+    if requested in {"", "auto"}:
+        return ["g2pw", "g2pm", "pypinyin"]
+    if requested in {"g2pw", "g2pm", "pypinyin"}:
+        return [requested, "g2pm", "pypinyin"] if requested == "g2pw" else [requested, "pypinyin"]
+    LOGGER.warning(
+        "Unknown LMC_G2P_BACKEND=%r; using auto order g2pw -> g2pm -> pypinyin.",
+        requested,
+    )
+    return ["g2pw", "g2pm", "pypinyin"]
+
+
+def _create_backend(name: str) -> _Backend:
+    if name == "g2pw":
+        timeout = float(os.environ.get("LMC_G2PW_INIT_TIMEOUT_SEC", "12"))
+        return _call_with_timeout(_G2PWBackend, timeout)
+    if name == "g2pm":
+        return _G2PMBackend()
+    if name == "pypinyin":
+        return _PypinyinBackend()
+    raise ValueError(f"Unsupported g2p backend: {name}")
+
+
+def selected_g2p_backend_name() -> str:
+    return _get_g2p_backend().name
+
+
+def _get_g2p_backend() -> _Backend:
+    global _G2P_BACKEND
+    if _G2P_BACKEND is not None:
+        return _G2P_BACKEND
+
+    failures: list[str] = []
+    for name in _backend_order():
+        try:
+            _G2P_BACKEND = _create_backend(name)
+            if failures:
+                LOGGER.warning(
+                    "Using %s pinyin backend after fallback; earlier backend failures: %s",
+                    _G2P_BACKEND.name,
+                    "; ".join(failures),
+                )
+            return _G2P_BACKEND
+        except Exception as exc:  # pragma: no cover - exercised by environment availability.
+            failures.append(f"{name}: {exc}")
+
+    LOGGER.warning(
+        "No neural pinyin backend is available (%s); falling back to default pypinyin.",
+        "; ".join(failures),
+    )
+    _G2P_BACKEND = _PypinyinBackend()
+    return _G2P_BACKEND
+
+
+def reset_g2p_backend_for_tests() -> None:
+    global _G2P_BACKEND
+    _G2P_BACKEND = None
+
+
+def _backend_tokens_for_text(text: str) -> list[str]:
+    backend = _get_g2p_backend()
+    tokens = backend.tokens(text)
+    if len(tokens) == len(text):
+        pypinyin_tokens = _pypinyin_tokens_for_text(text)
+        for index, char in enumerate(text):
+            if char in {"一", "不"} and index < len(pypinyin_tokens):
+                tokens[index] = pypinyin_tokens[index]
+    return tokens
+
+
+def pinyin_tokens_for_text(text: str) -> list[str]:
+    tokens = _backend_tokens_for_text(text)
+    if len(tokens) != len(text):
+        raise ValueError(f"pinyin token count {len(tokens)} does not match text length {len(text)}")
+    return apply_polyphone_overrides(text, tokens, is_hanzi_char=is_hanzi_char)
 
 
 def pinyin_for_text(text: str) -> str:
@@ -93,8 +247,6 @@ def pinyin_for_text(text: str) -> str:
 
 def pinyin_cells_for_text(text: str) -> list[dict[str, str]]:
     tokens = pinyin_tokens_for_text(text)
-    if len(tokens) != len(text):
-        raise ValueError(f"pinyin token count {len(tokens)} does not match text length {len(text)}")
     return [
         {"c": char, "p": token if is_hanzi_char(char) else ""}
         for char, token in zip(text, tokens)
@@ -318,23 +470,48 @@ def align_audio_for_stories(stories_dir: Path, ids: list[str] | None = None) -> 
 
 def sync_audio_assets_to_resources(*, story_id: str, stories_dir: Path, app_resources_dir: Path) -> None:
     source_story_dir = stories_dir / story_id
+    source_story_json = source_story_dir / "story.json"
     source_audio_json = source_story_dir / "audio.json"
     source_audio_dir = source_story_dir / "audio"
 
+    if not source_story_json.exists():
+        raise FileNotFoundError(f"Missing story JSON for {story_id}: {source_story_json}")
     if not source_audio_json.exists():
         raise FileNotFoundError(f"Missing audio manifest for {story_id}: {source_audio_json}")
+    if not source_audio_dir.exists() or not source_audio_dir.is_dir():
+        raise FileNotFoundError(f"Missing audio directory for {story_id}: {source_audio_dir}")
 
     target_story_dir = app_resources_dir / story_id
     target_story_dir.mkdir(parents=True, exist_ok=True)
 
+    target_story_json = target_story_dir / "story.json"
+    shutil.copy2(source_story_json, target_story_json)
+
     target_audio_json = target_story_dir / "audio.json"
     shutil.copy2(source_audio_json, target_audio_json)
 
-    if source_audio_dir.exists():
-        target_audio_dir = target_story_dir / "audio"
-        if target_audio_dir.exists():
-            shutil.rmtree(target_audio_dir)
-        shutil.copytree(source_audio_dir, target_audio_dir)
+    target_audio_dir = target_story_dir / "audio"
+    if target_audio_dir.exists():
+        shutil.rmtree(target_audio_dir)
+    shutil.copytree(source_audio_dir, target_audio_dir)
+
+
+def sync_app_story_resources(
+    *,
+    stories_dir: Path,
+    app_resources_dir: Path,
+    ids: list[str] | None = None,
+) -> list[Path]:
+    wanted = ids or list(STORY_IDS)
+    copied: list[Path] = []
+    for story_id in wanted:
+        sync_audio_assets_to_resources(
+            story_id=story_id,
+            stories_dir=stories_dir,
+            app_resources_dir=app_resources_dir,
+        )
+        copied.append(app_resources_dir / story_id / "story.json")
+    return copied
 
 
 def add_pinyin_cells_to_story(story: dict[str, Any]) -> dict[str, Any]:
@@ -377,7 +554,7 @@ def migrate_story_cells(stories_dir: Path, ids: list[str] | None = None) -> list
     return [migrate_story_cells_file(path) for path in story_paths_for_migration(stories_dir, ids)]
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Generate rewritten story JSON files.")
     parser.add_argument("--stories-dir", type=Path, default=Path("content/stories"))
     parser.add_argument("--sources-dir", type=Path, default=Path("content/sources"))
@@ -428,7 +605,7 @@ def main() -> int:
         action="store_true",
         help="Add or refresh paragraphs[].cells in existing story.json files without regenerating stories.",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     if args.migrate_cells:
         paths = migrate_story_cells(args.stories_dir, args.ids)
@@ -460,6 +637,17 @@ def main() -> int:
         print(f"Generated audio (gen-only) for {len(paths)} stories")
         return 0
 
+    if args.sync_app_resources:
+        paths = sync_app_story_resources(
+            stories_dir=args.stories_dir,
+            app_resources_dir=args.app_stories_dir,
+            ids=args.ids,
+        )
+        for path in paths:
+            print(path)
+        print(f"Synced {len(paths)} story resource folders")
+        return 0
+
     paths = generate_all(
         args.stories_dir,
         args.sources_dir,
@@ -468,8 +656,6 @@ def main() -> int:
         audio_provider=args.audio_provider,
         mock_audio=args.mock,
         allow_missing_provider=args.skip_missing_audio_provider,
-        sync_app_resources=args.sync_app_resources,
-        app_stories_dir=args.app_stories_dir,
     )
 
     if args.audio:
