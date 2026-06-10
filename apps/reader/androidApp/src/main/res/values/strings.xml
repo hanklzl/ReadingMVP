@@ -151,6 +151,7 @@
     <string name="reading_text_size_large">L</string>
     <string name="reading_audio">Audio</string>
     <string name="reading_read_all">Read all</string>
+    <string name="reading_settings_title">Reading settings</string>
     <string name="reading_mode_read_along">Read-along</string>
     <string name="reading_mode_tap_to_listen">Tap-to-listen</string>
     <string name="reading_previous_sentence">Previous sentence</string>

@@ -149,6 +149,7 @@
     <string name="reading_text_size_large">大</string>
     <string name="reading_audio">朗读</string>
     <string name="reading_read_all">朗读全文</string>
+    <string name="reading_settings_title">阅读设置</string>
     <string name="reading_mode_read_along">听读</string>
     <string name="reading_mode_tap_to_listen">点读</string>
     <string name="reading_previous_sentence">上一句</string>

@@ -2562,6 +2562,7 @@ private struct ReadingScreen: View {
     @State private var paragraphIndex = 0
     @State private var askState: LMCAiAskState = .idle
     @State private var autoFollowReading = true
+    @State private var showSettingsSheet = false
     @AppStorage("reading_coachmark_tts_row_dismissed") private var didDismissReadAlongCoachmark = false
 
     private var activeSentenceLocation: LMCSentenceLocation? {
@@ -2577,6 +2578,48 @@ private struct ReadingScreen: View {
     private var canGoNextSentence: Bool {
         guard let location = activeSentenceLocation else { return false }
         return story.lmcNextSentenceLocation(after: location) != nil
+    }
+
+    private var activeSentenceProgress: (index: Int, total: Int, source: LMCAudioSource, isPaused: Bool)? {
+        guard let location = activeSentenceLocation else { return nil }
+        let paragraphSentenceCount: Int
+        if story.paragraphs.indices.contains(location.paragraphIndex) {
+            paragraphSentenceCount = story.paragraphs[location.paragraphIndex].lmcSentenceSegments.count
+        } else {
+            paragraphSentenceCount = 0
+        }
+        let source: LMCAudioSource? = {
+            switch viewModel.readingAudioStatus {
+            case .playing(_, let source), .paused(_, let source):
+                return source
+            default:
+                return nil
+            }
+        }()
+        guard let source else { return nil }
+        return (
+            index: min(location.sentenceIndex + 1, max(paragraphSentenceCount, 1)),
+            total: max(paragraphSentenceCount, 1),
+            source: source,
+            isPaused: viewModel.isReadingAudioPaused
+        )
+    }
+
+    private var readingPlayerStatusText: String {
+        guard let activeSentenceProgress else { return "" }
+        let sourceLabel = activeSentenceProgress.source == .recorded
+            ? LMCStrings.localized("reading_audio_source_recorded")
+            : LMCStrings.localized("reading_audio_source_tts")
+        let stateLabel = activeSentenceProgress.isPaused
+            ? LMCStrings.localized("reading_audio_paused")
+            : LMCStrings.localized("reading_audio_playing")
+        return LMCStrings.format(
+            "reading_sentence_progress",
+            activeSentenceProgress.index,
+            activeSentenceProgress.total,
+            sourceLabel,
+            stateLabel
+        )
     }
 
     private var readingState: ReadingSessionState {
@@ -2595,43 +2638,28 @@ private struct ReadingScreen: View {
         VStack(spacing: 0) {
             ReadingTopBar(
                 story: story,
-                progress: progress,
                 countText: "\(Int(readingState.paragraphIndex) + 1) / \(Int(readingState.paragraphCount))",
-                isSpeaking: viewModel.isReadingAudioActive,
-                close: {
-                    viewModel.stopSpeaking()
-                    close()
+                openSettings: {
+                    showSettingsSheet = true
                 },
-                playCurrent: {
-                    if viewModel.isReadingAudioActive {
-                        viewModel.stopSentencePlayback()
-                    } else {
-                        startPlaybackAtVisiblePosition()
-                    }
+                close: {
+                    viewModel.stopSentencePlayback()
+                    close()
                 }
+            )
+
+            ReadingProgressHairline(
+                value: progress,
+                accessibilityValue: LMCStrings.format(
+                    "reading_progress_accessibility",
+                    Int(readingState.paragraphIndex) + 1,
+                    Int(readingState.paragraphCount)
+                )
             )
 
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: LMCSpace.s5) {
-                        readingControls
-                        if viewModel.isReadingAudioActive,
-                           !autoFollowReading,
-                           let location = activeSentenceLocation {
-                            Button {
-                                autoFollowReading = true
-                                paragraphIndex = location.paragraphIndex
-                                withAnimation(.easeInOut(duration: 0.25)) {
-                                    proxy.scrollTo(location.scrollId, anchor: .center)
-                                }
-                            } label: {
-                                Label("reading_back_to_reading_place", systemImage: "scope")
-                                    .frame(maxWidth: .infinity)
-                            }
-                            .buttonStyle(LMCSecondaryButtonStyle())
-                        }
-                        askPanel
-
                         VStack(alignment: .leading, spacing: LMCSpace.s5) {
                             ForEach(Array(story.paragraphs.enumerated()), id: \.offset) { index, paragraph in
                                 ReadingParagraphView(
@@ -2660,6 +2688,11 @@ private struct ReadingScreen: View {
                                         )
                                     }
                                 )
+                                .id(paragraphScrollId(index))
+
+                                if index == paragraphIndex {
+                                    askPanel
+                                }
                             }
                         }
                         .padding(LMCSpace.s4)
@@ -2682,29 +2715,85 @@ private struct ReadingScreen: View {
                     guard let location, location.storyId == story.id else { return }
                     paragraphIndex = location.paragraphIndex
                     guard autoFollowReading else { return }
-                    withAnimation(.easeInOut(duration: 0.25)) {
-                        proxy.scrollTo(location.scrollId, anchor: .center)
+                    scrollToLocation(location, in: proxy)
+                }
+                .onChange(of: showPinyin) { _ in
+                    recenterActiveSentenceIfNeeded(in: proxy)
+                }
+                .onChange(of: readingSize) { _ in
+                    recenterActiveSentenceIfNeeded(in: proxy)
+                }
+                .safeAreaInset(edge: .bottom) {
+                    VStack(spacing: LMCSpace.s2) {
+                        if !didDismissReadAlongCoachmark {
+                            ReadingAudioCoachmark(dismiss: {
+                                didDismissReadAlongCoachmark = true
+                            })
+                            .padding(.horizontal, LMCSpace.s4)
+                        }
+
+                        ReadingBottomDock(
+                            isAudioActive: viewModel.isReadingAudioActive,
+                            autoFollowReading: autoFollowReading,
+                            location: activeSentenceLocation,
+                            canGoPreviousSentence: canGoPreviousSentence,
+                            canGoNextSentence: canGoNextSentence,
+                            playerStatusText: readingPlayerStatusText,
+                            isReadingAudioPaused: viewModel.isReadingAudioPaused,
+                            readingState: readingState,
+                            canGoPreviousParagraph: readingState.canGoPrevious,
+                            backToReadingPlace: {
+                                guard let location = activeSentenceLocation else { return }
+                                autoFollowReading = true
+                                paragraphIndex = location.paragraphIndex
+                                scrollToLocation(location, in: proxy)
+                            },
+                            previousSentence: { viewModel.previousSentencePlayback(story: story) },
+                            togglePlayback: {
+                                if viewModel.isReadingAudioPaused {
+                                    viewModel.resumeSentencePlayback(story: story)
+                                } else {
+                                    viewModel.pauseSentencePlayback()
+                                }
+                            },
+                            repeatSentence: { viewModel.repeatCurrentSentence(story: story) },
+                            nextSentence: { viewModel.advanceSentencePlayback(story: story) },
+                            stopAudio: { viewModel.stopSentencePlayback() },
+                            previousParagraph: {
+                                let targetIndex = Int(viewModel.previousReadingState(story, state: readingState).paragraphIndex)
+                                paragraphIndex = targetIndex
+                                scrollToParagraph(targetIndex, in: proxy)
+                            },
+                            nextParagraph: {
+                                let transition = viewModel.nextReadingTransition(story, state: readingState)
+                                let targetIndex = Int(transition.state.paragraphIndex)
+                                paragraphIndex = targetIndex
+                                scrollToParagraph(targetIndex, in: proxy)
+                                if transition.shouldOpenVocabulary {
+                                    viewModel.stopSentencePlayback()
+                                    openVocabulary()
+                                }
+                            },
+                            readParagraph: { startPlaybackAtVisiblePosition() }
+                        )
                     }
+                    .padding(.horizontal, LMCSpace.s4)
+                    .padding(.bottom, LMCSpace.s2)
                 }
             }
-
-            ReadingBottomBar(
-                canGoBack: readingState.canGoPrevious,
-                isLast: readingState.isLastParagraph,
-                previous: {
-                    paragraphIndex = Int(viewModel.previousReadingState(story, state: readingState).paragraphIndex)
-                },
-                next: {
-                    let transition = viewModel.nextReadingTransition(story, state: readingState)
-                    paragraphIndex = Int(transition.state.paragraphIndex)
-                    if transition.shouldOpenVocabulary {
-                        viewModel.stopSentencePlayback()
-                        openVocabulary()
-                    }
-                }
-            )
         }
         .background(LMCColor.background.ignoresSafeArea())
+        .sheet(isPresented: $showSettingsSheet) {
+            ReadingSettingsSheet(
+                showPinyin: $showPinyin,
+                readingSize: $readingSize,
+                readingModeBinding: readingModeBinding,
+                autoContinueBinding: autoContinueBinding,
+                playbackSpeed: viewModel.playbackSpeed,
+                setPlaybackSpeed: viewModel.setPlaybackSpeed
+            )
+            .presentationDetents([.medium])
+        }
         .task(id: story.id) {
             await viewModel.prepareReadingAudio(for: story)
             paragraphIndex = await viewModel.savedReadingParagraphIndex(for: story)
@@ -2723,127 +2812,6 @@ private struct ReadingScreen: View {
 
     private var progress: Double {
         readingState.progressFraction
-    }
-
-    private var readingControls: some View {
-        VStack(alignment: .leading, spacing: LMCSpace.s3) {
-            Toggle(isOn: $showPinyin) {
-                Text("reading_pinyin")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(LMCColor.textPrimary)
-            }
-            .tint(LMCColor.secondary)
-
-            HStack(alignment: .center, spacing: LMCSpace.s3) {
-                Text("reading_font_size")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(LMCColor.textPrimary)
-                Spacer(minLength: LMCSpace.s2)
-                LMCSegmentedReadingSize(readingSize: $readingSize)
-            }
-
-            LMCPlaybackModeControl(mode: readingModeBinding)
-
-            HStack(alignment: .center, spacing: LMCSpace.s3) {
-                Toggle(isOn: autoContinueBinding) {
-                    Text("reading_auto_continue")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(LMCColor.textPrimary)
-                }
-                .tint(LMCColor.secondary)
-                .disabled(viewModel.readingMode == .tapToListen)
-
-                Spacer(minLength: LMCSpace.s2)
-
-                Menu {
-                    ForEach(LMCReadingPlaybackSpeed.allCases, id: \.self) { speed in
-                        Button {
-                            viewModel.setPlaybackSpeed(speed)
-                        } label: {
-                            Label(
-                                LocalizedStringKey(speed.labelKey),
-                                systemImage: speed == viewModel.playbackSpeed ? "checkmark" : "speedometer"
-                            )
-                        }
-                    }
-                } label: {
-                    Label(
-                        LocalizedStringKey(viewModel.playbackSpeed.labelKey),
-                        systemImage: "speedometer"
-                    )
-                    .lineLimit(1)
-                }
-                .buttonStyle(LMCSecondaryButtonStyle())
-                .accessibilityLabel(Text("reading_playback_speed"))
-            }
-
-            if viewModel.isReadingAudioActive {
-                HStack(spacing: LMCSpace.s2) {
-                    IconButton(
-                        systemName: "backward.end.fill",
-                        labelKey: "reading_previous_sentence",
-                        action: { viewModel.previousSentencePlayback(story: story) }
-                    )
-                    .disabled(!canGoPreviousSentence)
-                    IconButton(
-                        systemName: viewModel.isReadingAudioPaused ? "play.fill" : "pause.fill",
-                        labelKey: viewModel.isReadingAudioPaused ? "reading_resume_audio" : "reading_pause_audio",
-                        action: {
-                            if viewModel.isReadingAudioPaused {
-                                viewModel.resumeSentencePlayback(story: story)
-                            } else {
-                                viewModel.pauseSentencePlayback()
-                            }
-                        }
-                    )
-                    IconButton(
-                        systemName: "repeat",
-                        labelKey: "reading_repeat_sentence",
-                        action: { viewModel.repeatCurrentSentence(story: story) }
-                    )
-                    IconButton(
-                        systemName: "forward.end.fill",
-                        labelKey: "reading_next_sentence",
-                        action: { viewModel.advanceSentencePlayback(story: story) }
-                    )
-                    .disabled(!canGoNextSentence)
-                    IconButton(
-                        systemName: "stop.circle.fill",
-                        labelKey: "reading_stop_audio",
-                        action: { viewModel.stopSentencePlayback() }
-                    )
-                    Spacer(minLength: 0)
-                }
-            }
-
-            Button {
-                if viewModel.isReadingAudioActive {
-                    viewModel.stopSentencePlayback()
-                } else {
-                    startPlaybackAtVisiblePosition()
-                }
-            } label: {
-                Label(
-                    LocalizedStringKey(primaryAudioButtonLabelKey),
-                    systemImage: viewModel.isReadingAudioActive ? "stop.circle.fill" : "speaker.wave.2.fill"
-                )
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(LMCSecondaryButtonStyle())
-
-            if !didDismissReadAlongCoachmark {
-                ReadingAudioCoachmark {
-                    didDismissReadAlongCoachmark = true
-                }
-            }
-        }
-    }
-
-    private var primaryAudioButtonLabelKey: String {
-        if viewModel.isReadingAudioActive {
-            return "reading_stop_audio"
-        }
-        return viewModel.readingMode == .readAlong ? "reading_read_all" : "reading_sentence_play"
     }
 
     private var readingModeBinding: Binding<LMCReadingPlaybackMode> {
@@ -2868,6 +2836,27 @@ private struct ReadingScreen: View {
             paragraphIndex: retainedLocation?.paragraphIndex ?? paragraphIndex,
             sentenceIndex: retainedLocation?.sentenceIndex ?? 0
         )
+    }
+
+    private func scrollToLocation(_ location: LMCSentenceLocation, in proxy: ScrollViewProxy) {
+        withAnimation(.easeInOut(duration: 0.25)) {
+            proxy.scrollTo(location.scrollId, anchor: .center)
+        }
+    }
+
+    private func paragraphScrollId(_ index: Int) -> String {
+        "paragraph-\(index)"
+    }
+
+    private func scrollToParagraph(_ index: Int, in proxy: ScrollViewProxy) {
+        withAnimation(.easeInOut(duration: 0.25)) {
+            proxy.scrollTo(paragraphScrollId(index), anchor: .top)
+        }
+    }
+
+    private func recenterActiveSentenceIfNeeded(in proxy: ScrollViewProxy) {
+        guard autoFollowReading, viewModel.isReadingAudioActive, let location = activeSentenceLocation else { return }
+        scrollToLocation(location, in: proxy)
     }
 
     private var askPanel: some View {
@@ -3754,36 +3743,342 @@ private struct SummaryTile: View {
 
 private struct ReadingTopBar: View {
     let story: Story
-    let progress: Double
     let countText: String
-    let isSpeaking: Bool
+    let openSettings: () -> Void
     let close: () -> Void
-    let playCurrent: () -> Void
 
     var body: some View {
-        VStack(spacing: LMCSpace.s3) {
-            HStack(spacing: LMCSpace.s2) {
-                IconButton(systemName: "xmark", labelKey: "action_close", action: close)
-                Text(story.titleZh)
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(LMCColor.textPrimary)
-                    .lineLimit(1)
-                Spacer()
-                Text(countText)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(LMCColor.textSecondary)
-                IconButton(
-                    systemName: isSpeaking ? "stop.circle.fill" : "speaker.wave.2.fill",
-                    labelKey: isSpeaking ? "reading_stop_audio" : "reading_audio",
-                    action: playCurrent
-                )
-            }
-            LMCProgressBar(value: progress)
+        HStack(spacing: LMCSpace.s2) {
+            IconButton(systemName: "xmark", labelKey: "action_close", action: close)
+            Text(story.titleZh)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(LMCColor.textPrimary)
+                .lineLimit(1)
+            Spacer()
+            Text(countText)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(LMCColor.textSecondary)
+            IconButton(systemName: "gearshape", labelKey: "reading_settings_title", action: openSettings)
         }
         .padding(.horizontal, LMCSpace.s4)
         .padding(.top, LMCSpace.s4)
         .padding(.bottom, LMCSpace.s3)
         .background(LMCColor.surface)
+    }
+}
+
+private struct ReadingProgressHairline: View {
+    let value: Double
+    let accessibilityValue: String
+
+    var body: some View {
+        GeometryReader { proxy in
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(LMCColor.outlineVariant)
+                Capsule()
+                    .fill(progressTint)
+                    .frame(width: max(0, min(proxy.size.width, proxy.size.width * clampedProgress)))
+            }
+        }
+        .frame(height: 2)
+        .accessibilityValue(Text(accessibilityValue))
+        .accessibilityAddTraits(.updatesFrequently)
+    }
+
+    private var progressTint: Color {
+        value >= 1 ? LMCColor.success : LMCColor.primary
+    }
+
+    private var clampedProgress: Double {
+        min(max(value, 0), 1)
+    }
+}
+
+private struct ReadingSettingsSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Binding var showPinyin: Bool
+    @Binding var readingSize: String
+    let readingModeBinding: Binding<LMCReadingPlaybackMode>
+    let autoContinueBinding: Binding<Bool>
+    let playbackSpeed: LMCReadingPlaybackSpeed
+    let setPlaybackSpeed: (LMCReadingPlaybackSpeed) -> Void
+
+    private var isTapToListen: Bool {
+        readingModeBinding.wrappedValue == .tapToListen
+    }
+
+    var body: some View {
+        VStack(spacing: LMCSpace.s5) {
+            HStack {
+                Text("reading_settings_title")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(LMCColor.textPrimary)
+                Spacer()
+                Button("action_done") {
+                    dismiss()
+                }
+                .buttonStyle(LMCSecondaryButtonStyle())
+            }
+            .padding(.horizontal, LMCSpace.s4)
+
+            VStack(spacing: LMCSpace.s3) {
+                Toggle(isOn: $showPinyin) {
+                    Text("reading_pinyin")
+                        .font(.system(size: 18))
+                        .foregroundStyle(LMCColor.textPrimary)
+                }
+                .tint(LMCColor.secondary)
+
+                Divider().background(LMCColor.outlineVariant)
+
+                HStack(alignment: .center, spacing: LMCSpace.s3) {
+                    Text("reading_font_size")
+                        .font(.system(size: 18))
+                        .foregroundStyle(LMCColor.textPrimary)
+                    Spacer(minLength: LMCSpace.s2)
+                    LMCSegmentedReadingSize(readingSize: $readingSize)
+                }
+
+                Divider().background(LMCColor.outlineVariant)
+
+                LMCPlaybackModeControl(mode: readingModeBinding)
+
+                Divider().background(LMCColor.outlineVariant)
+
+                Toggle(isOn: autoContinueBinding) {
+                    Text("reading_auto_continue")
+                        .font(.system(size: 18))
+                        .foregroundStyle(LMCColor.textPrimary)
+                }
+                .tint(LMCColor.secondary)
+                .disabled(isTapToListen)
+                .opacity(isTapToListen ? 0.45 : 1)
+
+                HStack(alignment: .center, spacing: LMCSpace.s3) {
+                    Text("reading_playback_speed")
+                        .font(.system(size: 18))
+                        .foregroundStyle(LMCColor.textPrimary)
+                    Spacer(minLength: LMCSpace.s2)
+
+                    Menu {
+                        ForEach(LMCReadingPlaybackSpeed.allCases, id: \.self) { speed in
+                            Button {
+                                setPlaybackSpeed(speed)
+                            } label: {
+                                HStack {
+                                    Text(LocalizedStringKey(speed.labelKey))
+                                    if speed == playbackSpeed {
+                                        Spacer()
+                                        Image(systemName: "checkmark")
+                                    }
+                                }
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: LMCSpace.s2) {
+                            Text(LocalizedStringKey(playbackSpeed.labelKey))
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(LMCColor.textPrimary)
+                            Image(systemName: "chevron.up.chevron.down")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundStyle(LMCColor.textSecondary)
+                                .accessibilityHidden(true)
+                        }
+                        .padding(.horizontal, LMCSpace.s3)
+                        .frame(minHeight: LMCSpace.minTouch)
+                        .background(LMCColor.surface)
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, LMCSpace.s4)
+
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, LMCSpace.s4)
+        .presentationDragIndicator(.visible)
+    }
+}
+
+private struct ReadingBottomDock: View {
+    let isAudioActive: Bool
+    let autoFollowReading: Bool
+    let location: LMCSentenceLocation?
+    let canGoPreviousSentence: Bool
+    let canGoNextSentence: Bool
+    let playerStatusText: String
+    let isReadingAudioPaused: Bool
+    let readingState: ReadingSessionState
+    let canGoPreviousParagraph: Bool
+    let backToReadingPlace: () -> Void
+    let previousSentence: () -> Void
+    let togglePlayback: () -> Void
+    let repeatSentence: () -> Void
+    let nextSentence: () -> Void
+    let stopAudio: () -> Void
+    let previousParagraph: () -> Void
+    let nextParagraph: () -> Void
+    let readParagraph: () -> Void
+
+    var body: some View {
+        VStack(spacing: LMCSpace.s2) {
+            if isAudioActive {
+                if !autoFollowReading, location != nil {
+                    Button("reading_back_to_reading_place") {
+                        backToReadingPlace()
+                    }
+                    .buttonStyle(LMCSecondaryButtonStyle())
+                    .frame(maxWidth: .infinity)
+                }
+
+                ReadingPlayerBar(
+                    canGoPreviousSentence: canGoPreviousSentence,
+                    canGoNextSentence: canGoNextSentence,
+                    isReadingAudioPaused: isReadingAudioPaused,
+                    playerStatusText: playerStatusText,
+                    previousSentence: previousSentence,
+                    togglePlayback: togglePlayback,
+                    repeatSentence: repeatSentence,
+                    nextSentence: nextSentence,
+                    stopAudio: stopAudio
+                )
+            } else {
+                HStack(spacing: LMCSpace.s2) {
+                    IconButton(systemName: "chevron.left", labelKey: "action_previous", action: previousParagraph)
+                        .disabled(!canGoPreviousParagraph)
+
+                    Button {
+                        readParagraph()
+                    } label: {
+                        HStack(spacing: LMCSpace.s2) {
+                            Image(systemName: "play.fill")
+                                .font(.system(size: 18, weight: .bold))
+                            Text("reading_read_all")
+                                .font(.system(size: 16, weight: .bold))
+                        }
+                    }
+                    .buttonStyle(LMCPrimaryButtonStyle())
+                    .frame(maxWidth: .infinity)
+
+                    IconButton(
+                        systemName: "chevron.right",
+                        labelKey: readingState.isLastParagraph ? "action_new_words" : "action_next",
+                        action: nextParagraph
+                    )
+                }
+            }
+        }
+        .padding(LMCSpace.s3)
+        .background(LMCColor.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(LMCColor.outlineVariant)
+                .frame(height: 1)
+        }
+    }
+}
+
+private struct ReadingPlayerBar: View {
+    let canGoPreviousSentence: Bool
+    let canGoNextSentence: Bool
+    let isReadingAudioPaused: Bool
+    let playerStatusText: String
+    let previousSentence: () -> Void
+    let togglePlayback: () -> Void
+    let repeatSentence: () -> Void
+    let nextSentence: () -> Void
+    let stopAudio: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: LMCSpace.s2) {
+            if !playerStatusText.isEmpty {
+                Text(playerStatusText)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(LMCColor.textSecondary)
+                    .lineLimit(1)
+            }
+
+            HStack(spacing: LMCSpace.s2) {
+                ReadingTransportButton(
+                    icon: "backward.end.fill",
+                    labelKey: "reading_previous_sentence",
+                    isEnabled: canGoPreviousSentence,
+                    action: previousSentence
+                )
+
+                ReadingTransportButton(
+                    icon: isReadingAudioPaused ? "play.fill" : "pause.fill",
+                    labelKey: isReadingAudioPaused ? "reading_resume_audio" : "reading_pause_audio",
+                    isEnabled: true,
+                    isPrimary: true,
+                    action: togglePlayback
+                )
+
+                ReadingTransportButton(
+                    icon: "repeat",
+                    labelKey: "reading_repeat_sentence",
+                    isEnabled: true,
+                    action: repeatSentence
+                )
+
+                ReadingTransportButton(
+                    icon: "forward.end.fill",
+                    labelKey: "reading_next_sentence",
+                    isEnabled: canGoNextSentence,
+                    action: nextSentence
+                )
+
+                ReadingTransportButton(
+                    icon: "stop.circle.fill",
+                    labelKey: "reading_stop_audio",
+                    isEnabled: true,
+                    action: stopAudio
+                )
+            }
+        }
+        .padding(LMCSpace.s3)
+        .padding(.top, LMCSpace.s1)
+        .background(LMCColor.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(LMCColor.outlineVariant)
+                .frame(height: 1)
+        }
+    }
+}
+
+private struct ReadingTransportButton: View {
+        let icon: String
+        let labelKey: LocalizedStringKey
+        let isEnabled: Bool
+        let isPrimary: Bool
+        let action: () -> Void
+
+    init(icon: String, labelKey: LocalizedStringKey, isEnabled: Bool, isPrimary: Bool = false, action: @escaping () -> Void) {
+        self.icon = icon
+        self.labelKey = labelKey
+        self.isEnabled = isEnabled
+        self.isPrimary = isPrimary
+        self.action = action
+    }
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: isPrimary ? 22 : 20, weight: .bold))
+                .frame(width: isPrimary ? 56 : LMCSpace.minTouch, height: isPrimary ? 56 : LMCSpace.minTouch)
+                .background(isPrimary ? LMCColor.primary : LMCColor.secondaryContainer)
+                .foregroundStyle(isPrimary ? LMCColor.onPrimary : LMCColor.secondary)
+                .clipShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!isEnabled)
+        .opacity(isEnabled ? 1 : 0.35)
+        .accessibilityLabel(Text(labelKey))
     }
 }
 
@@ -4349,25 +4644,6 @@ private struct LMCRubyFlowRow {
     let items: [Item]
     let width: CGFloat
     let height: CGFloat
-}
-
-private struct ReadingBottomBar: View {
-    let canGoBack: Bool
-    let isLast: Bool
-    let previous: () -> Void
-    let next: () -> Void
-
-    var body: some View {
-        LMCBottomActionBar {
-            Button("action_previous", action: previous)
-                .buttonStyle(LMCSecondaryButtonStyle())
-                .disabled(!canGoBack)
-            Button(action: next) {
-                Text(LocalizedStringKey(isLast ? "action_new_words" : "action_next"))
-            }
-            .buttonStyle(LMCPrimaryButtonStyle())
-        }
-    }
 }
 
 private struct VocabularyCard: View {

@@ -54,13 +54,16 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -72,6 +75,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.lightColorScheme
@@ -1554,6 +1558,9 @@ private fun ReadingScreen(
     var showCoachmark by remember(story.id) {
         mutableStateOf(!readingPrefs.getBoolean(ReadingCoachmarkDismissedKey, false))
     }
+    var showSettingsSheet by remember(story.id) {
+        mutableStateOf(false)
+    }
     var playbackState by remember(story.id) {
         mutableStateOf(
             SentencePlaybackUiState(
@@ -1591,6 +1598,8 @@ private fun ReadingScreen(
         paragraphIndex,
         sentenceCountInParagraph,
         autoFollowEnabled,
+        settings.showPinyinByDefault,
+        settings.readingTextSize,
     ) {
         if (
             playbackState.status != SentencePlaybackStatus.Stopped &&
@@ -1989,32 +1998,227 @@ private fun ReadingScreen(
         }
     }
 
-    Column(
+    val canGoPreviousSentence = previousSentenceTarget(
+        story = story,
+        target = SentencePlaybackTarget(
+            paragraphIndex = playbackState.paragraphIndex,
+            sentenceIndex = playbackState.sentenceIndex,
+        ),
+    ) != null
+    val canGoNextSentence = nextSentenceTarget(
+        story = story,
+        target = SentencePlaybackTarget(
+            paragraphIndex = playbackState.paragraphIndex,
+            sentenceIndex = playbackState.sentenceIndex,
+        ),
+    ) != null
+    val showReturnToReadingPlace = !autoFollowEnabled &&
+        playbackState.status != SentencePlaybackStatus.Stopped &&
+        playbackState.sentenceCountInParagraph > 0
+
+    fun goPreviousParagraph() {
+        val previousState = readingSessionReducer.previous(story, readingState)
+        readingState = previousState
+        resetPlaybackForParagraph(previousState.paragraphIndex)
+    }
+
+    fun goNextParagraph() {
+        val transition = readingSessionReducer.next(story, readingState)
+        readingState = transition.state
+        resetPlaybackForParagraph(transition.state.paragraphIndex)
+        if (transition.shouldOpenVocabulary) {
+            stopAudioTransport()
+            onVocabulary()
+        }
+    }
+
+    val canGoNextParagraph = paragraphCount > 0
+    val nextParagraphLabelRes = if (readingState.isLastParagraph) {
+        R.string.nav_vocabulary
+    } else {
+        R.string.action_next
+    }
+    val dockContentPaddingBottom = when (playbackState.status) {
+        SentencePlaybackStatus.Stopped -> LmcSpacing.BottomActionHeight
+        else -> LmcSpacing.BottomActionHeight + LmcSpacing.Space6
+    }
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
     ) {
-        ReadingTopBar(
-            story = story,
-            paragraphIndex = paragraphIndex,
-            paragraphCount = paragraphCount,
-            progressFraction = readingState.progressFraction,
-            playbackStatus = playbackState.status,
-            onClose = {
-                stopAudioTransport()
-                onClose()
-            },
-            onAudioClick = {
-                when (playbackState.status) {
-                    SentencePlaybackStatus.Playing -> pauseSentencePlayback()
-                    SentencePlaybackStatus.Paused -> resumeSentencePlayback()
-                    SentencePlaybackStatus.Stopped -> startCurrentSentencePlayback()
+        Column(modifier = Modifier.fillMaxSize()) {
+            ReadingTopBar(
+                story = story,
+                paragraphIndex = paragraphIndex,
+                paragraphCount = paragraphCount,
+                progressFraction = readingState.progressFraction,
+                onClose = {
+                    stopAudioTransport()
+                    onClose()
+                },
+                onSettingsClick = {
+                    showSettingsSheet = true
+                },
+            )
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.TopCenter,
+            ) {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .widthIn(max = LmcSpacing.ReadingMaxWidth)
+                        .padding(
+                            horizontal = LmcSpacing.ScreenPadding,
+                            vertical = LmcSpacing.Space4,
+                        ),
+                    contentPadding = PaddingValues(
+                        bottom = dockContentPaddingBottom +
+                            if (showCoachmark) {
+                                LmcSpacing.Space8
+                            } else {
+                                LmcSpacing.Space3
+                            },
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space3),
+                ) {
+                    if (paragraph != null) {
+                        if (sentenceSegments.isNotEmpty()) {
+                            itemsIndexed(
+                                items = sentenceSegments,
+                                key = { index, _ -> "paragraph-$paragraphIndex-sentence-$index" },
+                            ) { sentenceIndex, sentence ->
+                                val sentenceHighlighted =
+                                    playbackState.status != SentencePlaybackStatus.Stopped &&
+                                        playbackState.paragraphIndex == paragraphIndex &&
+                                        playbackState.sentenceIndex == sentenceIndex
+                                SentenceTextBlock(
+                                    paragraph = paragraph,
+                                    sentence = sentence,
+                                    showPinyin = settings.showPinyinByDefault,
+                                    readingType = readingType,
+                                    isHighlighted = sentenceHighlighted,
+                                    activeCharIndex = if (sentenceHighlighted) activeCharIndex else null,
+                                    sentenceIndex = sentenceIndex,
+                                    sentenceCount = sentenceSegments.size,
+                                    onSentenceClick = { playSentenceFromTap(sentenceIndex) },
+                                    onSpeakerClick = { replaySentenceOnly(sentenceIndex) },
+                                )
+                            }
+                        } else {
+                            item(key = "paragraph-$paragraphIndex-fallback") {
+                                PinyinTextBlock(
+                                    paragraph = paragraph,
+                                    showPinyin = settings.showPinyinByDefault,
+                                    readingType = readingType,
+                                )
+                            }
+                        }
+                        item(key = "paragraph-$paragraphIndex-ask") {
+                            AskExplanationCard(
+                                state = aiState,
+                                enabled = paragraph.text.isNotBlank(),
+                                onAsk = {
+                                    val request = buildAiExplanationRequestUseCase.forParagraph(
+                                        storyId = story.id,
+                                        paragraph = paragraph,
+                                    )
+                                    if (request == null) {
+                                        aiState = AiUiState.Error
+                                        return@AskExplanationCard
+                                    }
+                                    aiState = AiUiState.Loading
+                                    scope.launch {
+                                        runCatching {
+                                            aiService.explain(request)
+                                        }.onSuccess { response ->
+                                            val answer = response.toLimitedDisplayText(
+                                                stubText = aiStubText,
+                                                outOfScopeText = aiOutOfScopeText,
+                                            )
+                                            analytics.track(
+                                                ReaderAnalyticsEvents.aiExplainRequest(
+                                                    storyId = story.id,
+                                                    requestType = AiQuestionTypes.ExplainSentence,
+                                                    targetType = "paragraph",
+                                                    safetyOutcome = response.safetyOutcome(answer, aiOutOfScopeText),
+                                                ),
+                                            )
+                                            aiState = AiUiState.Answer(answer)
+                                        }.onFailure {
+                                            analytics.track(
+                                                ReaderAnalyticsEvents.aiExplainRequest(
+                                                    storyId = story.id,
+                                                    requestType = AiQuestionTypes.ExplainSentence,
+                                                    targetType = "paragraph",
+                                                    safetyOutcome = "error",
+                                                ),
+                                            )
+                                            aiState = AiUiState.Error
+                                        }
+                                    }
+                                },
+                            )
+                        }
+                    }
                 }
+            }
+            ReadingBottomDock(
+                playbackStatus = playbackState.status,
+                playbackState = playbackState,
+                canGoPreviousParagraph = readingState.canGoPrevious,
+                canGoNextParagraph = canGoNextParagraph,
+                nextParagraphDescriptionRes = nextParagraphLabelRes,
+                onPreviousParagraph = { goPreviousParagraph() },
+                onNextParagraph = { goNextParagraph() },
+                onReadClick = {
+                    startCurrentSentencePlayback()
+                },
+                canGoPreviousSentence = canGoPreviousSentence,
+                canGoNextSentence = canGoNextSentence,
+                onPreviousSentence = ::playPreviousSentence,
+                onNextSentence = ::playNextSentence,
+                onRepeatSentence = ::repeatCurrentSentence,
+                onPlayPause = {
+                    when (playbackState.status) {
+                        SentencePlaybackStatus.Playing -> pauseSentencePlayback()
+                        SentencePlaybackStatus.Paused -> resumeSentencePlayback()
+                        SentencePlaybackStatus.Stopped -> startCurrentSentencePlayback()
+                    }
+                },
+                onStop = {
+                    stopSentencePlayback()
+                },
+                onReturnToReadingPlace = { returnToReadingPlace() },
+                showReturnToReadingPlace = showReturnToReadingPlace,
+            )
+        }
+        if (showCoachmark) {
+            ReadingAudioCoachmark(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(horizontal = LmcSpacing.ScreenPadding)
+                    .padding(bottom = dockContentPaddingBottom + LmcSpacing.Space3),
+            onDismiss = {
+                readingPrefs.edit().putBoolean(ReadingCoachmarkDismissedKey, true).apply()
+                showCoachmark = false
             },
         )
-        ReadingControls(
+        }
+    }
+
+    if (showSettingsSheet) {
+        ReadingSettingsSheet(
             showPinyin = settings.showPinyinByDefault,
             readingTextSize = settings.readingTextSize,
+            playbackMode = readingState.playbackMode,
+            autoContinue = readingState.autoContinue,
+            playbackSpeed = playbackState.playbackSpeed,
             onPinyinChange = { enabled ->
                 analytics.track(
                     ReaderAnalyticsEvents.pinyinToggle(
@@ -2027,188 +2231,19 @@ private fun ReadingScreen(
                 onPinyinDefaultChange(enabled)
             },
             onTextSizeChange = onTextSizeChange,
-        )
-        val canGoPreviousSentence = previousSentenceTarget(
-            story = story,
-            target = SentencePlaybackTarget(
-                paragraphIndex = playbackState.paragraphIndex,
-                sentenceIndex = playbackState.sentenceIndex,
-            ),
-        ) != null
-        val canGoNextSentence = nextSentenceTarget(
-            story = story,
-            target = SentencePlaybackTarget(
-                paragraphIndex = playbackState.paragraphIndex,
-                sentenceIndex = playbackState.sentenceIndex,
-            ),
-        ) != null
-        val showReturnToReadingPlace = !autoFollowEnabled &&
-            playbackState.status != SentencePlaybackStatus.Stopped &&
-            playbackState.sentenceCountInParagraph > 0
-        ReadingFullAudioRow(
-            playbackState = playbackState,
-            playbackMode = readingState.playbackMode,
-            canGoPreviousSentence = canGoPreviousSentence,
-            canGoNextSentence = canGoNextSentence,
-            onPrimaryClick = {
-                when (playbackState.status) {
-                    SentencePlaybackStatus.Playing -> pauseSentencePlayback()
-                    SentencePlaybackStatus.Paused -> resumeSentencePlayback()
-                    SentencePlaybackStatus.Stopped -> startCurrentSentencePlayback()
-                }
+            onPlaybackModeChange = { mode ->
+                readingState = readingSessionReducer.setPlaybackMode(readingState, mode)
             },
-            onPreviousSentence = ::playPreviousSentence,
-            onNextSentence = ::playNextSentence,
-            onRepeatSentence = ::repeatCurrentSentence,
-            onStop = ::stopSentencePlayback,
             onAutoContinueChange = { enabled ->
                 readingState = readingSessionReducer.setAutoContinue(readingState, enabled)
                 playbackState = playbackState.copy(autoContinue = enabled)
-            },
-            onReturnToReadingPlace = { returnToReadingPlace() },
-            showReturnToReadingPlace = showReturnToReadingPlace,
-            onPlaybackModeChange = { mode ->
-                readingState = readingSessionReducer.setPlaybackMode(readingState, mode)
             },
             onPlaybackSpeedChange = { speed ->
                 readingState = readingSessionReducer.setPlaybackSpeed(readingState, speed)
                 playbackState = playbackState.copy(playbackSpeed = speed)
             },
+            onDismiss = { showSettingsSheet = false },
         )
-        if (showCoachmark) {
-            ReadingAudioCoachmark(
-                onDismiss = {
-                    readingPrefs.edit().putBoolean(ReadingCoachmarkDismissedKey, true).apply()
-                    showCoachmark = false
-                },
-            )
-        }
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
-            contentAlignment = Alignment.TopCenter,
-        ) {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .widthIn(max = LmcSpacing.ReadingMaxWidth)
-                    .padding(
-                        horizontal = LmcSpacing.ScreenPadding,
-                        vertical = LmcSpacing.Space4,
-                    ),
-                verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space3),
-            ) {
-                if (paragraph != null) {
-                    if (sentenceSegments.isNotEmpty()) {
-                        itemsIndexed(
-                            items = sentenceSegments,
-                            key = { index, _ -> "paragraph-$paragraphIndex-sentence-$index" },
-                        ) { sentenceIndex, sentence ->
-                            val sentenceHighlighted =
-                                playbackState.status != SentencePlaybackStatus.Stopped &&
-                                    playbackState.paragraphIndex == paragraphIndex &&
-                                    playbackState.sentenceIndex == sentenceIndex
-                            SentenceTextBlock(
-                                paragraph = paragraph,
-                                sentence = sentence,
-                                showPinyin = settings.showPinyinByDefault,
-                                readingType = readingType,
-                                isHighlighted = sentenceHighlighted,
-                                activeCharIndex = if (sentenceHighlighted) activeCharIndex else null,
-                                sentenceIndex = sentenceIndex,
-                                sentenceCount = sentenceSegments.size,
-                                onSentenceClick = { playSentenceFromTap(sentenceIndex) },
-                                onSpeakerClick = { replaySentenceOnly(sentenceIndex) },
-                            )
-                        }
-                    } else {
-                        item(key = "paragraph-$paragraphIndex-fallback") {
-                            PinyinTextBlock(
-                                paragraph = paragraph,
-                                showPinyin = settings.showPinyinByDefault,
-                                readingType = readingType,
-                            )
-                        }
-                    }
-                    item(key = "paragraph-$paragraphIndex-ask") {
-                        AskExplanationCard(
-                            state = aiState,
-                            enabled = paragraph.text.isNotBlank(),
-                            onAsk = {
-                                val request = buildAiExplanationRequestUseCase.forParagraph(
-                                    storyId = story.id,
-                                    paragraph = paragraph,
-                                )
-                                if (request == null) {
-                                    aiState = AiUiState.Error
-                                    return@AskExplanationCard
-                                }
-                                aiState = AiUiState.Loading
-                                scope.launch {
-                                    runCatching {
-                                        aiService.explain(request)
-                                    }.onSuccess { response ->
-                                        val answer = response.toLimitedDisplayText(
-                                            stubText = aiStubText,
-                                            outOfScopeText = aiOutOfScopeText,
-                                        )
-                                        analytics.track(
-                                            ReaderAnalyticsEvents.aiExplainRequest(
-                                                storyId = story.id,
-                                                requestType = AiQuestionTypes.ExplainSentence,
-                                                targetType = "paragraph",
-                                                safetyOutcome = response.safetyOutcome(answer, aiOutOfScopeText),
-                                            ),
-                                        )
-                                        aiState = AiUiState.Answer(answer)
-                                    }.onFailure {
-                                        analytics.track(
-                                            ReaderAnalyticsEvents.aiExplainRequest(
-                                                storyId = story.id,
-                                                requestType = AiQuestionTypes.ExplainSentence,
-                                                targetType = "paragraph",
-                                                safetyOutcome = "error",
-                                            ),
-                                        )
-                                        aiState = AiUiState.Error
-                                    }
-                                }
-                            },
-                        )
-                    }
-                }
-            }
-        }
-        BottomActionRow {
-            OutlinedButton(
-                enabled = readingState.canGoPrevious,
-                onClick = {
-                    val previousState = readingSessionReducer.previous(story, readingState)
-                    readingState = previousState
-                    resetPlaybackForParagraph(previousState.paragraphIndex)
-                },
-                modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
-            ) {
-                Text(text = stringResource(R.string.action_previous))
-            }
-            Button(
-                onClick = {
-                    val transition = readingSessionReducer.next(story, readingState)
-                    readingState = transition.state
-                    resetPlaybackForParagraph(transition.state.paragraphIndex)
-                    if (transition.shouldOpenVocabulary) {
-                        stopAudioTransport()
-                        onVocabulary()
-                    }
-                },
-                modifier = Modifier.heightIn(min = LmcSpacing.ButtonPrimaryHeight),
-                shape = RoundedCornerShape(LmcSpacing.RadiusLg),
-            ) {
-                Text(text = stringResource(R.string.action_next))
-            }
-        }
     }
 }
 
@@ -2897,10 +2932,15 @@ private fun ReadingTopBar(
     paragraphIndex: Int,
     paragraphCount: Int,
     progressFraction: Double,
-    playbackStatus: SentencePlaybackStatus,
     onClose: () -> Unit,
-    onAudioClick: () -> Unit,
+    onSettingsClick: () -> Unit,
 ) {
+    val progressDescription = stringResource(
+        R.string.reading_progress_accessibility,
+        paragraphIndex + 1,
+        paragraphCount,
+    )
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -2927,33 +2967,6 @@ private fun ReadingTopBar(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            HeaderIconButton(
-                icon = when (playbackStatus) {
-                    SentencePlaybackStatus.Playing -> LmcIcon.PauseAudio
-                    SentencePlaybackStatus.Paused,
-                    SentencePlaybackStatus.Stopped -> LmcIcon.Audio
-                },
-                contentDescription = stringResource(
-                    when (playbackStatus) {
-                        SentencePlaybackStatus.Playing -> R.string.action_pause_audio
-                        SentencePlaybackStatus.Paused -> R.string.action_resume_audio
-                        SentencePlaybackStatus.Stopped -> R.string.action_play_audio
-                    },
-                ),
-                onClick = onAudioClick,
-            )
-        }
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = LmcSpacing.ScreenPadding),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space3),
-        ) {
-            LmcProgressBar(
-                progress = progressFraction.toFloat(),
-                modifier = Modifier.weight(1f),
-            )
             Text(
                 text = stringResource(
                     R.string.reading_progress_count,
@@ -2963,284 +2976,428 @@ private fun ReadingTopBar(
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            HeaderIconButton(
+                icon = LmcIcon.Settings,
+                contentDescription = stringResource(R.string.settings_title),
+                onClick = onSettingsClick,
+            )
         }
-        Spacer(modifier = Modifier.height(LmcSpacing.Space3))
+        LmcProgressBar(
+            progress = progressFraction.toFloat(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = LmcSpacing.ScreenPadding)
+                .semantics {
+                    contentDescription = progressDescription
+                },
+            progressHeight = 2.dp,
+        )
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-private fun ReadingControls(
+private fun ReadingSettingsSheet(
     showPinyin: Boolean,
     readingTextSize: ReadingTextSize,
+    playbackMode: ReadingSessionMode,
+    autoContinue: Boolean,
+    playbackSpeed: ReadingPlaybackSpeed,
     onPinyinChange: (Boolean) -> Unit,
     onTextSizeChange: (ReadingTextSize) -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = LmcSpacing.ScreenPadding, vertical = LmcSpacing.Space3),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space4),
-    ) {
-        Row(
-            modifier = Modifier.weight(1f),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
-        ) {
-            Text(
-                text = stringResource(R.string.reading_pinyin),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-            Switch(
-                checked = showPinyin,
-                onCheckedChange = onPinyinChange,
-            )
-        }
-        Column(horizontalAlignment = Alignment.End) {
-            Text(
-                text = stringResource(R.string.reading_text_size),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            TextSizeChips(
-                selectedTextSize = readingTextSize,
-                onTextSizeChange = onTextSizeChange,
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun ReadingFullAudioRow(
-    playbackState: SentencePlaybackUiState,
-    playbackMode: ReadingSessionMode,
-    canGoPreviousSentence: Boolean,
-    canGoNextSentence: Boolean,
-    onPrimaryClick: () -> Unit,
-    onPreviousSentence: () -> Unit,
-    onNextSentence: () -> Unit,
-    onRepeatSentence: () -> Unit,
-    onStop: () -> Unit,
-    onAutoContinueChange: (Boolean) -> Unit,
-    onReturnToReadingPlace: () -> Unit,
-    showReturnToReadingPlace: Boolean,
-    onPlaybackSpeedChange: (ReadingPlaybackSpeed) -> Unit,
     onPlaybackModeChange: (ReadingSessionMode) -> Unit,
+    onAutoContinueChange: (Boolean) -> Unit,
+    onPlaybackSpeedChange: (ReadingPlaybackSpeed) -> Unit,
+    onDismiss: () -> Unit,
 ) {
-    val audioSourceText = when (playbackState.audioSource) {
-        ReadingAudioSource.Recorded -> stringResource(R.string.reading_audio_source_recorded)
-        ReadingAudioSource.Tts -> stringResource(R.string.reading_audio_source_tts)
-        null -> null
-    }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var speedMenuExpanded by remember { mutableStateOf(false) }
+    val autoContinueEnabled = playbackMode != ReadingSessionMode.TapToListen
+    val speedLabel = stringResource(
+        R.string.reading_speed_value,
+        stringResource(R.string.reading_playback_speed),
+        stringResource(playbackSpeed.labelRes()),
+    )
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = LmcSpacing.ScreenPadding)
-            .padding(bottom = LmcSpacing.Space3),
-        verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(LmcSpacing.Space3)
+                .padding(bottom = LmcSpacing.Space8),
+            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space4),
         ) {
             Text(
-                text = stringResource(
-                    R.string.reading_sentence_progress,
-                    (playbackState.sentenceIndex + 1).coerceAtLeast(1),
-                    playbackState.sentenceCountInParagraph.coerceAtLeast(1),
-                ),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = stringResource(
-                    when (playbackState.status) {
-                        SentencePlaybackStatus.Playing -> R.string.reading_audio_playing
-                        SentencePlaybackStatus.Paused -> R.string.reading_audio_paused
-                        SentencePlaybackStatus.Stopped -> R.string.reading_audio_stopped
-                    },
-                ),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-            )
-            if (audioSourceText != null) {
-                Text(
-                    text = audioSourceText,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                )
-            }
-        }
-        FlowRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
-            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
-        ) {
-            FilterChip(
-                selected = playbackMode == ReadingSessionMode.ReadAlong,
-                onClick = { onPlaybackModeChange(ReadingSessionMode.ReadAlong) },
-                label = { Text(text = stringResource(R.string.reading_mode_read_along)) },
-                modifier = Modifier.heightIn(min = LmcSpacing.ChipHeight),
-                colors = lmcFilterChipColors(),
-            )
-            FilterChip(
-                selected = playbackMode == ReadingSessionMode.TapToListen,
-                onClick = { onPlaybackModeChange(ReadingSessionMode.TapToListen) },
-                label = { Text(text = stringResource(R.string.reading_mode_tap_to_listen)) },
-                modifier = Modifier.heightIn(min = LmcSpacing.ChipHeight),
-                colors = lmcFilterChipColors(),
+                text = stringResource(R.string.reading_settings_title),
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface,
             )
             Row(
-                modifier = Modifier.heightIn(min = LmcSpacing.MinTouchTarget),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space1),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = stringResource(R.string.reading_pinyin),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+                Switch(
+                    checked = showPinyin,
+                    onCheckedChange = onPinyinChange,
+                )
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2)) {
+                Text(
+                    text = stringResource(R.string.reading_text_size),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                TextSizeChips(
+                    selectedTextSize = readingTextSize,
+                    onTextSizeChange = onTextSizeChange,
+                )
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2)) {
+                Text(
+                    text = stringResource(R.string.reading_audio),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+                ) {
+                    FilterChip(
+                        selected = playbackMode == ReadingSessionMode.ReadAlong,
+                        onClick = { onPlaybackModeChange(ReadingSessionMode.ReadAlong) },
+                        label = { Text(text = stringResource(R.string.reading_mode_read_along)) },
+                        modifier = Modifier.heightIn(min = LmcSpacing.ChipHeight),
+                        colors = lmcFilterChipColors(),
+                    )
+                    FilterChip(
+                        selected = playbackMode == ReadingSessionMode.TapToListen,
+                        onClick = { onPlaybackModeChange(ReadingSessionMode.TapToListen) },
+                        label = { Text(text = stringResource(R.string.reading_mode_tap_to_listen)) },
+                        modifier = Modifier.heightIn(min = LmcSpacing.ChipHeight),
+                        colors = lmcFilterChipColors(),
+                    )
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
                     text = stringResource(R.string.reading_auto_continue),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
                 )
                 Switch(
-                    checked = playbackState.autoContinue,
+                    checked = autoContinue,
                     onCheckedChange = onAutoContinueChange,
+                    enabled = autoContinueEnabled,
                 )
             }
-            Box {
-                OutlinedButton(
-                    onClick = { speedMenuExpanded = true },
-                    modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
-                ) {
-                    Text(
-                        text = stringResource(
-                            R.string.reading_speed_value,
-                            stringResource(R.string.reading_playback_speed),
-                            stringResource(playbackState.playbackSpeed.labelRes()),
-                        ),
-                    )
-                }
-                DropdownMenu(
-                    expanded = speedMenuExpanded,
-                    onDismissRequest = { speedMenuExpanded = false },
-                ) {
-                    ReadingPlaybackSpeed.entries.forEach { speed ->
-                        DropdownMenuItem(
-                            text = { Text(text = stringResource(speed.labelRes())) },
-                            onClick = {
-                                speedMenuExpanded = false
-                                onPlaybackSpeedChange(speed)
-                            },
-                        )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = stringResource(R.string.reading_playback_speed),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Box {
+                    OutlinedButton(
+                        onClick = { speedMenuExpanded = true },
+                        modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
+                    ) {
+                        Text(text = speedLabel)
+                    }
+                    DropdownMenu(
+                        expanded = speedMenuExpanded,
+                        onDismissRequest = { speedMenuExpanded = false },
+                    ) {
+                        ReadingPlaybackSpeed.entries.forEach { speed ->
+                            DropdownMenuItem(
+                                text = { Text(text = stringResource(speed.labelRes())) },
+                                onClick = {
+                                    speedMenuExpanded = false
+                                    onPlaybackSpeedChange(speed)
+                                },
+                            )
+                        }
                     }
                 }
             }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                TextButton(onClick = onDismiss) {
+                    Text(text = stringResource(R.string.action_done))
+                }
+            }
         }
-        FlowRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space2, Alignment.End),
-            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+    }
+}
+
+@Composable
+private fun ReadingBottomDock(
+    playbackStatus: SentencePlaybackStatus,
+    playbackState: SentencePlaybackUiState,
+    canGoPreviousParagraph: Boolean,
+    canGoNextParagraph: Boolean,
+    nextParagraphDescriptionRes: Int,
+    onPreviousParagraph: () -> Unit,
+    onNextParagraph: () -> Unit,
+    onReadClick: () -> Unit,
+    canGoPreviousSentence: Boolean,
+    canGoNextSentence: Boolean,
+    onPreviousSentence: () -> Unit,
+    onNextSentence: () -> Unit,
+    onRepeatSentence: () -> Unit,
+    onPlayPause: () -> Unit,
+    onStop: () -> Unit,
+    onReturnToReadingPlace: () -> Unit,
+    showReturnToReadingPlace: Boolean,
+) {
+    if (playbackStatus == SentencePlaybackStatus.Stopped) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = LmcSpacing.BottomActionHeight)
+                .background(MaterialTheme.colorScheme.surface)
+                .padding(horizontal = LmcSpacing.ScreenPadding, vertical = LmcSpacing.Space2),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            OutlinedButton(
-                onClick = onPrimaryClick,
-                enabled = playbackState.sentenceCountInParagraph > 0 ||
-                    playbackState.status != SentencePlaybackStatus.Stopped,
-                modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
-            ) {
-                LmcCanvasIcon(
-                    icon = if (playbackState.status == SentencePlaybackStatus.Playing) {
-                        LmcIcon.PauseAudio
-                    } else {
-                        LmcIcon.Audio
-                    },
-                    color = MaterialTheme.colorScheme.secondary,
-                )
-                Spacer(modifier = Modifier.width(LmcSpacing.Space2))
-                Text(
-                    text = stringResource(
-                        when (playbackState.status) {
-                            SentencePlaybackStatus.Playing -> R.string.action_pause_audio
-                            SentencePlaybackStatus.Paused -> R.string.action_resume_audio
-                            SentencePlaybackStatus.Stopped -> R.string.reading_read_all
-                        },
-                    ),
-                )
-            }
-            OutlinedButton(
-                enabled = canGoPreviousSentence,
-                onClick = onPreviousSentence,
-                modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
-            ) {
-                LmcCanvasIcon(
-                    icon = LmcIcon.Previous,
-                    color = MaterialTheme.colorScheme.secondary,
-                )
-                Spacer(modifier = Modifier.width(LmcSpacing.Space2))
-                Text(text = stringResource(R.string.reading_previous_sentence))
-            }
-            OutlinedButton(
-                enabled = canGoNextSentence,
-                onClick = onNextSentence,
-                modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
-            ) {
-                LmcCanvasIcon(
-                    icon = LmcIcon.Next,
-                    color = MaterialTheme.colorScheme.secondary,
-                )
-                Spacer(modifier = Modifier.width(LmcSpacing.Space2))
-                Text(text = stringResource(R.string.reading_next_sentence))
-            }
-            OutlinedButton(
+            ReadingActionIconButton(
+                icon = LmcIcon.Previous,
+                contentDescription = stringResource(R.string.action_previous),
+                onClick = onPreviousParagraph,
+                enabled = canGoPreviousParagraph,
+            )
+            Button(
+                onClick = onReadClick,
                 enabled = playbackState.sentenceCountInParagraph > 0,
-                onClick = onRepeatSentence,
-                modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = LmcSpacing.ButtonPrimaryHeight),
+                shape = RoundedCornerShape(LmcSpacing.RadiusLg),
             ) {
                 LmcCanvasIcon(
-                    icon = LmcIcon.Repeat,
-                    color = MaterialTheme.colorScheme.secondary,
+                    icon = LmcIcon.Audio,
+                    color = MaterialTheme.colorScheme.onPrimary,
                 )
                 Spacer(modifier = Modifier.width(LmcSpacing.Space2))
-                Text(text = stringResource(R.string.reading_repeat_sentence))
+                Text(text = stringResource(R.string.reading_read_all))
             }
-            if (playbackState.status != SentencePlaybackStatus.Stopped) {
-                TextButton(
-                    onClick = onStop,
-                    modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
-                ) {
-                    Text(text = stringResource(R.string.action_stop_audio))
-                }
+            ReadingActionIconButton(
+                icon = LmcIcon.Next,
+                contentDescription = stringResource(nextParagraphDescriptionRes),
+                onClick = onNextParagraph,
+                enabled = canGoNextParagraph,
+            )
+        }
+    } else {
+        ReadingPlayerBar(
+            playbackState = playbackState,
+            canGoPreviousSentence = canGoPreviousSentence,
+            canGoNextSentence = canGoNextSentence,
+            onPreviousSentence = onPreviousSentence,
+            onNextSentence = onNextSentence,
+            onRepeatSentence = onRepeatSentence,
+            onPlayPause = onPlayPause,
+            onStop = onStop,
+            onReturnToReadingPlace = onReturnToReadingPlace,
+            showReturnToReadingPlace = showReturnToReadingPlace,
+        )
+    }
+}
+
+@Composable
+private fun ReadingPlayerBar(
+    playbackState: SentencePlaybackUiState,
+    canGoPreviousSentence: Boolean,
+    canGoNextSentence: Boolean,
+    onPreviousSentence: () -> Unit,
+    onNextSentence: () -> Unit,
+    onRepeatSentence: () -> Unit,
+    onPlayPause: () -> Unit,
+    onStop: () -> Unit,
+    onReturnToReadingPlace: () -> Unit,
+    showReturnToReadingPlace: Boolean,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(horizontal = LmcSpacing.ScreenPadding, vertical = LmcSpacing.Space2),
+        verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space1),
+    ) {
+        val statusText = stringResource(
+            when (playbackState.status) {
+                SentencePlaybackStatus.Playing -> R.string.reading_audio_playing
+                SentencePlaybackStatus.Paused -> R.string.reading_audio_paused
+                SentencePlaybackStatus.Stopped -> R.string.reading_audio_stopped
+            },
+        )
+        val audioSourceText = when (playbackState.audioSource) {
+            ReadingAudioSource.Recorded -> stringResource(R.string.reading_audio_source_recorded)
+            ReadingAudioSource.Tts -> stringResource(R.string.reading_audio_source_tts)
+            null -> null
+        }
+        val sentenceProgress = stringResource(
+            R.string.reading_sentence_progress,
+            (playbackState.sentenceIndex + 1).coerceAtLeast(1),
+            playbackState.sentenceCountInParagraph.coerceAtLeast(1),
+        )
+        Text(
+            text = if (audioSourceText == null) {
+                "$sentenceProgress · $statusText"
+            } else {
+                "$sentenceProgress · $audioSourceText · $statusText"
+            },
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (showReturnToReadingPlace) {
+            Button(
+                onClick = onReturnToReadingPlace,
+                modifier = Modifier.heightIn(min = LmcSpacing.MinTouchTarget),
+                shape = CircleShape,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                ),
+                contentPadding = PaddingValues(
+                    horizontal = LmcSpacing.Space3,
+                ),
+            ) {
+                Text(
+                    text = stringResource(R.string.reading_back_to_reading_place),
+                    style = MaterialTheme.typography.labelMedium,
+                )
             }
-            if (showReturnToReadingPlace) {
-                TextButton(
-                    onClick = onReturnToReadingPlace,
-                    modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
-                ) {
-                    Text(text = stringResource(R.string.reading_back_to_reading_place))
-                }
-            }
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            ReadingActionIconButton(
+                icon = LmcIcon.Previous,
+                contentDescription = stringResource(R.string.reading_previous_sentence),
+                onClick = onPreviousSentence,
+                enabled = canGoPreviousSentence,
+            )
+            ReadingActionIconButton(
+                icon = if (playbackState.status == SentencePlaybackStatus.Playing) {
+                    LmcIcon.PauseAudio
+                } else {
+                    LmcIcon.Audio
+                },
+                contentDescription = if (playbackState.status == SentencePlaybackStatus.Playing) {
+                    stringResource(R.string.action_pause_audio)
+                } else {
+                    stringResource(R.string.action_resume_audio)
+                },
+                onClick = onPlayPause,
+                isPrimary = true,
+            )
+            ReadingActionIconButton(
+                icon = LmcIcon.Repeat,
+                contentDescription = stringResource(R.string.reading_repeat_sentence),
+                onClick = onRepeatSentence,
+                enabled = playbackState.sentenceCountInParagraph > 0,
+            )
+            ReadingActionIconButton(
+                icon = LmcIcon.Next,
+                contentDescription = stringResource(R.string.reading_next_sentence),
+                onClick = onNextSentence,
+                enabled = canGoNextSentence,
+            )
+            ReadingActionIconButton(
+                icon = LmcIcon.StopAudio,
+                contentDescription = stringResource(R.string.action_stop_audio),
+                onClick = onStop,
+                enabled = playbackState.sentenceCountInParagraph > 0,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ReadingActionIconButton(
+    icon: LmcIcon,
+    contentDescription: String,
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    isPrimary: Boolean = false,
+) {
+    if (isPrimary) {
+        Button(
+            enabled = enabled,
+            onClick = onClick,
+            modifier = Modifier
+                .size(LmcSpacing.MinTouchTarget + LmcSpacing.Space2)
+                .semantics {
+                    this.contentDescription = contentDescription
+                },
+            shape = CircleShape,
+            contentPadding = PaddingValues(0.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            ),
+        ) {
+            LmcCanvasIcon(
+                icon = icon,
+                color = if (enabled) {
+                    MaterialTheme.colorScheme.onPrimary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+            )
+        }
+    } else {
+        IconButton(
+            enabled = enabled,
+            onClick = onClick,
+            modifier = Modifier
+                .size(LmcSpacing.MinTouchTarget)
+                .semantics {
+                    this.contentDescription = contentDescription
+                },
+        ) {
+            LmcCanvasIcon(
+                icon = icon,
+                color = if (enabled) {
+                    MaterialTheme.colorScheme.secondary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+            )
         }
     }
 }
 
 @Composable
 private fun ReadingAudioCoachmark(
+    modifier: Modifier = Modifier,
     onDismiss: () -> Unit,
 ) {
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = LmcSpacing.ScreenPadding)
-            .padding(bottom = LmcSpacing.Space3),
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(LmcSpacing.RadiusLg),
         color = MaterialTheme.colorScheme.secondaryContainer,
     ) {
@@ -5368,12 +5525,13 @@ private fun HeaderIconButton(
 private fun LmcProgressBar(
     progress: Float,
     modifier: Modifier = Modifier,
+    progressHeight: Dp = LmcSpacing.ProgressHeight,
 ) {
     LinearProgressIndicator(
         progress = { progress.coerceIn(0f, 1f) },
         modifier = modifier
             .fillMaxWidth()
-            .height(LmcSpacing.ProgressHeight)
+            .height(progressHeight)
             .clip(CircleShape),
         color = if (progress >= 1f) LmcColors.Success else MaterialTheme.colorScheme.primary,
         trackColor = MaterialTheme.colorScheme.tertiaryContainer,
