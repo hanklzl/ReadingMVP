@@ -666,7 +666,7 @@
     },
     {
       "text": "第三次，三人又来到茅庐。刘备先在门外等候，怕打扰主人休息。等诸葛亮醒来，他才恭恭敬敬地说明来意。他没有催促，也没有摆架子，只把心里的愿望认真讲出来。",
-      "pinyin": "dì sān cì， sān rén yòu lái dào máo lú。 liú bèi xiān zài mén wài děng hòu， pà dǎ rǎo zhǔ rén xiū xī。 děng zhū gě liàng xǐng lái， tā cái gōng gōng jìng jìng dì shuō míng lái yì。 tā méi yǒu cuī cù， yě méi yǒu bǎi jià zi， zhǐ bǎ xīn lǐ de yuàn wàng rèn zhēn jiǎng chū lái。",
+      "pinyin": "dì sān cì， sān rén yòu lái dào máo lú。 liú bèi xiān zài mén wài děng hòu， pà dǎ rǎo zhǔ rén xiū xī。 děng zhū gě liàng xǐng lái， tā cái gōng gōng jìng jìng de shuō míng lái yì。 tā méi yǒu cuī cù， yě méi yǒu bǎi jià zi， zhǐ bǎ xīn lǐ de yuàn wàng rèn zhēn jiǎng chū lái。",
       "cells": [
         {
           "c": "第",
@@ -838,7 +838,7 @@
         },
         {
           "c": "地",
-          "p": "dì"
+          "p": "de"
         },
         {
           "c": "说",
@@ -1250,7 +1250,7 @@
     },
     {
       "text": "后来，诸葛亮决定帮助刘备。三顾茅庐的故事告诉我们，真诚不是一句话，而是一次又一次有礼貌地坚持。想请别人帮助时，先学会尊重别人，也学会把目标说得清清楚楚。",
-      "pinyin": "hòu lái， zhū gě liàng jué dìng bāng zhù liú bèi。 sān gù máo lú de gù shì gào sù wǒ men， zhēn chéng bú shì yī jù huà， ér shì yī cì yòu yī cì yǒu lǐ mào dì jiān chí。 xiǎng qǐng bié rén bāng zhù shí， xiān xué huì zūn zhòng bié rén， yě xué huì bǎ mù biāo shuō dé qīng qīng chǔ chǔ。",
+      "pinyin": "hòu lái， zhū gě liàng jué dìng bāng zhù liú bèi。 sān gù máo lú de gù shì gào sù wǒ men， zhēn chéng bú shì yī jù huà， ér shì yī cì yòu yī cì yǒu lǐ mào de jiān chí。 xiǎng qǐng bié rén bāng zhù shí， xiān xué huì zūn zhòng bié rén， yě xué huì bǎ mù biāo shuō de qīng qīng chǔ chǔ。",
       "cells": [
         {
           "c": "后",
@@ -1426,7 +1426,7 @@
         },
         {
           "c": "地",
-          "p": "dì"
+          "p": "de"
         },
         {
           "c": "坚",
@@ -1534,7 +1534,7 @@
         },
         {
           "c": "得",
-          "p": "dé"
+          "p": "de"
         },
         {
           "c": "清",

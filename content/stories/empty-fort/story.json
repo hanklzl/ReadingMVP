@@ -288,7 +288,7 @@
     },
     {
       "text": "诸葛亮先让大家安静。他打开城门，安排几个人在门口慢慢扫地，自己穿戴整齐，坐到城楼上弹琴。扫地的人也照着吩咐，一下一下地扫，不让手忙脚乱露出来。",
-      "pinyin": "zhū gě liàng xiān ràng dà jiā ān jìng。 tā dǎ kāi chéng mén， ān pái jǐ gè rén zài mén kǒu màn màn sǎo dì， zì jǐ chuān dài zhěng qí， zuò dào chéng lóu shàng tán qín。 sǎo dì de rén yě zhào zhe fēn fù， yī xià yī xià dì sǎo， bù ràng shǒu máng jiǎo luàn lù chū lái。",
+      "pinyin": "zhū gě liàng xiān ràng dà jiā ān jìng。 tā dǎ kāi chéng mén， ān pái jǐ gè rén zài mén kǒu màn màn sǎo dì， zì jǐ chuān dài zhěng qí， zuò dào chéng lóu shàng tán qín。 sǎo dì de rén yě zhào zhe fēn fù， yī xià yī xià de sǎo， bù ràng shǒu máng jiǎo luàn lù chū lái。",
       "cells": [
         {
           "c": "诸",
@@ -524,7 +524,7 @@
         },
         {
           "c": "地",
-          "p": "dì"
+          "p": "de"
         },
         {
           "c": "扫",

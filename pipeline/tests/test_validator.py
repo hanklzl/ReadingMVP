@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from validator.validate import count_hanzi, validate_story_file
+from validator.validate import count_hanzi, lint_polyphone_readings, validate_story_file
 from transformer.audio import build_sentence_plan, even_char_timings
 
 
@@ -262,6 +262,55 @@ class ValidatorTest(unittest.TestCase):
 
         self.assertFalse(result.passed)
         self.assertIn("must not precede previous endMs", "\n".join(result.errors))
+
+
+class PolyphoneLintTest(unittest.TestCase):
+    @staticmethod
+    def _cells(text, overrides):
+        return [{"c": ch, "p": overrides.get(i, "x")} for i, ch in enumerate(text)]
+
+    def assertFlags(self, text, overrides, needle):
+        errors = lint_polyphone_readings(1, self._cells(text, overrides))
+        self.assertTrue(
+            any(needle in error for error in errors),
+            f"expected a {needle!r} flag for {text!r}, got {errors}",
+        )
+
+    def assertClean(self, text, overrides):
+        errors = lint_polyphone_readings(1, self._cells(text, overrides))
+        # Ignore the filler 'x' particle flags from unrelated cells.
+        relevant = [e for e in errors if "got 'x'" not in e]
+        self.assertEqual([], relevant, relevant)
+
+    def test_flags_de_complement_full_tone(self):
+        self.assertFlags("大家走得很慢", {3: "dé"}, "V得C")
+        self.assertFlags("桃花开得正好", {3: "dé"}, "V得C")
+        self.assertFlags("把目标说得清楚", {4: "dé"}, "V得C")
+
+    def test_flags_adverbial_de_particle(self):
+        self.assertFlags("一下一下地扫", {4: "dì"}, "adverbial particle")
+        self.assertFlags("恭恭敬敬地说明", {4: "dì"}, "adverbial particle")
+
+    def test_flags_changban_place_name(self):
+        self.assertFlags("长坂坡上", {0: "zhǎng"}, "长坂")
+
+    def test_flags_non_neutral_de_particle(self):
+        self.assertFlags("我的书", {1: "dì"}, "neutral-tone 'de'")
+
+    def test_does_not_flag_legitimate_full_tone_words(self):
+        self.assertClean("觉得奇怪", {1: "dé"})
+        self.assertClean("记得恩情", {1: "dé"})
+        self.assertClean("懂得照顾", {1: "dé"})
+
+    def test_does_not_flag_di_noun_readings(self):
+        self.assertClean("有地方", {1: "dì"})
+        self.assertClean("当地百姓", {1: "dì"})
+        self.assertClean("扫地的人", {0: "sǎo", 1: "dì", 2: "de", 3: "rén"})
+
+    def test_does_not_flag_correct_neutral_particles(self):
+        self.assertClean("大家走得很慢", {3: "de"})
+        self.assertClean("一下一下地扫", {4: "de"})
+        self.assertClean("长叹一声", {0: "cháng"})
 
 
 if __name__ == "__main__":

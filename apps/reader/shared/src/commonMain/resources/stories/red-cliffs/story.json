@@ -10,7 +10,7 @@
   "paragraphs": [
     {
       "text": "赤壁江边，曹操的船队很多，江面显得十分热闹。孙权和刘备一方人数较少，大家知道，只有合作，才可能想出好办法。江边百姓也盼着风浪早点过去，日子重新安定。",
-      "pinyin": "chì bì jiāng biān， cáo cāo de chuán duì hěn duō， jiāng miàn xiǎn de shí fēn rè nào。 sūn quán hé liú bèi yī fāng rén shù jiào shǎo， dà jiā zhī dào， zhǐ yǒu hé zuò， cái kě néng xiǎng chū hǎo bàn fǎ。 jiāng biān bǎi xìng yě pàn zháo fēng làng zǎo diǎn guò qù， rì zi chóng xīn ān dìng。",
+      "pinyin": "chì bì jiāng biān， cáo cāo de chuán duì hěn duō， jiāng miàn xiǎn de shí fēn rè nào。 sūn quán hé liú bèi yī fāng rén shù jiào shǎo， dà jiā zhī dào， zhǐ yǒu hé zuò， cái kě néng xiǎng chū hǎo bàn fǎ。 jiāng biān bǎi xìng yě pàn zhe fēng làng zǎo diǎn guò qù， rì zi chóng xīn ān dìng。",
       "cells": [
         {
           "c": "赤",
@@ -250,7 +250,7 @@
         },
         {
           "c": "着",
-          "p": "zháo"
+          "p": "zhe"
         },
         {
           "c": "风",

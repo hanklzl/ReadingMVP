@@ -10,7 +10,7 @@
   "paragraphs": [
     {
       "text": "有一次，曹操带着队伍赶路。太阳很大，路又长，大家走得口渴，脚步也慢了下来。曹操看在眼里，知道大家需要鼓励。他先让队伍放慢一点，又提醒大家不要互相抱怨。",
-      "pinyin": "yǒu yī cì， cáo cāo dài zhe duì wǔ gǎn lù。 tài yáng hěn dà， lù yòu zhǎng， dà jiā zǒu dé kǒu kě， jiǎo bù yě màn le xià lái。 cáo cāo kàn zài yǎn lǐ， zhī dào dà jiā xū yào gǔ lì。 tā xiān ràng duì wǔ fàng màn yì diǎn， yòu tí xǐng dà jiā bú yào hù xiāng bào yuàn。",
+      "pinyin": "yǒu yī cì， cáo cāo dài zhe duì wǔ gǎn lù。 tài yáng hěn dà， lù yòu cháng， dà jiā zǒu de kǒu kě， jiǎo bù yě màn le xià lái。 cáo cāo kàn zài yǎn lǐ， zhī dào dà jiā xū yào gǔ lì。 tā xiān ràng duì wǔ fàng màn yì diǎn， yòu tí xǐng dà jiā bú yào hù xiāng bào yuàn。",
       "cells": [
         {
           "c": "有",
@@ -94,7 +94,7 @@
         },
         {
           "c": "长",
-          "p": "zhǎng"
+          "p": "cháng"
         },
         {
           "c": "，",
@@ -114,7 +114,7 @@
         },
         {
           "c": "得",
-          "p": "dé"
+          "p": "de"
         },
         {
           "c": "口",

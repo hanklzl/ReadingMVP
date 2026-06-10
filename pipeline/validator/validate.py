@@ -41,6 +41,102 @@ def load_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+# --- Lightweight polyphone (多音字) lint -------------------------------------
+# A small, high-confidence regression guard for the most common pinyin mistakes
+# in children's 《三国演义》 retellings. It intentionally does NOT try to cover
+# every heteronym; it only fires on patterns that are almost always wrong so it
+# stays free of false positives. See docs/specs reading-platform-design §6.
+
+# Structural particles that should always carry the neutral tone in this corpus.
+_NEUTRAL_PARTICLE_READINGS = {
+    "的": {"de"},
+    "地": {"de", "dì"},   # 地 is also the noun "ground/place" (dì); both allowed, lint checks position.
+    "得": {"de", "dé", "děi"},  # full-tone 得 only allowed inside known words (below).
+    "了": {"le", "liǎo"},
+    "着": {"zhe", "zháo", "zhāo", "zhuó"},
+}
+
+# Two-character words where 得 legitimately keeps a full tone (dé / děi).
+_DE_FULL_TONE_WORDS = {
+    "得到", "得意", "得力", "得知", "得胜", "得分", "得当", "获得", "取得", "记得",
+    "懂得", "舍得", "觉得", "值得", "显得", "晓得", "免得", "落得", "难得", "心得",
+    "得失", "得罪", "所得", "求得", "赢得", "博得", "使得", "省得", "怪不得",
+    "只得", "乐得", "非得", "总得",
+}
+# Words where 地 keeps the noun reading dì (not the adverbial particle de).
+_DI_NOUN_WORDS = {
+    "地方", "地上", "地下", "地面", "地里", "地点", "土地", "天地", "大地", "当地",
+    "各地", "本地", "此地", "那地", "这地", "地区", "地图", "地球", "地位", "地步",
+    "田地", "境地", "余地", "阵地", "地名", "地址", "扫地", "种地", "落地", "倒地",
+    "遍地", "就地", "平地", "空地", "外地", "产地", "基地", "陆地", "草地", "园地",
+}
+
+
+def lint_polyphone_readings(para_index: int, cells: list[Any]) -> list[str]:
+    """Flag high-confidence polyphone (多音字) reading mistakes.
+
+    Heuristics (deliberately conservative):
+    - 的 must be neutral-tone ``de``.
+    - 长 in the place name 长坂 must read ``cháng``.
+    - 得 between a verb/adjective and its complement (V得C) must read ``de``;
+      a full tone is only allowed inside a known 得-word (得到/觉得/记得 …).
+    - 地 used as the adverbial particle (X地V, i.e. preceded by a hanzi and
+      followed by a hanzi, and not part of a 地-noun word) must read ``de``.
+    """
+    errors: list[str] = []
+
+    def cell_char(i: int) -> str:
+        if 0 <= i < len(cells) and isinstance(cells[i], dict):
+            return str(cells[i].get("c", ""))
+        return ""
+
+    for i, cell in enumerate(cells):
+        if not isinstance(cell, dict):
+            continue
+        char = str(cell.get("c", ""))
+        reading = str(cell.get("p", ""))
+        prev_char = cell_char(i - 1)
+        next_char = cell_char(i + 1)
+        prev_is_hanzi = is_hanzi_char(prev_char)
+        next_is_hanzi = is_hanzi_char(next_char)
+
+        if char == "的" and reading != "de":
+            errors.append(
+                f"paragraph {para_index} cell {i + 1} 的 should read neutral-tone 'de', got '{reading}'"
+            )
+
+        elif char == "长" and reading == "zhǎng" and next_char == "坂":
+            errors.append(
+                f"paragraph {para_index} cell {i + 1} 长 in place name 长坂 should read 'cháng', got '{reading}'"
+            )
+
+        elif char == "得" and reading in {"dé", "děi"}:
+            word_prev = prev_char + char
+            word_next = char + next_char
+            in_known_word = word_prev in _DE_FULL_TONE_WORDS or word_next in _DE_FULL_TONE_WORDS
+            # V得C structural-complement pattern: hanzi 得 hanzi, not a known 得-word.
+            if prev_is_hanzi and next_is_hanzi and not in_known_word:
+                errors.append(
+                    f"paragraph {para_index} cell {i + 1} 得 in V得C complement should read neutral-tone 'de', "
+                    f"got '{reading}' (context: …{prev_char}得{next_char}…)"
+                )
+
+        elif char == "地" and reading == "dì":
+            word_prev = prev_char + char
+            word_next = char + next_char
+            in_noun_word = word_prev in _DI_NOUN_WORDS or word_next in _DI_NOUN_WORDS
+            # Adverbial particle pattern: X地V (hanzi 地 hanzi), not a 地-noun word.
+            # An adverbial 地 is followed by a verb, never by 的 (that marks 地 as a
+            # noun being modified, e.g. 扫地的人), so 地的 is treated as the noun reading.
+            if prev_is_hanzi and next_is_hanzi and not in_noun_word and next_char != "的":
+                errors.append(
+                    f"paragraph {para_index} cell {i + 1} 地 as adverbial particle should read neutral-tone 'de', "
+                    f"got '{reading}' (context: …{prev_char}地{next_char}…)"
+                )
+
+    return errors
+
+
 def validate_story(story: dict[str, Any], schema: dict[str, Any], path: Path | None = None) -> ValidationResult:
     errors: list[str] = []
 
@@ -117,6 +213,10 @@ def validate_story(story: dict[str, Any], schema: dict[str, Any], path: Path | N
 
     audio_errors = validate_audio_manifest(story, path)
     errors.extend(audio_errors)
+
+    for index, paragraph in enumerate(paragraphs, start=1):
+        if isinstance(paragraph, dict) and isinstance(paragraph.get("cells"), list):
+            errors.extend(lint_polyphone_readings(index, paragraph["cells"]))
 
     for index, item in enumerate(vocab, start=1):
         if not isinstance(item, dict):
