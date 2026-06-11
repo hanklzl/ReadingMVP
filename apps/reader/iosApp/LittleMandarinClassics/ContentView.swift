@@ -1,6 +1,7 @@
 import Foundation
 import AVFoundation
 import SwiftUI
+import UIKit
 import shared
 
 struct ContentView: View {
@@ -179,6 +180,16 @@ struct ContentView: View {
                 openReview: {
                     viewModel.openPendingReview()
                     flowRoute = .reviewPack
+                },
+                recordings: viewModel.recordings,
+                playRecording: { recording in
+                    Task { await viewModel.playRecording(recording) }
+                },
+                deleteRecording: { recordingId in
+                    Task { await viewModel.deleteRecording(recordingId) }
+                },
+                clearAllRecordings: {
+                    Task { await viewModel.clearRecordings() }
                 }
             )
         }
@@ -368,6 +379,7 @@ final class ReaderViewModel: ObservableObject {
     @Published private(set) var aiInteractionRecords: [AiInteractionRecord] = []
     @Published var activeReviewPack: ReviewPack?
     @Published private(set) var lastCompletionReviewPack: ReviewPack?
+    @Published private(set) var recordings: [VoiceRecording] = []
 
     private let repository = DefaultStoryRepository(
         resourceReader: IosStoryResourceReaderKt.defaultStoryResourceReader(),
@@ -401,7 +413,22 @@ final class ReaderViewModel: ObservableObject {
     private var activeSentenceShouldAutoContinue = true
     private var generatedAudioPlayer: AVAudioPlayer?
     private var generatedAudioDelegate: LMCGeneratedAudioDelegate?
+    @Published private(set) var activeSentenceRecordingLocation: LMCSentenceLocation?
+    private var sentenceRecorder: AVAudioRecorder?
+    private var activeSentenceRecording: LMCActiveSentenceRecording?
+    private var recordingPlaybackPlayer: AVAudioPlayer?
+    private var recordingPlaybackDelegate: LMCGeneratedAudioDelegate?
     private var sfxPlayers: [String: AVAudioPlayer] = [:]
+
+    private let maxRecordingsPerStory = 12
+    private let maxRecordingsOverall = 60
+    private let readingRecordingsDirectoryName = "recording"
+    private let voiceRecordingService = IosRecordingServiceKt.createPlatformVoiceRecordingService(
+        retentionPolicy: RecordingRetentionPolicy(
+            maxPerStory: 12,
+            maxOverall: 60
+        )
+    )
 
     // Per-character ("karaoke") highlight state, driven by the shared reducer.
     private let loadAudioManifestUseCase = LoadStoryAudioManifestUseCase(
@@ -541,6 +568,7 @@ final class ReaderViewModel: ObservableObject {
             try await refreshWordBook()
             try await refreshStreak()
             try await refreshPendingReview()
+            await syncRecordingsFromService()
             loadingState = .loaded
         } catch {
             loadingState = .failed
@@ -837,9 +865,163 @@ final class ReaderViewModel: ObservableObject {
     func stopSentencePlayback() {
         let location = readingAudioLocation
         stopSpeaking()
+        stopSentenceRecording()
         if let location {
             readingAudioStatus = .stopped(location)
         }
+    }
+
+    enum LMCRecordingStartResult {
+        case started
+        case permissionDenied
+        case failed
+    }
+
+    func isRecordingSentence(storyId: String, paragraphIndex: Int, sentenceIndex: Int) -> Bool {
+        guard let location = activeSentenceRecordingLocation else { return false }
+        return location.storyId == storyId && location.paragraphIndex == paragraphIndex && location.sentenceIndex == sentenceIndex
+    }
+
+    func recordingRetentionLimits() -> (perStory: Int, overall: Int) {
+        (maxRecordingsPerStory, maxRecordingsOverall)
+    }
+
+    func startSentenceRecording(story: Story, paragraphIndex: Int, sentenceIndex: Int) async -> LMCRecordingStartResult {
+        guard let location = story.lmcNormalizedSentenceLocation(
+            paragraphIndex: paragraphIndex,
+            sentenceIndex: sentenceIndex
+        ) else {
+            return .failed
+        }
+
+        let isPermissionGranted = await ensureMicrophonePermissionGranted()
+        guard isPermissionGranted else {
+            return .permissionDenied
+        }
+
+        guard let fileURL = makeRecordingFileURL(for: story.id, location: location) else {
+            return .failed
+        }
+
+        stopSentenceRecording()
+
+        stopSentencePlayback()
+        stopRecordingPlayback()
+
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.record, mode: .default, options: [.defaultToSpeaker])
+            try session.setActive(true)
+
+            let recorder = try AVAudioRecorder(url: fileURL, settings: lmcAudioRecordingSettings)
+            recorder.prepareToRecord()
+            guard recorder.record() else {
+                return .failed
+            }
+
+            if let previous = activeSentenceRecording {
+                try? FileManager.default.removeItem(at: previous.fileURL)
+            }
+
+            let active = LMCActiveSentenceRecording(
+                location: location,
+                fileURL: fileURL,
+                startedAt: Date()
+            )
+            activeSentenceRecording = active
+            sentenceRecorder = recorder
+            activeSentenceRecordingLocation = location
+            return .started
+        } catch {
+            return .failed
+        }
+    }
+
+    func stopSentenceRecording() {
+        guard let active = activeSentenceRecording, let recorder = sentenceRecorder else { return }
+        defer {
+            sentenceRecorder = nil
+            activeSentenceRecording = nil
+            activeSentenceRecordingLocation = nil
+        }
+
+        recorder.stop()
+
+        let endAt = Date()
+        let durationSeconds = max(0, endAt.timeIntervalSince(active.startedAt))
+        let durationMillis = Int64(durationSeconds * 1_000)
+
+        guard durationMillis > 250, FileManager.default.fileExists(atPath: active.fileURL.path) else {
+            try? FileManager.default.removeItem(at: active.fileURL)
+            return
+        }
+
+        let newRecording = VoiceRecording(
+            id: UUID().uuidString,
+            storyId: active.location.storyId,
+            paragraphIndex: Int32(active.location.paragraphIndex),
+            filePath: active.fileURL.path,
+            durationMs: durationMillis,
+            createdAtEpochMillis: Int64(active.startedAt.timeIntervalSince1970 * 1_000)
+        )
+
+        Task {
+            _ = try? await self.voiceRecordingService.add(recording: newRecording)
+            await self.syncRecordingsFromService()
+        }
+    }
+
+    func playRecording(_ recording: VoiceRecording) async {
+        stopSpeaking()
+        stopSentenceRecording()
+        stopRecordingPlayback()
+
+        guard let url = localRecordingFileURL(for: recording) else { return }
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .spokenAudio, options: [.duckOthers])
+            try AVAudioSession.sharedInstance().setActive(true)
+
+            let player = try AVAudioPlayer(contentsOf: url)
+            let delegate = LMCGeneratedAudioDelegate { [weak self] in
+                Task { @MainActor [weak self] in
+                    self?.recordingPlaybackPlayer = nil
+                    self?.recordingPlaybackDelegate = nil
+                }
+            }
+            player.prepareToPlay()
+            player.delegate = delegate
+            if player.play() {
+                recordingPlaybackPlayer = player
+                recordingPlaybackDelegate = delegate
+            } else {
+                stopRecordingPlayback()
+            }
+        } catch {
+            stopRecordingPlayback()
+        }
+    }
+
+    func deleteRecording(_ recordingId: String) async {
+        guard let index = recordings.firstIndex(where: { $0.id == recordingId }) else { return }
+        let recording = recordings.remove(at: index)
+        if let fileURL = localRecordingFileURL(for: recording) {
+            try? FileManager.default.removeItem(at: fileURL)
+        }
+        _ = try? await voiceRecordingService.delete(recordingId: recordingId)
+        await syncRecordingsFromService()
+    }
+
+    func clearRecordings() async {
+        let toDelete = recordings
+        do {
+            try await voiceRecordingService.clearAll()
+        } catch {
+            remove(recordings: toDelete)
+            await syncRecordingsFromService()
+            return
+        }
+        remove(recordings: toDelete)
+        await syncRecordingsFromService()
     }
 
     func vocabSpeechText(_ word: Vocab) -> String {
@@ -1398,6 +1580,157 @@ final class ReaderViewModel: ObservableObject {
         activeCharIndex = nil
     }
 
+    private var lmcAudioRecordingSettings: [String: Any] {
+        [
+            AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
+            AVSampleRateKey: 44_100,
+            AVNumberOfChannelsKey: 1,
+            AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue,
+            AVEncoderBitRateKey: 96_000
+        ]
+    }
+
+    private var recordingsDirectory: URL? {
+        guard let appSupport = try? FileManager.default.url(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask,
+            appropriateFor: nil,
+            create: true
+        ) else { return nil }
+        let target = appSupport.appendingPathComponent(readingRecordingsDirectoryName, isDirectory: true)
+        do {
+            try FileManager.default.createDirectory(at: target, withIntermediateDirectories: true)
+            return target
+        } catch {
+            return nil
+        }
+    }
+
+    private func localRecordingFileURL(for recording: VoiceRecording) -> URL? {
+        if recording.filePath.hasPrefix("/") {
+            return URL(fileURLWithPath: recording.filePath)
+        }
+        return recordingsDirectory?.appendingPathComponent(recording.filePath)
+    }
+
+    private func localRecordingFileURL(for storyId: String, location: LMCSentenceLocation) -> URL? {
+        latestRecording(forStoryId: storyId, paragraphIndex: location.paragraphIndex, sentenceIndex: location.sentenceIndex)
+            .flatMap({ localRecordingFileURL(for: $0) })
+    }
+
+    private func latestRecording(
+        forStoryId storyId: String,
+        paragraphIndex: Int,
+        sentenceIndex: Int
+    ) -> VoiceRecording? {
+        recordings
+            .filter {
+                $0.storyId == storyId &&
+                paragraphAndSentenceIndex(for: $0)?.0 == paragraphIndex &&
+                paragraphAndSentenceIndex(for: $0)?.1 == sentenceIndex
+            }
+            .sorted { $0.createdAtEpochMillis > $1.createdAtEpochMillis }
+            .first
+    }
+
+    private func makeRecordingFileURL(for storyId: String, location: LMCSentenceLocation) -> URL? {
+        guard let directory = recordingsDirectory else { return nil }
+        let fileName = "\(storyId)_p\(location.paragraphIndex + 1)_s\(location.sentenceIndex + 1)_\(UUID().uuidString).m4a"
+            .replacingOccurrences(of: "/", with: "_")
+        return directory.appendingPathComponent(fileName)
+    }
+
+    private func syncRecordingsFromService() async {
+        let previous = recordings
+        let loaded = try? await voiceRecordingService.getRecordings(storyId: nil)
+        recordings = loaded ?? []
+
+        let removed = previous.filter { old in
+            !recordings.contains { $0.id == old.id }
+        }
+        remove(recordings: removed)
+        pruneRecordingOrphans(against: recordings)
+    }
+
+    private func pruneRecordingOrphans(against knownRecordings: [VoiceRecording]) {
+        guard let directory = recordingsDirectory else { return }
+        guard let entries = try? FileManager.default.contentsOfDirectory(atPath: directory.path) else { return }
+
+        let referencedPaths = Set(knownRecordings.compactMap { recording in
+            localRecordingFileURL(for: recording)?.path
+        })
+
+        for entry in entries where entry.hasSuffix(".m4a") {
+            let entryPath = directory.appendingPathComponent(entry).path
+            if !referencedPaths.contains(entryPath) {
+                try? FileManager.default.removeItem(atPath: entryPath)
+            }
+        }
+    }
+
+    private func reloadRecordingsFromService() async {
+        await syncRecordingsFromService()
+    }
+
+    private func remove(recordings removeList: [VoiceRecording]) {
+        for recording in removeList {
+            guard let fileURL = localRecordingFileURL(for: recording), FileManager.default.fileExists(atPath: fileURL.path) else {
+                continue
+            }
+            try? FileManager.default.removeItem(at: fileURL)
+        }
+    }
+
+    private func paragraphAndSentenceIndex(for recording: VoiceRecording) -> (Int, Int)? {
+        guard let fileName = localRecordingFileURL(for: recording)?.lastPathComponent else { return nil }
+        let stem = fileName
+            .split(separator: ".")
+            .first
+            .map { String($0) }
+            ?? fileName
+        let parts = stem.split(separator: "_")
+
+        var paragraphIndex = -1
+        var sentenceIndex = -1
+
+        for part in parts {
+            if part.hasPrefix("p"),
+               let parsed = Int(part.dropFirst()) {
+                paragraphIndex = parsed - 1
+            }
+            if part.hasPrefix("s"),
+               let parsed = Int(part.dropFirst()) {
+                sentenceIndex = parsed - 1
+            }
+        }
+
+        guard paragraphIndex >= 0, sentenceIndex >= 0 else { return nil }
+        return (paragraphIndex, sentenceIndex)
+    }
+
+    private func ensureMicrophonePermissionGranted() async -> Bool {
+        switch AVAudioSession.sharedInstance().recordPermission {
+        case .granted:
+            return true
+        case .undetermined:
+            return await withCheckedContinuation { continuation in
+                AVAudioSession.sharedInstance().requestRecordPermission { granted in
+                    continuation.resume(returning: granted)
+                }
+            }
+        case .denied:
+            return false
+        @unknown default:
+            return false
+        }
+    }
+
+    private func stopRecordingPlayback() {
+        recordingPlaybackPlayer?.stop()
+        recordingPlaybackPlayer = nil
+        recordingPlaybackDelegate = nil
+    }
+
     private func playReadingSentence(story: Story, location: LMCSentenceLocation, shouldTrack: Bool) {
         guard let sentence = story.lmcSentence(at: location) else {
             stopSpeaking()
@@ -1410,8 +1743,33 @@ final class ReaderViewModel: ObservableObject {
         karaokeTimer?.invalidate()
         karaokeTimer = nil
 
+        if let localURL = localRecordingFileURL(for: story.id, location: location),
+           playGeneratedSentenceAudio(
+            url: localURL,
+            story: story,
+            location: location,
+            shouldTrack: false,
+            completion: { [weak self] in
+                Task { @MainActor [weak self] in
+                    self?.finishReadingSentence(story: story, location: location)
+                }
+            }
+           ) {
+            return
+        }
+
         if let url = LMCSentenceAudioResolver.generatedAudioURL(storyId: story.id, location: location),
-           playGeneratedSentenceAudio(url: url, story: story, location: location, shouldTrack: shouldTrack) {
+           playGeneratedSentenceAudio(
+            url: url,
+            story: story,
+            location: location,
+            shouldTrack: shouldTrack,
+            completion: { [weak self] in
+                Task { @MainActor [weak self] in
+                    self?.finishReadingSentence(story: story, location: location)
+                }
+            }
+           ) {
             return
         }
 
@@ -1422,7 +1780,8 @@ final class ReaderViewModel: ObservableObject {
         url: URL,
         story: Story,
         location: LMCSentenceLocation,
-        shouldTrack: Bool
+        shouldTrack: Bool,
+        completion: @escaping () -> Void
     ) -> Bool {
         do {
             try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .spokenAudio, options: [.duckOthers])
@@ -1433,7 +1792,7 @@ final class ReaderViewModel: ObservableObject {
             player.rate = Float(playbackSpeed.multiplier)
             let delegate = LMCGeneratedAudioDelegate { [weak self] in
                 Task { @MainActor [weak self] in
-                    self?.finishReadingSentence(story: story, location: location)
+                    completion()
                 }
             }
             player.delegate = delegate
@@ -1772,6 +2131,12 @@ struct LMCSentenceLocation: Equatable {
     var scrollId: String {
         "sentence-\(storyId)-\(paragraphIndex)-\(sentenceIndex)"
     }
+}
+
+private struct LMCActiveSentenceRecording {
+    let location: LMCSentenceLocation
+    let fileURL: URL
+    let startedAt: Date
 }
 
 enum LMCReadingAudioStatus {
@@ -3325,6 +3690,7 @@ private struct ReadingScreen: View {
     @State private var wordLookup: LMCWordLookup?
     @State private var wordLookupAskState: LMCAiAskState = .idle
     @AppStorage("reading_coachmark_tts_row_dismissed") private var didDismissReadAlongCoachmark = false
+    @State private var showMicrophonePermissionAlert = false
 
     private var activeSentenceLocation: LMCSentenceLocation? {
         guard let location = viewModel.readingAudioLocation, location.storyId == story.id else { return nil }
@@ -3448,6 +3814,28 @@ private struct ReadingScreen: View {
                                             sentenceIndex: sentenceIndex
                                         )
                                     },
+                                isRecordingSentence: { sentenceIndex in
+                                    viewModel.isRecordingSentence(
+                                        storyId: story.id,
+                                        paragraphIndex: index,
+                                        sentenceIndex: sentenceIndex
+                                    )
+                                },
+                                    startSentenceRecording: { sentenceIndex in
+                                        Task {
+                                            let result = await viewModel.startSentenceRecording(
+                                                story: story,
+                                                paragraphIndex: index,
+                                                sentenceIndex: sentenceIndex
+                                            )
+                                            if result == .permissionDenied {
+                                                showMicrophonePermissionAlert = true
+                                            }
+                                        }
+                                    },
+                                    stopSentenceRecording: { _ in
+                                        viewModel.stopSentenceRecording()
+                                    },
                                     onWordTap: { token in
                                         wordLookupAskState = .idle
                                         wordLookup = LMCWordLookup(result: viewModel.lookupWord(story: story, token: token))
@@ -3548,6 +3936,18 @@ private struct ReadingScreen: View {
             }
         }
         .background(LMCColor.background.ignoresSafeArea())
+        .alert("reading_recording_permission_required_title", isPresented: $showMicrophonePermissionAlert) {
+            Button("action_open_settings") {
+                if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(settingsURL)
+                }
+            }
+            Button("action_ok", role: .cancel) {
+                showMicrophonePermissionAlert = false
+            }
+        } message: {
+            Text("reading_recording_permission_required_message")
+        }
         .sheet(isPresented: $showSettingsSheet) {
             ReadingSettingsSheet(
                 showPinyin: $showPinyin,
@@ -4601,8 +5001,13 @@ private struct ParentReportScreen: View {
     let openStory: (Story) -> Void
     let openWords: () -> Void
     let openReview: () -> Void
+    let recordings: [VoiceRecording]
+    let playRecording: (VoiceRecording) -> Void
+    let deleteRecording: (String) -> Void
+    let clearAllRecordings: () -> Void
     @State private var gatePassed = false
     @State private var showPrivacy = false
+    @State private var showClearRecordingsConfirm = false
 
     var body: some View {
         LMCScreen(maxWidth: LMCSpace.gridMaxWidth) {
@@ -4621,6 +5026,16 @@ private struct ParentReportScreen: View {
         .sheet(isPresented: $showPrivacy) {
             PrivacyScreen(close: { showPrivacy = false })
                 .preferredColorScheme(.light)
+        }
+        .alert("parent_recordings_clear_all_confirm_title", isPresented: $showClearRecordingsConfirm) {
+            Button("action_cancel", role: .cancel) {
+                showClearRecordingsConfirm = false
+            }
+            Button("action_delete", role: .destructive) {
+                clearAllRecordings()
+            }
+        } message: {
+            Text("parent_recordings_clear_all_confirm_message")
         }
     }
 
@@ -4671,6 +5086,18 @@ private struct ParentReportScreen: View {
                 .buttonStyle(.plain)
             }
 
+            ParentRecordingSection(
+                recordings: recordings,
+                maxPerStory: viewModel.recordingRetentionLimits().perStory,
+                maxOverall: viewModel.recordingRetentionLimits().overall,
+                lookupStoryTitle: { id in
+                    viewModel.story(id: id)?.titleZh ?? id
+                },
+                playRecording: playRecording,
+                deleteRecording: deleteRecording,
+                clearAllRecordings: { showClearRecordingsConfirm = true }
+            )
+
             VStack(alignment: .leading, spacing: LMCSpace.s3) {
                 SectionTitle("parent_story_progress")
                 ForEach(viewModel.stories, id: \.id) { story in
@@ -4715,6 +5142,155 @@ private struct ParentReportScreen: View {
     private var adviceStory: Story? {
         guard let storyId = summary?.advice.storyId else { return nil }
         return viewModel.story(id: storyId)
+    }
+}
+
+private struct ParentRecordingSection: View {
+    let recordings: [VoiceRecording]
+    let maxPerStory: Int
+    let maxOverall: Int
+    let lookupStoryTitle: (String) -> String
+    let playRecording: (VoiceRecording) -> Void
+    let deleteRecording: (String) -> Void
+    let clearAllRecordings: () -> Void
+
+    private var dateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        formatter.timeStyle = .short
+        return formatter
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: LMCSpace.s3) {
+            HStack(alignment: .center) {
+                SectionTitle("parent_recordings_title")
+                Spacer()
+                if !recordings.isEmpty {
+                    Button("parent_recordings_clear_all") {
+                        clearAllRecordings()
+                    }
+                    .buttonStyle(LMCSecondaryButtonStyle())
+                }
+            }
+
+            if recordings.isEmpty {
+                Text("parent_recordings_empty")
+                    .font(.system(size: 15))
+                    .foregroundStyle(LMCColor.textSecondary)
+            } else {
+                ForEach(recordingsByStory) { row in
+                    HStack(spacing: LMCSpace.s2) {
+                        VStack(alignment: .leading, spacing: LMCSpace.s1) {
+                            Text(row.title)
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundStyle(LMCColor.textPrimary)
+                            Text(row.subtitle)
+                                .font(.system(size: 13))
+                                .foregroundStyle(LMCColor.textSecondary)
+                        }
+
+                        Spacer()
+
+                        Button(action: { playRecording(row.recording) }) {
+                            Image(systemName: "play.circle")
+                                .font(.system(size: 20, weight: .bold))
+                                .frame(width: LMCSpace.minTouch, height: LMCSpace.minTouch)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(Text("reading_recording_play"))
+
+                        Button(action: { deleteRecording(row.recording.id) }) {
+                            Image(systemName: "trash")
+                                .font(.system(size: 20, weight: .bold))
+                                .frame(width: LMCSpace.minTouch, height: LMCSpace.minTouch)
+                                .foregroundStyle(LMCColor.textSecondary)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(Text("action_delete"))
+                    }
+                    .padding(LMCSpace.s3)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(LMCColor.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+
+                Text(
+                    LMCStrings.format(
+                        "parent_recordings_retention_statement",
+                        maxPerStory,
+                        maxOverall
+                    )
+                )
+                .font(.system(size: 13))
+                .foregroundStyle(LMCColor.textSecondary)
+            }
+        }
+        .padding(LMCSpace.s3)
+        .background(LMCColor.surfaceVariant)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    private var recordingsByStory: [RecordingRow] {
+        recordings
+            .sorted { $0.createdAtEpochMillis > $1.createdAtEpochMillis }
+            .compactMap { recording in
+                guard let indexes = paragraphAndSentenceIndex(for: recording) else { return nil }
+                let title = lookupStoryTitle(recording.storyId)
+                let subtitle = LMCStrings.format(
+                    "parent_recording_row_format",
+                    title,
+                    indexes.0 + 1,
+                    indexes.1 + 1,
+                    dateString(recording.createdAtEpochMillis),
+                    durationText(recording.durationMs)
+                )
+                return RecordingRow(recording: recording, title: title, subtitle: subtitle)
+            }
+    }
+
+    private func durationText(_ durationMs: Int64) -> String {
+        let totalSeconds = Int((durationMs + 500) / 1_000)
+        let minutes = totalSeconds / 60
+        let seconds = totalSeconds % 60
+        return LMCStrings.format("reading_recording_duration", String(format: "%02d:%02d", minutes, seconds))
+    }
+
+    private func dateString(_ epochMillis: Int64) -> String {
+        dateFormatter.string(from: Date(timeIntervalSince1970: Double(epochMillis) / 1_000))
+    }
+
+    private func paragraphAndSentenceIndex(for recording: VoiceRecording) -> (Int, Int)? {
+        let fileName = URL(fileURLWithPath: recording.filePath).lastPathComponent
+        let stem = fileName
+            .split(separator: ".")
+            .first
+            .map(String.init) ?? fileName
+        let parts = stem.split(separator: "_")
+
+        var paragraphIndex = -1
+        var sentenceIndex = -1
+        for part in parts {
+            if part.hasPrefix("p"), let value = Int(part.dropFirst()) {
+                paragraphIndex = value - 1
+            }
+            if part.hasPrefix("s"), let value = Int(part.dropFirst()) {
+                sentenceIndex = value - 1
+            }
+        }
+
+        guard paragraphIndex >= 0, sentenceIndex >= 0 else { return nil }
+        return (paragraphIndex, sentenceIndex)
+    }
+
+    private struct RecordingRow: Identifiable {
+        let recording: VoiceRecording
+        let title: String
+        let subtitle: String
+
+        var id: String {
+            recording.id
+        }
     }
 }
 
@@ -6200,13 +6776,16 @@ private struct ReadingParagraphView: View {
     let activeCharIndex: Int?
     let playSentence: (Int) -> Void
     let playSentenceOnly: (Int) -> Void
+    let isRecordingSentence: (Int) -> Bool
+    let startSentenceRecording: (Int) -> Void
+    let stopSentenceRecording: (Int) -> Void
     var onWordTap: ((String) -> Void)? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: LMCSpace.s3) {
             ForEach(paragraph.lmcSentenceSegments) { sentence in
-                let isActiveSentence = activeSentenceIndex == sentence.index
-                ReadingSentenceView(
+                    let isActiveSentence = activeSentenceIndex == sentence.index
+                    ReadingSentenceView(
                     sentence: sentence,
                     size: size,
                     showPinyin: showPinyin,
@@ -6214,6 +6793,9 @@ private struct ReadingParagraphView: View {
                     activeCharIndex: isActiveSentence ? activeCharIndex : nil,
                     playSentence: { playSentence(sentence.index) },
                     playSentenceOnly: { playSentenceOnly(sentence.index) },
+                    isRecording: isRecordingSentence(sentence.index),
+                    startRecording: { startSentenceRecording(sentence.index) },
+                    stopRecording: { stopSentenceRecording(sentence.index) },
                     onWordTap: onWordTap
                 )
                 .id(LMCSentenceLocation(
@@ -6240,6 +6822,9 @@ private struct ReadingSentenceView: View {
     var activeCharIndex: Int? = nil
     let playSentence: () -> Void
     let playSentenceOnly: () -> Void
+    let isRecording: Bool
+    let startRecording: () -> Void
+    let stopRecording: () -> Void
     var onWordTap: ((String) -> Void)? = nil
 
     @ViewBuilder
@@ -6255,6 +6840,17 @@ private struct ReadingSentenceView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel(Text("reading_sentence_play"))
+
+            Button(action: isRecording ? stopRecording : startRecording) {
+                Image(systemName: isRecording ? "stop.circle.fill" : "mic.fill")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(isRecording ? LMCColor.onErrorContainer : LMCColor.textSecondary)
+                    .frame(width: LMCSpace.minTouch, height: LMCSpace.minTouch)
+                    .background(isRecording ? LMCColor.error : LMCColor.surfaceVariant)
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text(isRecording ? "reading_sentence_stop_recording" : "reading_sentence_record"))
 
             sentenceContent
                 // Sentence tap plays audio; per-character word taps run as a higher

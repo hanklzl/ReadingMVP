@@ -27,5 +27,7 @@
         <key>UIImageRespectsSafeAreaInsets</key>
         <true/>
     </dict>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Allow recording for read-aloud practice. Recordings stay on this device for parent review.</string>
 </dict>
 </plist>

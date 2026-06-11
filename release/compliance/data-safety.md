@@ -86,7 +86,7 @@ Official context checked: [Google Play Data Safety](https://support.google.com/g
 - Health and fitness: none.
 - Messages: no emails, SMS, chat, or in-app messages between users.
 - Photos and videos: none.
-- Audio files or voice recordings: none. System TTS plays story audio; it does not record the child.
+- Audio files or voice recordings: not collected or transmitted. Read-aloud practice may store child voice recordings locally in app-private device storage for parent review only; recordings are capped, parent-deletable, and never uploaded or used for analytics.
 - Files and docs: none.
 - Calendar: none.
 - Contacts: none.

@@ -84,7 +84,7 @@ Declare if anonymous analytics are enabled.
 - Contact Info from children: no child name, child email, child phone, address, or other child contact information.
 - Contacts: none.
 - Photos or Videos: none.
-- Audio Data: none. TTS/audio playback does not record the child.
+- Audio Data: not collected by the developer or transmitted off device. Read-aloud practice may store child voice recordings locally in app-private device storage for parent review only; recordings are capped, parent-deletable, and never uploaded or used for analytics.
 - Gameplay Content: not applicable.
 - Browsing History: none.
 - Search History: none.

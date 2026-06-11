@@ -1,15 +1,21 @@
 package com.littlemandarin.classics
 
+import android.Manifest
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.net.Uri
 import android.os.Bundle
 import android.os.LocaleList
 import android.provider.Settings
 import android.text.format.DateUtils
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -262,6 +268,18 @@ import com.littlemandarin.classics.shared.story.Story
 import com.littlemandarin.classics.shared.story.StoryAudioManifest
 import com.littlemandarin.classics.shared.story.Vocab
 import com.littlemandarin.classics.shared.usecase.GetStoryListUseCase
+import com.littlemandarin.classics.shared.recording.AndroidRecordingStoreProvider
+import com.littlemandarin.classics.shared.recording.RecordingAction
+import com.littlemandarin.classics.shared.recording.RecordingState
+import com.littlemandarin.classics.shared.recording.RecordingStateMachine
+import com.littlemandarin.classics.shared.recording.RecordingRetentionPolicy
+import com.littlemandarin.classics.shared.recording.VoiceRecording
+import com.littlemandarin.classics.shared.recording.VoiceRecordingService
+import com.littlemandarin.classics.shared.recording.RecordingStorageResult
+import com.littlemandarin.classics.shared.recording.createPlatformVoiceRecordingService
+import com.littlemandarin.classics.AndroidVoiceRecordingController
+import androidx.core.app.ActivityCompat
+import java.io.File
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
@@ -294,6 +312,7 @@ class MainActivity : ComponentActivity() {
         AndroidVocabReviewServiceProvider.initialize(applicationContext)
         AndroidAudioServiceProvider.initialize(applicationContext)
         AndroidTtsServiceProvider.initialize(applicationContext)
+        AndroidRecordingStoreProvider.initialize(applicationContext)
 
         setContent {
             ReaderApp()
@@ -518,6 +537,11 @@ private fun ReaderAppContent(
     val vocabReviewService = remember { createPlatformVocabReviewService() }
     val reviewPackService = remember { createPlatformReviewPackService() }
     val aiInteractionLogService = remember { createPlatformAiInteractionLogService() }
+    val voiceRecordingService = remember {
+        createPlatformVoiceRecordingService(
+            RecordingRetentionPolicy(maxPerStory = 12, maxOverall = 60),
+        )
+    }
     val audioService = remember { createAudioService() }
     val ttsService = remember { createTtsService() }
     val storyPresentationUseCases = remember { StoryPresentationUseCases() }
@@ -540,6 +564,7 @@ private fun ReaderAppContent(
     }
     val progressRecords by progressService.records.collectAsState(initial = emptyList())
     val vocabRecords by vocabReviewService.records.collectAsState(initial = emptyList())
+    val voiceRecordings by voiceRecordingService.recordings.collectAsState(initial = emptyList())
     var storiesState by remember {
         mutableStateOf<StoriesState>(StoriesState.Loading)
     }
@@ -913,6 +938,8 @@ private fun ReaderAppContent(
                         readingPositions = readingPositions,
                         storyPresentationUseCases = storyPresentationUseCases,
                         pendingReview = pendingReview,
+                        voiceRecordings = voiceRecordings,
+                        voiceRecordingService = voiceRecordingService,
                         parentGatePassed = parentGatePassed,
                         onParentGatePassed = { parentGatePassed = true },
                         onStoryClick = { storyId ->
@@ -971,18 +998,21 @@ private fun ReaderAppContent(
                     storiesState = storiesState,
                     storyId = backStackEntry.arguments?.getString("storyId"),
                 ) { story, _ ->
-                    ReadingScreen(
-                        story = story,
-                        settings = settings,
-                        analytics = analytics,
-                        aiService = aiService,
-                        aiInteractionLogService = aiInteractionLogService,
-                        audioService = audioService,
-                        ttsService = ttsService,
-                        initialParagraphIndex = readingPositions[story.id] ?: -1,
-                        onClose = { navController.popBackStack() },
-                        onTextSizeChange = onTextSizeChange,
-                        onPinyinDefaultChange = onPinyinDefaultChange,
+            ReadingScreen(
+                story = story,
+                settings = settings,
+                analytics = analytics,
+                aiService = aiService,
+                aiInteractionLogService = aiInteractionLogService,
+                voiceRecordings = voiceRecordings.filter { it.storyId == story.id },
+                voiceRecordingService = voiceRecordingService,
+                audioService = audioService,
+                ttsService = ttsService,
+                stopSfx = sfxPlayer::stopAll,
+                initialParagraphIndex = readingPositions[story.id] ?: -1,
+                onClose = { navController.popBackStack() },
+                onTextSizeChange = onTextSizeChange,
+                onPinyinDefaultChange = onPinyinDefaultChange,
                         onReadingPositionChange = onReadingPositionChange,
                         onVocabulary = {
                             navController.navigate(ReaderRoutes.vocabulary(story.id, VocabularyEntrySource.Reading))
@@ -2194,8 +2224,11 @@ private fun ReadingScreen(
     analytics: ReaderAnalytics,
     aiService: AiService,
     aiInteractionLogService: AiInteractionLogService,
+    voiceRecordings: List<VoiceRecording>,
+    voiceRecordingService: VoiceRecordingService,
     audioService: AudioService,
     ttsService: TtsService,
+    stopSfx: () -> Unit,
     initialParagraphIndex: Int,
     onClose: () -> Unit,
     onTextSizeChange: (ReadingTextSize) -> Unit,
@@ -2294,6 +2327,19 @@ private fun ReadingScreen(
     val wordLookupUseCase = remember { WordLookupUseCase() }
     var wordLookup by remember(story.id) { mutableStateOf<WordLookupResult?>(null) }
     var wordLookupAiState by remember(story.id) { mutableStateOf<AiUiState>(AiUiState.Idle) }
+    val voiceRecordingController = remember(context.applicationContext) {
+        AndroidVoiceRecordingController(context)
+    }
+    val voiceRecordingStateMachine = remember { RecordingStateMachine() }
+    var voiceRecordingState by remember(story.id) { mutableStateOf<RecordingState>(RecordingState.Idle) }
+    var pendingVoiceRecordingParagraphIndex by remember(story.id) { mutableIntStateOf(-1) }
+    var showVoicePermissionDialog by remember(story.id) { mutableStateOf(false) }
+    var showVoicePermissionSettingsAction by remember(story.id) { mutableStateOf(false) }
+    var voiceRecordingMessageRes by remember(story.id) { mutableStateOf<Int?>(null) }
+
+    DisposableEffect(voiceRecordingController) {
+        onDispose { voiceRecordingController.release() }
+    }
 
     LaunchedEffect(story.id, paragraphIndex) {
         onReadingPositionChange(story.id, paragraphIndex)
@@ -2383,10 +2429,172 @@ private fun ReadingScreen(
     fun stopAudioTransport() {
         playbackJob?.cancel()
         playbackJob = null
+        voiceRecordingController.stopPlayback()
+        stopSfx()
+        if (voiceRecordingState is RecordingState.Playing) {
+            voiceRecordingState = voiceRecordingStateMachine.reduce(
+                voiceRecordingState,
+                RecordingAction.Completed,
+            )
+        }
         scope.launch {
             audioService.stop()
             ttsService.stop()
         }
+    }
+
+    fun stopVoiceRecording() {
+        val activeRecording = voiceRecordingState as? RecordingState.Recording ?: return
+        val capture = voiceRecordingController.stopRecording()
+        if (capture == null) {
+            voiceRecordingState = voiceRecordingStateMachine.reduce(
+                voiceRecordingState,
+                RecordingAction.Reset,
+            )
+            voiceRecordingMessageRes = R.string.voice_recording_failed
+            return
+        }
+
+        val recording = VoiceRecording(
+            id = capture.file.nameWithoutExtension,
+            storyId = activeRecording.storyId,
+            paragraphIndex = activeRecording.paragraphIndex,
+            filePath = capture.file.absolutePath,
+            durationMs = capture.durationMs,
+            createdAtEpochMillis = System.currentTimeMillis(),
+        )
+        voiceRecordingState = voiceRecordingStateMachine.reduce(
+            voiceRecordingState,
+            RecordingAction.Stopped(recording.id),
+        )
+        voiceRecordingMessageRes = R.string.voice_recording_saved
+        scope.launch {
+            val result = voiceRecordingService.register(recording)
+            cleanupRecordingFiles(result.removed)
+        }
+    }
+
+    fun openRecordingSettings() {
+        val activity = context as? Activity ?: return
+        val intent = Intent(
+            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+            Uri.fromParts("package", activity.packageName, null),
+        )
+        activity.startActivity(intent)
+    }
+
+    fun beginVoiceRecording(targetParagraphIndex: Int) {
+        if (voiceRecordingState is RecordingState.Recording) {
+            stopVoiceRecording()
+        }
+        stopAudioTransport()
+        voiceRecordingMessageRes = null
+        showVoicePermissionDialog = false
+        showVoicePermissionSettingsAction = false
+        voiceRecordingState = voiceRecordingStateMachine.reduce(
+            voiceRecordingState,
+            RecordingAction.Request(story.id, targetParagraphIndex),
+        )
+        try {
+            voiceRecordingController.startRecording(story.id, targetParagraphIndex)
+            voiceRecordingState = voiceRecordingStateMachine.reduce(
+                voiceRecordingState,
+                RecordingAction.PermissionGranted,
+            )
+        } catch (_: Throwable) {
+            voiceRecordingState = voiceRecordingStateMachine.reduce(
+                voiceRecordingState,
+                RecordingAction.Reset,
+            )
+            voiceRecordingMessageRes = R.string.voice_recording_failed
+        }
+    }
+
+    val microphonePermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        val targetParagraphIndex = pendingVoiceRecordingParagraphIndex
+        if (granted && targetParagraphIndex >= 0) {
+            pendingVoiceRecordingParagraphIndex = -1
+            showVoicePermissionDialog = false
+            showVoicePermissionSettingsAction = false
+            beginVoiceRecording(targetParagraphIndex)
+        } else {
+            voiceRecordingState = voiceRecordingStateMachine.reduce(
+                voiceRecordingState,
+                RecordingAction.PermissionDenied,
+            )
+            val activity = context as? Activity
+            val shouldShowRationale = activity?.let {
+                ActivityCompat.shouldShowRequestPermissionRationale(
+                    it,
+                    Manifest.permission.RECORD_AUDIO,
+                )
+            } ?: false
+            showVoicePermissionSettingsAction = !shouldShowRationale
+            showVoicePermissionDialog = true
+            voiceRecordingMessageRes = R.string.voice_mic_denied
+        }
+    }
+
+    fun requestVoiceRecording(targetParagraphIndex: Int) {
+        val activeRecording = voiceRecordingState as? RecordingState.Recording
+        if (
+            activeRecording != null &&
+            activeRecording.storyId == story.id &&
+            activeRecording.paragraphIndex == targetParagraphIndex
+        ) {
+            stopVoiceRecording()
+            return
+        }
+
+        if (activeRecording != null) {
+            stopVoiceRecording()
+        }
+        pendingVoiceRecordingParagraphIndex = targetParagraphIndex
+        voiceRecordingState = voiceRecordingStateMachine.reduce(
+            voiceRecordingState,
+            RecordingAction.Request(story.id, targetParagraphIndex),
+        )
+        if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            beginVoiceRecording(targetParagraphIndex)
+        } else {
+            voiceRecordingMessageRes = null
+            showVoicePermissionDialog = true
+            showVoicePermissionSettingsAction = false
+        }
+    }
+
+    fun playVoiceRecording(recording: VoiceRecording) {
+        if (voiceRecordingState is RecordingState.Recording) {
+            stopVoiceRecording()
+        }
+        stopAudioTransport()
+        voiceRecordingMessageRes = null
+        voiceRecordingState = voiceRecordingStateMachine.reduce(
+            RecordingState.Stopped(
+                storyId = recording.storyId,
+                paragraphIndex = recording.paragraphIndex,
+                activeRecordingId = recording.id,
+            ),
+            RecordingAction.Playing(recording.id),
+        )
+        voiceRecordingController.play(
+            filePath = recording.filePath,
+            onCompletion = {
+                voiceRecordingState = voiceRecordingStateMachine.reduce(
+                    voiceRecordingState,
+                    RecordingAction.Completed,
+                )
+            },
+            onError = {
+                voiceRecordingState = voiceRecordingStateMachine.reduce(
+                    voiceRecordingState,
+                    RecordingAction.Reset,
+                )
+                voiceRecordingMessageRes = R.string.voice_recording_playback_failed
+            },
+        )
     }
 
     fun stopSentencePlayback() {
@@ -2407,7 +2615,10 @@ private fun ReadingScreen(
     ) {
         if (story.paragraphs.getOrNull(target.paragraphIndex) == null) return
 
-        playbackJob?.cancel()
+        if (voiceRecordingState is RecordingState.Recording) {
+            stopVoiceRecording()
+        }
+        stopAudioTransport()
         playbackJob = scope.launch {
             audioService.stop()
             ttsService.stop()
@@ -2565,6 +2776,19 @@ private fun ReadingScreen(
                 ttsService.stop()
             }
         }
+    }
+
+    fun requestVoiceRecordingPermission() {
+        val targetParagraphIndex = pendingVoiceRecordingParagraphIndex
+        if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            showVoicePermissionDialog = false
+            showVoicePermissionSettingsAction = false
+            if (targetParagraphIndex >= 0) {
+                beginVoiceRecording(targetParagraphIndex)
+            }
+            return
+        }
+        microphonePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
     }
 
     fun resumeSentencePlayback() {
@@ -2732,12 +2956,14 @@ private fun ReadingScreen(
         playbackState.sentenceCountInParagraph > 0
 
     fun goPreviousParagraph() {
+        stopVoiceRecording()
         val previousState = readingSessionReducer.previous(story, readingState)
         readingState = previousState
         resetPlaybackForParagraph(previousState.paragraphIndex)
     }
 
     fun goNextParagraph() {
+        stopVoiceRecording()
         val transition = readingSessionReducer.next(story, readingState)
         readingState = transition.state
         resetPlaybackForParagraph(transition.state.paragraphIndex)
@@ -2766,6 +2992,11 @@ private fun ReadingScreen(
             wordLookup = wordLookupUseCase.lookup(story, token)
         }
     }
+    val currentParagraphVoiceRecordings = remember(voiceRecordings, story.id, paragraphIndex) {
+        voiceRecordings
+            .filter { it.storyId == story.id && it.paragraphIndex == paragraphIndex }
+            .sortedByDescending { it.createdAtEpochMillis }
+    }
 
     Box(
         modifier = Modifier
@@ -2779,6 +3010,7 @@ private fun ReadingScreen(
                 paragraphCount = paragraphCount,
                 progressFraction = readingState.progressFraction,
                 onClose = {
+                    stopVoiceRecording()
                     stopAudioTransport()
                     onClose()
                 },
@@ -2844,6 +3076,31 @@ private fun ReadingScreen(
                                     onWordTap = onWordTap,
                                 )
                             }
+                        }
+                        item(key = "paragraph-$paragraphIndex-voice-recording") {
+                            VoiceRecordingPracticeCard(
+                                latestRecording = currentParagraphVoiceRecordings.firstOrNull(),
+                                isRecording = (voiceRecordingState as? RecordingState.Recording)
+                                    ?.let { it.storyId == story.id && it.paragraphIndex == paragraphIndex } == true,
+                                isPlaying = (voiceRecordingState as? RecordingState.Playing)
+                                    ?.let { it.storyId == story.id && it.paragraphIndex == paragraphIndex } == true,
+                                showMicRationale = showVoicePermissionDialog &&
+                                    pendingVoiceRecordingParagraphIndex == paragraphIndex,
+                                messageRes = voiceRecordingMessageRes,
+                                onRecordClick = { requestVoiceRecording(paragraphIndex) },
+                                onAllowMicClick = {
+                                    if (showVoicePermissionSettingsAction) {
+                                        openRecordingSettings()
+                                    } else {
+                                        requestVoiceRecordingPermission()
+                                    }
+                                },
+                                onPlayClick = {
+                                    currentParagraphVoiceRecordings.firstOrNull()?.let(::playVoiceRecording)
+                                },
+                                showPermissionSettingsAction = showVoicePermissionSettingsAction &&
+                                    pendingVoiceRecordingParagraphIndex == paragraphIndex,
+                            )
                         }
                         item(key = "paragraph-$paragraphIndex-ask") {
                             AskExplanationCard(
@@ -3037,6 +3294,147 @@ private fun ReadingScreen(
                 wordLookupAiState = AiUiState.Idle
             },
         )
+    }
+
+}
+
+@Composable
+private fun VoiceRecordingPracticeCard(
+    latestRecording: VoiceRecording?,
+    isRecording: Boolean,
+    isPlaying: Boolean,
+    showMicRationale: Boolean,
+    showPermissionSettingsAction: Boolean,
+    @StringRes messageRes: Int?,
+    onRecordClick: () -> Unit,
+    onAllowMicClick: () -> Unit,
+    onPlayClick: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(LmcSpacing.RadiusSm),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+    ) {
+        Column(
+            modifier = Modifier.padding(LmcSpacing.CardPadding),
+            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+        ) {
+            Text(
+                text = stringResource(R.string.voice_practice_title),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+            Text(
+                text = stringResource(R.string.voice_practice_body),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+            Text(
+                text = stringResource(R.string.voice_practice_privacy),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Button(
+                    onClick = onRecordClick,
+                    modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
+                    shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+                ) {
+                    Text(
+                        text = stringResource(
+                            if (isRecording) {
+                                R.string.action_stop_recording
+                            } else {
+                                R.string.action_record_voice
+                            },
+                        ),
+                    )
+                }
+                OutlinedButton(
+                    onClick = onPlayClick,
+                    enabled = latestRecording != null && !isRecording,
+                    modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
+                    shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+                ) {
+                    Text(
+                        text = stringResource(
+                            if (isPlaying) {
+                                R.string.voice_recording_playing
+                            } else {
+                                R.string.action_play_recording
+                            },
+                        ),
+                    )
+                }
+            }
+            latestRecording?.let { recording ->
+                Text(
+                    text = stringResource(
+                        R.string.voice_latest_recording_format,
+                        voiceRecordingDurationText(recording.durationMs),
+                        relativeTimeText(recording.createdAtEpochMillis),
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+            }
+            if (showMicRationale) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(LmcSpacing.RadiusSm),
+                    color = MaterialTheme.colorScheme.surface,
+                ) {
+                    Column(
+                        modifier = Modifier.padding(LmcSpacing.Space3),
+                        verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.voice_mic_rationale_title),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = stringResource(
+                                if (showPermissionSettingsAction) {
+                                    R.string.voice_mic_settings_body
+                                } else {
+                                    R.string.voice_mic_rationale_body
+                                },
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        OutlinedButton(
+                            onClick = onAllowMicClick,
+                            modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
+                            shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+                        ) {
+                            Text(
+                                text = stringResource(
+                                    if (showPermissionSettingsAction) {
+                                        R.string.action_open_settings
+                                    } else {
+                                        R.string.voice_mic_allow
+                                    },
+                                ),
+                            )
+                        }
+                    }
+                }
+            }
+            messageRes?.let { resId ->
+                Text(
+                    text = stringResource(resId),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                )
+            }
+        }
     }
 }
 
@@ -3466,6 +3864,8 @@ private fun ParentReportScreen(
     readingPositions: Map<String, Int>,
     storyPresentationUseCases: StoryPresentationUseCases,
     pendingReview: PendingReview?,
+    voiceRecordings: List<VoiceRecording>,
+    voiceRecordingService: VoiceRecordingService,
     parentGatePassed: Boolean,
     onParentGatePassed: () -> Unit,
     onStoryClick: (String) -> Unit,
@@ -3475,6 +3875,15 @@ private fun ParentReportScreen(
     onPrivacy: () -> Unit,
 ) {
     val numberFormat = rememberNumberFormat()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val voicePlaybackController = remember(context.applicationContext) {
+        AndroidVoiceRecordingController(context)
+    }
+    var playingVoiceRecordingId by remember { mutableStateOf<String?>(null) }
+    DisposableEffect(voicePlaybackController) {
+        onDispose { voicePlaybackController.release() }
+    }
     val completedStoryIds = remember(progressRecords) {
         storyPresentationUseCases.completedStoryIds(progressRecords)
     }
@@ -3568,6 +3977,44 @@ private fun ParentReportScreen(
             item {
                 ParentWeeklyPlanSection(plan = weeklyPlan, stories = stories)
             }
+            item {
+                ParentVoiceRecordingsSection(
+                    stories = stories,
+                    recordings = voiceRecordings,
+                    playingRecordingId = playingVoiceRecordingId,
+                    onPlay = { recording ->
+                        if (playingVoiceRecordingId == recording.id) {
+                            voicePlaybackController.stopPlayback()
+                            playingVoiceRecordingId = null
+                        } else {
+                            voicePlaybackController.play(
+                                filePath = recording.filePath,
+                                onCompletion = { playingVoiceRecordingId = null },
+                                onError = { playingVoiceRecordingId = null },
+                            )
+                            playingVoiceRecordingId = recording.id
+                        }
+                    },
+                    onDelete = { recording ->
+                        if (playingVoiceRecordingId == recording.id) {
+                            voicePlaybackController.stopPlayback()
+                            playingVoiceRecordingId = null
+                        }
+                        scope.launch {
+                            val result = voiceRecordingService.deleteById(recording.id)
+                            cleanupRecordingFiles(result.removed)
+                        }
+                    },
+                    onClearAll = {
+                        voicePlaybackController.stopPlayback()
+                        playingVoiceRecordingId = null
+                        scope.launch {
+                            val result = voiceRecordingService.clearAll()
+                            cleanupRecordingFiles(result.removed)
+                        }
+                    },
+                )
+            }
             if (pendingReview != null) {
                 item {
                     ReviewSectionCard(
@@ -3602,6 +4049,117 @@ private fun ParentReportScreen(
             }
             item {
                 PrivacyNotice(onPrivacy = onPrivacy)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ParentVoiceRecordingsSection(
+    stories: List<Story>,
+    recordings: List<VoiceRecording>,
+    playingRecordingId: String?,
+    onPlay: (VoiceRecording) -> Unit,
+    onDelete: (VoiceRecording) -> Unit,
+    onClearAll: () -> Unit,
+) {
+    val storyTitles = remember(stories) { stories.associate { it.id to it.titleZh } }
+    ReviewSectionCard(
+        title = stringResource(R.string.voice_parent_title),
+        containerColor = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space3)) {
+            Text(
+                text = stringResource(R.string.voice_parent_retention),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (recordings.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.voice_parent_empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                OutlinedButton(
+                    onClick = onClearAll,
+                    modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
+                    shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+                ) {
+                    Text(text = stringResource(R.string.action_clear_recordings))
+                }
+                recordings.forEach { recording ->
+                    ParentVoiceRecordingRow(
+                        recording = recording,
+                        storyTitle = storyTitles[recording.storyId] ?: recording.storyId,
+                        isPlaying = playingRecordingId == recording.id,
+                        onPlay = { onPlay(recording) },
+                        onDelete = { onDelete(recording) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ParentVoiceRecordingRow(
+    recording: VoiceRecording,
+    storyTitle: String,
+    isPlaying: Boolean,
+    onPlay: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(LmcSpacing.RadiusSm),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+    ) {
+        Column(
+            modifier = Modifier.padding(LmcSpacing.Space3),
+            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+        ) {
+            Text(
+                text = storyTitle,
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = stringResource(
+                    R.string.voice_recording_parent_meta_format,
+                    recording.paragraphIndex + 1,
+                    voiceRecordingDurationText(recording.durationMs),
+                    relativeTimeText(recording.createdAtEpochMillis),
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                OutlinedButton(
+                    onClick = onPlay,
+                    modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
+                    shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+                ) {
+                    Text(
+                        text = stringResource(
+                            if (isPlaying) {
+                                R.string.voice_recording_playing
+                            } else {
+                                R.string.action_play_recording
+                            },
+                        ),
+                    )
+                }
+                TextButton(
+                    onClick = onDelete,
+                    modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
+                ) {
+                    Text(text = stringResource(R.string.action_delete_recording))
+                }
             }
         }
     }
@@ -7593,6 +8151,36 @@ private fun relativeTimeText(epochMillis: Long): String =
         System.currentTimeMillis(),
         DateUtils.MINUTE_IN_MILLIS,
     ).toString()
+
+private fun cleanupRecordingFiles(recordings: List<VoiceRecording>) {
+    recordings.forEach { recording ->
+        runCatching {
+            File(recording.filePath).delete()
+        }
+    }
+}
+
+private suspend fun VoiceRecordingService.register(
+    recording: VoiceRecording,
+): RecordingStorageResult = add(recording)
+
+private suspend fun VoiceRecordingService.deleteById(
+    recordingId: String,
+): RecordingStorageResult = delete(recordingId)
+
+@Composable
+private fun voiceRecordingDurationText(durationMs: Long): String {
+    val totalSeconds = (durationMs / 1_000L).coerceAtLeast(1L)
+    return if (totalSeconds < 60L) {
+        stringResource(R.string.voice_recording_duration_seconds, totalSeconds)
+    } else {
+        stringResource(
+            R.string.voice_recording_duration_minutes,
+            totalSeconds / 60L,
+            totalSeconds % 60L,
+        )
+    }
+}
 
 @Composable
 private fun PrivacyPoint(

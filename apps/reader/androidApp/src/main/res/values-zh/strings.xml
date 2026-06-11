@@ -216,6 +216,30 @@
     <string name="reading_ask_loading">正在解释...</string>
     <string name="reading_ask_error">暂时无法解释这段故事。</string>
     <string name="ai_answer_stub">这句话在帮助讲故事。继续读，看看接下来发生什么。</string>
+    <string name="action_record_voice">录下我的朗读</string>
+    <string name="action_stop_recording">停止录音</string>
+    <string name="action_play_recording">播放录音</string>
+    <string name="action_delete_recording">删除</string>
+    <string name="action_clear_recordings">清空录音</string>
+    <string name="voice_practice_title">用自己的声音读一读</string>
+    <string name="voice_practice_body">录下这一段，再播放听听自己读中文的声音。</string>
+    <string name="voice_practice_privacy">只保存在本设备上，家长可以随时删除。</string>
+    <string name="voice_mic_rationale_title">可以使用麦克风吗？</string>
+    <string name="voice_mic_rationale_body">只在你录朗读时使用麦克风。录音会留在本设备上。</string>
+    <string name="voice_mic_settings_body">麦克风权限已被关闭。请打开系统设置，允许这个应用使用麦克风。</string>
+    <string name="voice_mic_allow">允许麦克风</string>
+    <string name="voice_mic_denied">没有允许麦克风，所以暂时不能录音。</string>
+    <string name="voice_recording_saved">录音已保存在本设备上。</string>
+    <string name="voice_recording_failed">录音暂时保存失败，请再试一次。</string>
+    <string name="voice_recording_playback_failed">这条录音暂时无法播放。</string>
+    <string name="voice_recording_playing">播放中...</string>
+    <string name="voice_latest_recording_format">最新：%1$s，%2$s</string>
+    <string name="voice_recording_duration_seconds">%1$d 秒</string>
+    <string name="voice_recording_duration_minutes">%1$d:%2$02d 分钟</string>
+    <string name="voice_parent_title">朗读录音</string>
+    <string name="voice_parent_empty">还没有朗读录音。</string>
+    <string name="voice_parent_retention">录音只保存在本设备上，不会上传，也不会被分析。家长可以在这里播放或删除；应用只保留最近的录音。</string>
+    <string name="voice_recording_parent_meta_format">第 %1$d 段 · %2$s · %3$s</string>
 
     <!-- Tap-word lookup -->
     <string name="word_lookup_title">词语</string>

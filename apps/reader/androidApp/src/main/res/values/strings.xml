@@ -218,6 +218,30 @@
     <string name="reading_ask_loading">Explaining...</string>
     <string name="reading_ask_error">Story explanation is not available right now.</string>
     <string name="ai_answer_stub">This part helps explain the story. Keep reading to see what happens next.</string>
+    <string name="action_record_voice">Record my reading</string>
+    <string name="action_stop_recording">Stop recording</string>
+    <string name="action_play_recording">Play recording</string>
+    <string name="action_delete_recording">Delete</string>
+    <string name="action_clear_recordings">Clear all recordings</string>
+    <string name="voice_practice_title">Read it in your voice</string>
+    <string name="voice_practice_body">Record this paragraph, then play it back to hear yourself read Chinese.</string>
+    <string name="voice_practice_privacy">Saved only on this device. A parent can delete it anytime.</string>
+    <string name="voice_mic_rationale_title">Use the microphone?</string>
+    <string name="voice_mic_rationale_body">We need the microphone only while you record your reading. The recording stays on this device.</string>
+    <string name="voice_mic_settings_body">Microphone access is blocked. Open device settings and allow microphone for this app.</string>
+    <string name="voice_mic_allow">Allow microphone</string>
+    <string name="voice_mic_denied">Recording is unavailable because the microphone was not allowed.</string>
+    <string name="voice_recording_saved">Recording saved on this device.</string>
+    <string name="voice_recording_failed">Recording could not be saved. Please try again.</string>
+    <string name="voice_recording_playback_failed">This recording could not be played.</string>
+    <string name="voice_recording_playing">Playing...</string>
+    <string name="voice_latest_recording_format">Latest: %1$s, %2$s</string>
+    <string name="voice_recording_duration_seconds">%1$d sec</string>
+    <string name="voice_recording_duration_minutes">%1$d:%2$02d min</string>
+    <string name="voice_parent_title">Read-aloud recordings</string>
+    <string name="voice_parent_empty">No read-aloud recordings yet.</string>
+    <string name="voice_parent_retention">Recordings stay on this device only. They are not uploaded or analyzed. Parents can play or delete them here; the app keeps only the most recent recordings.</string>
+    <string name="voice_recording_parent_meta_format">Paragraph %1$d · %2$s · %3$s</string>
 
     <!-- Tap-word lookup -->
     <string name="word_lookup_title">Word</string>
