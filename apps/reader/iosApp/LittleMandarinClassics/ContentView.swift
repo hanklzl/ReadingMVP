@@ -365,6 +365,7 @@ final class ReaderViewModel: ObservableObject {
     @Published private(set) var lastCompletionStreakSummary: StreakSummary?
     @Published private(set) var onboardingPreferences: OnboardingPreferences?
     @Published private(set) var pendingReview: PendingReview?
+    @Published private(set) var aiInteractionRecords: [AiInteractionRecord] = []
     @Published var activeReviewPack: ReviewPack?
     @Published private(set) var lastCompletionReviewPack: ReviewPack?
 
@@ -378,6 +379,8 @@ final class ReaderViewModel: ObservableObject {
     private let streakService = IosEngagementServicesKt.createPlatformStreakService()
     private let vocabReviewService = IosVocabReviewServiceKt.createPlatformVocabReviewService()
     private let reviewPackService = IosEngagementServicesKt.createPlatformReviewPackService()
+    private let aiInteractionLogService = IosEngagementServicesKt.createPlatformAiInteractionLogService()
+    private let aiSafetyConsoleUseCases = AiSafetyConsoleUseCases()
     private let ttsService = IosTtsServiceKt.createTtsService()
     private let storyPresentationUseCases = StoryPresentationUseCases()
     private let readingLevelAssessmentUseCases = ReadingLevelAssessmentUseCases()
@@ -996,7 +999,14 @@ final class ReaderViewModel: ObservableObject {
             )
         )
         switch result {
-        case .answer(let answer, _):
+        case .answer(let answer, let outcome):
+            await logAiInteraction(
+                storyId: story.id,
+                questionType: questionType,
+                query: selectedText,
+                answerPreview: answer,
+                outcome: outcome
+            )
             return .answered(answer)
         case .failure:
             return .failed
@@ -1026,11 +1036,60 @@ final class ReaderViewModel: ObservableObject {
             )
         )
         switch result {
-        case .answer(let answer, _):
+        case .answer(let answer, let outcome):
+            await logAiInteraction(
+                storyId: story.id,
+                questionType: questionType,
+                query: token,
+                answerPreview: answer,
+                outcome: outcome
+            )
             return .answered(answer)
         case .failure:
             return .failed
         }
+    }
+
+    // Append a controlled-AI answer to the local, parent-reviewable safety log.
+    // Story content (query + short answer preview) + metadata only — never child PII.
+    private func logAiInteraction(
+        storyId: String,
+        questionType: String,
+        query: String,
+        answerPreview: String,
+        outcome: LMCAiSafetyOutcome
+    ) async {
+        let now = Int64(Date().timeIntervalSince1970 * 1_000)
+        let record = AiInteractionRecord(
+            id: "\(storyId)|\(questionType)|\(now)",
+            storyId: storyId,
+            questionType: questionType,
+            query: query,
+            answerPreview: answerPreview,
+            outcome: outcome == .outOfScope ? .outofscope : .allowed,
+            epochMillis: now
+        )
+        try? await aiInteractionLogService.append(record: record)
+        await refreshAiInteractionLog()
+    }
+
+    func refreshAiInteractionLog() async {
+        let records = (try? await aiInteractionLogService.read()) ?? []
+        aiInteractionRecords = records
+    }
+
+    func deleteAiInteraction(id: String) async {
+        try? await aiInteractionLogService.deleteById(id: id)
+        await refreshAiInteractionLog()
+    }
+
+    func clearAiInteractionLog() async {
+        try? await aiInteractionLogService.clear()
+        await refreshAiInteractionLog()
+    }
+
+    var aiInteractionSummary: AiSafetyConsoleSummary {
+        aiSafetyConsoleUseCases.summary(records: aiInteractionRecords)
     }
 
     func saveFeedback(_ draft: LMCFeedbackDraft) async throws {
@@ -2257,6 +2316,8 @@ enum LMCColor {
     static let success = Color(hex: 0x3B7A3B)
     static let successContainer = Color(hex: 0xE1F3DC)
     static let error = Color(hex: 0xB3261E)
+    static let errorContainer = Color(hex: 0xFADAD6)
+    static let onErrorContainer = Color(hex: 0x410E0B)
     static let info = Color(hex: 0x2B6CA3)
     static let infoContainer = Color(hex: 0xDCEEFF)
 }
@@ -4620,6 +4681,7 @@ private struct SettingsScreen: View {
     @State private var showPrivacy = false
     @State private var showFeedback = false
     @State private var showRecheckLevel = false
+    @State private var showAiConsole = false
     @State private var adultSettingsUnlocked = false
 
     var body: some View {
@@ -4638,6 +4700,11 @@ private struct SettingsScreen: View {
         }
         .sheet(isPresented: $showPrivacy) {
             PrivacyScreen(close: { showPrivacy = false })
+                .preferredColorScheme(.light)
+        }
+        .sheet(isPresented: $showAiConsole) {
+            AiSafetyConsoleScreen(viewModel: viewModel, close: { showAiConsole = false })
+                .environment(\.locale, Locale(identifier: localeIdentifier))
                 .preferredColorScheme(.light)
         }
         .sheet(isPresented: $showFeedback) {
@@ -4772,6 +4839,8 @@ private struct SettingsScreen: View {
         VStack(alignment: .leading, spacing: LMCSpace.s3) {
             SettingsNavigationRow(titleKey: "parent_title", systemName: "chart.bar.xaxis", action: openParent)
             Divider().background(LMCColor.outlineVariant)
+            SettingsNavigationRow(titleKey: "settings_ai_console", systemName: "shield.lefthalf.filled", action: { showAiConsole = true })
+            Divider().background(LMCColor.outlineVariant)
             SettingsNavigationRow(titleKey: "settings_recheck_level", systemName: "checkmark.seal", action: { showRecheckLevel = true })
             Divider().background(LMCColor.outlineVariant)
             SettingsNavigationRow(titleKey: "settings_give_feedback", systemName: "bubble.left.and.bubble.right.fill", action: { showFeedback = true })
@@ -4865,6 +4934,131 @@ private struct PrivacyPoint: View {
                 .font(.system(size: 16))
                 .foregroundStyle(LMCColor.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(LMCSpace.s4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(LMCColor.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+}
+
+private struct AiSafetyConsoleScreen: View {
+    @ObservedObject var viewModel: ReaderViewModel
+    let close: () -> Void
+
+    private static let relativeFormatter: RelativeDateTimeFormatter = {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .full
+        return formatter
+    }()
+
+    private func relativeTime(_ epochMillis: Int64) -> String {
+        let date = Date(timeIntervalSince1970: Double(epochMillis) / 1_000)
+        return Self.relativeFormatter.localizedString(for: date, relativeTo: Date())
+    }
+
+    var body: some View {
+        let records = viewModel.aiInteractionRecords
+        let summary = viewModel.aiInteractionSummary
+        return NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: LMCSpace.s4) {
+                    SectionTitle("ai_console_title")
+
+                    VStack(alignment: .leading, spacing: LMCSpace.s2) {
+                        Text(LMCStrings.format("ai_console_summary_total", Int(summary.totalCount)))
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundStyle(LMCColor.textPrimary)
+                        Text(LMCStrings.format("ai_console_summary_declined", Int(summary.outOfScopeCount)))
+                            .font(.system(size: 16))
+                            .foregroundStyle(LMCColor.textSecondary)
+                        let lastText = summary.lastEpochMillis.map { relativeTime($0.int64Value) }
+                            ?? LMCStrings.localized("ai_console_last_none")
+                        Text(LMCStrings.format("ai_console_summary_last", lastText))
+                            .font(.system(size: 16))
+                            .foregroundStyle(LMCColor.textSecondary)
+                    }
+                    .padding(LMCSpace.s4)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(LMCColor.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+                    Text("ai_console_retention")
+                        .font(.system(size: 15))
+                        .foregroundStyle(LMCColor.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    if !records.isEmpty {
+                        Button("ai_console_clear_all") {
+                            Task { await viewModel.clearAiInteractionLog() }
+                        }
+                        .buttonStyle(LMCSecondaryButtonStyle())
+                    }
+
+                    if records.isEmpty {
+                        Text("ai_console_empty")
+                            .font(.system(size: 16))
+                            .foregroundStyle(LMCColor.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    } else {
+                        ForEach(records, id: \.id) { record in
+                            AiInteractionRow(
+                                record: record,
+                                relativeTime: relativeTime(record.epochMillis),
+                                onDelete: {
+                                    Task { await viewModel.deleteAiInteraction(id: record.id) }
+                                }
+                            )
+                        }
+                    }
+                }
+                .padding(LMCSpace.s4)
+                .frame(maxWidth: LMCSpace.readingMaxWidth, alignment: .leading)
+                .frame(maxWidth: .infinity)
+            }
+            .background(LMCColor.background)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("action_close", action: close)
+                }
+            }
+        }
+        .task { await viewModel.refreshAiInteractionLog() }
+    }
+}
+
+private struct AiInteractionRow: View {
+    let record: AiInteractionRecord
+    let relativeTime: String
+    let onDelete: () -> Void
+
+    private var isDeclined: Bool { record.outcome == .outofscope }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: LMCSpace.s2) {
+            HStack(spacing: LMCSpace.s2) {
+                Text(isDeclined ? "ai_console_outcome_declined" : "ai_console_outcome_allowed")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(isDeclined ? LMCColor.onErrorContainer : LMCColor.onSecondaryContainer)
+                    .padding(.horizontal, LMCSpace.s2)
+                    .padding(.vertical, LMCSpace.s1)
+                    .background(isDeclined ? LMCColor.errorContainer : LMCColor.secondaryContainer)
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                Spacer()
+                Text(relativeTime)
+                    .font(.system(size: 13))
+                    .foregroundStyle(LMCColor.textSecondary)
+            }
+            Text(LMCStrings.format("ai_console_query_label", record.query))
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(LMCColor.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+            Text(LMCStrings.format("ai_console_answer_label", record.answerPreview))
+                .font(.system(size: 16))
+                .foregroundStyle(LMCColor.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Button("ai_console_delete", role: .destructive, action: onDelete)
+                .buttonStyle(LMCSecondaryButtonStyle())
         }
         .padding(LMCSpace.s4)
         .frame(maxWidth: .infinity, alignment: .leading)

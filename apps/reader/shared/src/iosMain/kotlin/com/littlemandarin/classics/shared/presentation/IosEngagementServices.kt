@@ -11,6 +11,31 @@ actual fun createPlatformStreakService(): StreakService =
 actual fun createPlatformReviewPackService(): ReviewPackService =
     StoredReviewPackService(IosReviewPackStore())
 
+actual fun createPlatformAiInteractionLogService(): AiInteractionLogService =
+    StoredAiInteractionLogService(IosAiInteractionLogStore())
+
+private class IosAiInteractionLogStore(
+    private val userDefaults: NSUserDefaults = NSUserDefaults.standardUserDefaults,
+) : AiInteractionLogStore {
+    override fun readLog(): List<AiInteractionRecord> =
+        AiInteractionLogJsonCodec.decode(userDefaults.stringForKey(AiInteractionLogKey))
+
+    override fun writeLog(records: List<AiInteractionRecord>) {
+        userDefaults.setObject(
+            AiInteractionLogJsonCodec.encode(records),
+            forKey = AiInteractionLogKey,
+        )
+    }
+
+    override fun clearLog() {
+        userDefaults.removeObjectForKey(AiInteractionLogKey)
+    }
+
+    private companion object {
+        const val AiInteractionLogKey: String = "lmc_ai_interaction_log"
+    }
+}
+
 private class IosReviewPackStore(
     private val userDefaults: NSUserDefaults = NSUserDefaults.standardUserDefaults,
 ) : ReviewPackStore {

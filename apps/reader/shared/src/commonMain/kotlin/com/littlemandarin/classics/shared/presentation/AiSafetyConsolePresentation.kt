@@ -102,6 +102,8 @@ class InMemoryAiInteractionLogService(
     }
 }
 
+expect fun createPlatformAiInteractionLogService(): AiInteractionLogService
+
 internal interface AiInteractionLogStore {
     fun readLog(): List<AiInteractionRecord>
 

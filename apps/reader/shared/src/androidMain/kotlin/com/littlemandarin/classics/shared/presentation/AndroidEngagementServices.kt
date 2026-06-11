@@ -32,6 +32,32 @@ actual fun createPlatformStreakService(): StreakService =
 actual fun createPlatformReviewPackService(): ReviewPackService =
     StoredReviewPackService(AndroidReviewPackStore(AndroidEngagementServiceProvider.sharedPreferences()))
 
+actual fun createPlatformAiInteractionLogService(): AiInteractionLogService =
+    StoredAiInteractionLogService(AndroidAiInteractionLogStore(AndroidEngagementServiceProvider.sharedPreferences()))
+
+private class AndroidAiInteractionLogStore(
+    private val sharedPreferences: SharedPreferences,
+) : AiInteractionLogStore {
+    override fun readLog(): List<AiInteractionRecord> =
+        AiInteractionLogJsonCodec.decode(sharedPreferences.getString(AiInteractionLogKey, null))
+
+    override fun writeLog(records: List<AiInteractionRecord>) {
+        sharedPreferences.edit()
+            .putString(AiInteractionLogKey, AiInteractionLogJsonCodec.encode(records))
+            .apply()
+    }
+
+    override fun clearLog() {
+        sharedPreferences.edit()
+            .remove(AiInteractionLogKey)
+            .apply()
+    }
+
+    private companion object {
+        const val AiInteractionLogKey: String = "ai_interaction_log"
+    }
+}
+
 private class AndroidReviewPackStore(
     private val sharedPreferences: SharedPreferences,
 ) : ReviewPackStore {

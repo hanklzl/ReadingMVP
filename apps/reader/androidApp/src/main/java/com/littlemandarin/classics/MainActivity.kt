@@ -6,6 +6,7 @@ import android.content.res.Configuration
 import android.os.Bundle
 import android.os.LocaleList
 import android.provider.Settings
+import android.text.format.DateUtils
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -209,6 +210,12 @@ import com.littlemandarin.classics.shared.presentation.VocabReviewAssessment
 import com.littlemandarin.classics.shared.presentation.VocabReviewUseCase
 import com.littlemandarin.classics.shared.presentation.WordBookItem
 import com.littlemandarin.classics.shared.presentation.WordBookSummary
+import com.littlemandarin.classics.shared.presentation.AiInteractionLogService
+import com.littlemandarin.classics.shared.presentation.AiInteractionOutcome
+import com.littlemandarin.classics.shared.presentation.AiInteractionRecord
+import com.littlemandarin.classics.shared.presentation.AiSafetyConsolePolicy
+import com.littlemandarin.classics.shared.presentation.AiSafetyConsoleUseCases
+import com.littlemandarin.classics.shared.presentation.createPlatformAiInteractionLogService
 import com.littlemandarin.classics.shared.presentation.createPlatformOnboardingService
 import com.littlemandarin.classics.shared.presentation.createPlatformReaderSettingsService
 import com.littlemandarin.classics.shared.presentation.createPlatformReviewPackService
@@ -299,6 +306,7 @@ private object ReaderRoutes {
     const val Parent = "parent"
     const val Settings = "settings"
     const val Privacy = "privacy"
+    const val AiConsole = "ai_console"
     const val PlacementCheck = "placement_check"
     const val Ability = "ability"
 
@@ -320,6 +328,7 @@ private object ReaderRoutes {
     fun isFocusedFlow(route: String?): Boolean =
         route == Onboarding ||
             route == Privacy ||
+            route == AiConsole ||
             route == PlacementCheck ||
             route == WordReview ||
             route == ReviewPack ||
@@ -505,6 +514,7 @@ private fun ReaderAppContent(
     val streakService = remember { createPlatformStreakService() }
     val vocabReviewService = remember { createPlatformVocabReviewService() }
     val reviewPackService = remember { createPlatformReviewPackService() }
+    val aiInteractionLogService = remember { createPlatformAiInteractionLogService() }
     val audioService = remember { createAudioService() }
     val ttsService = remember { createTtsService() }
     val storyPresentationUseCases = remember { StoryPresentationUseCases() }
@@ -935,6 +945,7 @@ private fun ReaderAppContent(
                         analytics.track(ReaderAnalyticsEvents.parentReportOpen("settings"))
                         navController.navigateTopLevel(ReaderRoutes.Parent)
                     },
+                    onAiConsole = { navController.navigate(ReaderRoutes.AiConsole) },
                     onRecheckLevel = { navController.navigate(ReaderRoutes.PlacementCheck) },
                     onPrivacy = { navController.navigate(ReaderRoutes.Privacy) },
                 )
@@ -962,6 +973,7 @@ private fun ReaderAppContent(
                         settings = settings,
                         analytics = analytics,
                         aiService = aiService,
+                        aiInteractionLogService = aiInteractionLogService,
                         audioService = audioService,
                         ttsService = ttsService,
                         initialParagraphIndex = readingPositions[story.id] ?: -1,
@@ -1011,6 +1023,12 @@ private fun ReaderAppContent(
             }
             composable(ReaderRoutes.Privacy) {
                 PrivacyScreen(onBack = { navController.popBackStack() })
+            }
+            composable(ReaderRoutes.AiConsole) {
+                AiSafetyConsoleScreen(
+                    logService = aiInteractionLogService,
+                    onBack = { navController.popBackStack() },
+                )
             }
             composable(
                 route = ReaderRoutes.Quiz,
@@ -2172,6 +2190,7 @@ private fun ReadingScreen(
     settings: ReaderSettings,
     analytics: ReaderAnalytics,
     aiService: AiService,
+    aiInteractionLogService: AiInteractionLogService,
     audioService: AudioService,
     ttsService: TtsService,
     initialParagraphIndex: Int,
@@ -2242,6 +2261,30 @@ private fun ReadingScreen(
     val aiStubText = stringResource(R.string.ai_answer_stub)
     val aiOutOfScopeText = stringResource(R.string.prompt_story_only_reply)
     val buildAiExplanationRequestUseCase = remember { BuildAiExplanationRequestUseCase() }
+
+    // Append every controlled-AI answer to the local, parent-reviewable safety log.
+    // Only story content (query word/sentence + short answer preview) + metadata —
+    // never child PII (AGENTS.md §7). Outcome derives from the existing safetyOutcome.
+    val logAiInteraction: (String, String, String, String) -> Unit =
+        { questionType, query, answerPreview, safetyOutcome ->
+            scope.launch {
+                aiInteractionLogService.append(
+                    AiInteractionRecord(
+                        id = "${story.id}|$questionType|${System.currentTimeMillis()}",
+                        storyId = story.id,
+                        questionType = questionType,
+                        query = query,
+                        answerPreview = answerPreview,
+                        outcome = if (safetyOutcome == "out_of_scope") {
+                            AiInteractionOutcome.OutOfScope
+                        } else {
+                            AiInteractionOutcome.Allowed
+                        },
+                        epochMillis = System.currentTimeMillis(),
+                    ),
+                )
+            }
+        }
 
     // Tap-word dictionary lookup. Resolving happens in shared (WordLookupUseCase);
     // the AI fallback reuses the same controlled explain flow, targeted at one word.
@@ -2821,13 +2864,20 @@ private fun ReadingScreen(
                                                 stubText = aiStubText,
                                                 outOfScopeText = aiOutOfScopeText,
                                             )
+                                            val outcome = response.safetyOutcome(answer, aiOutOfScopeText)
                                             analytics.track(
                                                 ReaderAnalyticsEvents.aiExplainRequest(
                                                     storyId = story.id,
                                                     requestType = AiQuestionTypes.ExplainSentence,
                                                     targetType = "paragraph",
-                                                    safetyOutcome = response.safetyOutcome(answer, aiOutOfScopeText),
+                                                    safetyOutcome = outcome,
                                                 ),
+                                            )
+                                            logAiInteraction(
+                                                request.questionType,
+                                                request.selectedText,
+                                                answer,
+                                                outcome,
                                             )
                                             aiState = AiUiState.Answer(answer)
                                         }.onFailure {
@@ -2949,13 +2999,20 @@ private fun ReadingScreen(
                                 stubText = aiStubText,
                                 outOfScopeText = aiOutOfScopeText,
                             )
+                            val outcome = response.safetyOutcome(answer, aiOutOfScopeText)
                             analytics.track(
                                 ReaderAnalyticsEvents.aiExplainRequest(
                                     storyId = story.id,
                                     requestType = AiQuestionTypes.ExplainWord,
                                     targetType = "word",
-                                    safetyOutcome = response.safetyOutcome(answer, aiOutOfScopeText),
+                                    safetyOutcome = outcome,
                                 ),
+                            )
+                            logAiInteraction(
+                                request.questionType,
+                                request.selectedText,
+                                answer,
+                                outcome,
                             )
                             wordLookupAiState = AiUiState.Answer(answer)
                         }
@@ -3563,6 +3620,7 @@ private fun SettingsScreen(
     parentGatePassed: Boolean,
     onParentGatePassed: () -> Unit,
     onParentReport: () -> Unit,
+    onAiConsole: () -> Unit,
     onRecheckLevel: () -> Unit,
     onPrivacy: () -> Unit,
 ) {
@@ -3646,6 +3704,11 @@ private fun SettingsScreen(
                     SettingsNavigationRow(
                         label = stringResource(R.string.settings_parent_report),
                         onClick = onParentReport,
+                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    SettingsNavigationRow(
+                        label = stringResource(R.string.settings_ai_console),
+                        onClick = onAiConsole,
                     )
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     SettingsNavigationRow(
@@ -6950,6 +7013,202 @@ private fun PrivacyScreen(onBack: () -> Unit) {
         }
     }
 }
+
+@Composable
+private fun AiSafetyConsoleScreen(
+    logService: AiInteractionLogService,
+    onBack: () -> Unit,
+) {
+    val scope = rememberCoroutineScope()
+    val summaryUseCases = remember { AiSafetyConsoleUseCases() }
+    val records by logService.records.collectAsState(initial = emptyList())
+
+    // Re-read from disk when the console opens so the parent always sees the latest log.
+    LaunchedEffect(Unit) { logService.read() }
+
+    val summary = remember(records) { summaryUseCases.summary(records) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+    ) {
+        FlowTopBar(
+            title = stringResource(R.string.ai_console_title),
+            onBack = onBack,
+        )
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                horizontal = LmcSpacing.ScreenPadding,
+                vertical = LmcSpacing.Space4,
+            ),
+            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space4),
+        ) {
+            item {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(LmcSpacing.RadiusSm),
+                    color = MaterialTheme.colorScheme.surface,
+                    shadowElevation = LmcSpacing.CardElevation,
+                ) {
+                    Column(
+                        modifier = Modifier.padding(LmcSpacing.CardPadding),
+                        verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.ai_console_summary_total, summary.totalCount),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = stringResource(
+                                R.string.ai_console_summary_declined,
+                                summary.outOfScopeCount,
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        val lastText = summary.lastEpochMillis?.let { relativeTimeText(it) }
+                            ?: stringResource(R.string.ai_console_last_none)
+                        Text(
+                            text = stringResource(R.string.ai_console_summary_last, lastText),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+            item {
+                Text(
+                    text = stringResource(R.string.ai_console_retention),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (records.isNotEmpty()) {
+                item {
+                    OutlinedButton(
+                        onClick = { scope.launch { logService.clear() } },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = LmcSpacing.ButtonPrimaryHeight),
+                        shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+                    ) {
+                        Text(text = stringResource(R.string.ai_console_clear_all))
+                    }
+                }
+            }
+            if (records.isEmpty()) {
+                item {
+                    Text(
+                        text = stringResource(R.string.ai_console_empty),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            } else {
+                items(records, key = { it.id }) { record ->
+                    AiInteractionRow(
+                        record = record,
+                        onDelete = { scope.launch { logService.deleteById(record.id) } },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AiInteractionRow(
+    record: AiInteractionRecord,
+    onDelete: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(LmcSpacing.RadiusSm),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = LmcSpacing.CardElevation,
+    ) {
+        Column(
+            modifier = Modifier.padding(LmcSpacing.CardPadding),
+            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+            ) {
+                AiOutcomeBadge(outcome = record.outcome)
+                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    text = relativeTimeText(record.epochMillis),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Text(
+                text = stringResource(R.string.ai_console_query_label, record.query),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = stringResource(R.string.ai_console_answer_label, record.answerPreview),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedButton(
+                onClick = onDelete,
+                modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
+                shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+            ) {
+                Text(text = stringResource(R.string.ai_console_delete))
+            }
+        }
+    }
+}
+
+@Composable
+private fun AiOutcomeBadge(outcome: AiInteractionOutcome) {
+    val isDeclined = outcome == AiInteractionOutcome.OutOfScope
+    val container = if (isDeclined) {
+        MaterialTheme.colorScheme.errorContainer
+    } else {
+        MaterialTheme.colorScheme.secondaryContainer
+    }
+    val content = if (isDeclined) {
+        MaterialTheme.colorScheme.onErrorContainer
+    } else {
+        MaterialTheme.colorScheme.onSecondaryContainer
+    }
+    val labelRes = if (isDeclined) {
+        R.string.ai_console_outcome_declined
+    } else {
+        R.string.ai_console_outcome_allowed
+    }
+    Surface(
+        shape = RoundedCornerShape(LmcSpacing.RadiusSm),
+        color = container,
+    ) {
+        Text(
+            text = stringResource(labelRes),
+            style = MaterialTheme.typography.labelMedium,
+            color = content,
+            modifier = Modifier.padding(
+                horizontal = LmcSpacing.Space2,
+                vertical = LmcSpacing.Space1,
+            ),
+        )
+    }
+}
+
+@Composable
+private fun relativeTimeText(epochMillis: Long): String =
+    DateUtils.getRelativeTimeSpanString(
+        epochMillis,
+        System.currentTimeMillis(),
+        DateUtils.MINUTE_IN_MILLIS,
+    ).toString()
 
 @Composable
 private fun PrivacyPoint(
