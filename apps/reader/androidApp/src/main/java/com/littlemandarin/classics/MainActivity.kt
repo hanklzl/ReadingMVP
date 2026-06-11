@@ -92,6 +92,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -151,8 +152,11 @@ import com.littlemandarin.classics.shared.feedback.FeedbackSatisfaction as Share
 import com.littlemandarin.classics.shared.feedback.createPlatformFeedbackService
 import com.littlemandarin.classics.shared.presentation.AnalyticsEventPayload
 import com.littlemandarin.classics.shared.presentation.AndroidEngagementServiceProvider
+import com.littlemandarin.classics.shared.presentation.AdaptiveReadingPathRecommender
 import com.littlemandarin.classics.shared.presentation.AndroidReaderSettingsServiceProvider
 import com.littlemandarin.classics.shared.presentation.AndroidVocabReviewServiceProvider
+import com.littlemandarin.classics.shared.presentation.AssessmentItem
+import com.littlemandarin.classics.shared.presentation.ReadingLevelAssessmentUseCases
 import com.littlemandarin.classics.shared.presentation.BuildAiExplanationRequestUseCase
 import com.littlemandarin.classics.shared.presentation.BuildFeedbackSubmissionUseCase
 import com.littlemandarin.classics.shared.presentation.BuildParentReportSummaryUseCase
@@ -277,6 +281,7 @@ private object ReaderRoutes {
     const val Parent = "parent"
     const val Settings = "settings"
     const val Privacy = "privacy"
+    const val PlacementCheck = "placement_check"
 
     const val Reading = "story/{storyId}/read"
     const val Vocabulary = "story/{storyId}/vocabulary?source={source}"
@@ -295,6 +300,7 @@ private object ReaderRoutes {
     fun isFocusedFlow(route: String?): Boolean =
         route == Onboarding ||
             route == Privacy ||
+            route == PlacementCheck ||
             route == WordReview ||
             route?.startsWith("story/") == true
 }
@@ -391,6 +397,14 @@ private fun ReaderApp() {
                             onboardingPreferences = onboardingService.read()
                         }
                     },
+                    onAssessedLevelChange = { level ->
+                        analyticsScope.launch {
+                            onboardingService.complete(
+                                onboardingService.read().copy(assessedReadingLevel = level),
+                            )
+                            onboardingPreferences = onboardingService.read()
+                        }
+                    },
                     onLanguageChange = { language ->
                         analyticsScope.launch {
                             settingsService.setLanguage(language)
@@ -449,6 +463,7 @@ private fun ReaderAppContent(
     readingProgressVersion: Int,
     onOnboardingComplete: (OnboardingPreferences) -> Unit,
     onOnboardingSkip: () -> Unit,
+    onAssessedLevelChange: (Int?) -> Unit,
     onLanguageChange: (ReaderLanguage) -> Unit,
     onPinyinDefaultChange: (Boolean) -> Unit,
     onTextSizeChange: (ReadingTextSize) -> Unit,
@@ -609,6 +624,24 @@ private fun ReaderAppContent(
         streakSummary = streakUseCase.summary(todayEpochMillis = now)
     }
 
+    val readingPathRecommender = remember { AdaptiveReadingPathRecommender() }
+    val readingPathRecommendation = remember(
+        storiesState,
+        progressRecords,
+        readingPositions,
+        wordBookSummary.dueCount,
+        onboardingPreferences.recommendedLevel,
+    ) {
+        val stories = (storiesState as? StoriesState.Ready)?.stories.orEmpty()
+        readingPathRecommender.recommend(
+            stories = stories,
+            readingLevel = onboardingPreferences.recommendedLevel,
+            completionRecords = progressRecords,
+            readingPositions = readingPositions,
+            dueVocabWordCount = wordBookSummary.dueCount,
+        )
+    }
+
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
     val showBottomBar = !ReaderRoutes.isFocusedFlow(currentRoute)
@@ -697,6 +730,7 @@ private fun ReaderAppContent(
             composable(ReaderRoutes.Onboarding) {
                 OnboardingScreen(
                     initialLanguage = settings.language,
+                    stories = (storiesState as? StoriesState.Ready)?.stories.orEmpty(),
                     onComplete = { preferences ->
                         appScope.launch {
                             streakUseCase.setDailyGoal(preferences.dailyGoalStories)
@@ -734,6 +768,8 @@ private fun ReaderAppContent(
                         streakSummary = streakSummary,
                         progressRecords = progressRecords,
                         readingPositions = readingPositions,
+                        recommendedStoryId = readingPathRecommendation.nextStory?.id,
+                        reviewWordCount = readingPathRecommendation.reviewWordCount,
                         storyPresentationUseCases = storyPresentationUseCases,
                         snackbarHostState = snackbarHostState,
                         onRead = { storyId ->
@@ -833,7 +869,18 @@ private fun ReaderAppContent(
                         analytics.track(ReaderAnalyticsEvents.parentReportOpen("settings"))
                         navController.navigateTopLevel(ReaderRoutes.Parent)
                     },
+                    onRecheckLevel = { navController.navigate(ReaderRoutes.PlacementCheck) },
                     onPrivacy = { navController.navigate(ReaderRoutes.Privacy) },
+                )
+            }
+            composable(ReaderRoutes.PlacementCheck) {
+                PlacementCheckFlow(
+                    stories = (storiesState as? StoriesState.Ready)?.stories.orEmpty(),
+                    onComplete = { level ->
+                        onAssessedLevelChange(level)
+                        navController.popBackStack()
+                    },
+                    onSkip = { navController.popBackStack() },
                 )
             }
             composable(
@@ -1040,12 +1087,32 @@ private fun StoryRouteContent(
 @Composable
 private fun OnboardingScreen(
     initialLanguage: ReaderLanguage,
+    stories: List<Story>,
     onComplete: (OnboardingPreferences) -> Unit,
     onSkip: () -> Unit,
 ) {
     var selectedAgeBand by remember { mutableStateOf(ChildAgeBand.Age5To6) }
     var selectedLanguage by remember(initialLanguage) { mutableStateOf(initialLanguage) }
     var dailyGoalStories by remember { mutableIntStateOf(1) }
+    var showPlacementCheck by remember { mutableStateOf(false) }
+
+    fun basePreferences(assessedLevel: Int?) = OnboardingPreferences(
+        completed = true,
+        skipped = false,
+        childAgeBand = selectedAgeBand,
+        language = selectedLanguage,
+        dailyGoalStories = dailyGoalStories,
+        assessedReadingLevel = assessedLevel,
+    )
+
+    if (showPlacementCheck) {
+        PlacementCheckFlow(
+            stories = stories,
+            onComplete = { level -> onComplete(basePreferences(level)) },
+            onSkip = { onComplete(basePreferences(null)) },
+        )
+        return
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -1138,6 +1205,30 @@ private fun OnboardingScreen(
             )
         }
         item {
+            SettingsSection(title = stringResource(R.string.placement_section_title)) {
+                Column(
+                    modifier = Modifier.padding(LmcSpacing.CardPadding),
+                    verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+                ) {
+                    Text(
+                        text = stringResource(R.string.placement_intro_body),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    OutlinedButton(
+                        onClick = { showPlacementCheck = true },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = LmcSpacing.ButtonSecondaryHeight),
+                        shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+                        enabled = stories.isNotEmpty(),
+                    ) {
+                        Text(text = stringResource(R.string.placement_start))
+                    }
+                }
+            }
+        }
+        item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space3),
@@ -1150,17 +1241,7 @@ private fun OnboardingScreen(
                     Text(text = stringResource(R.string.action_skip))
                 }
                 Button(
-                    onClick = {
-                        onComplete(
-                            OnboardingPreferences(
-                                completed = true,
-                                skipped = false,
-                                childAgeBand = selectedAgeBand,
-                                language = selectedLanguage,
-                                dailyGoalStories = dailyGoalStories,
-                            ),
-                        )
-                    },
+                    onClick = { onComplete(basePreferences(null)) },
                     modifier = Modifier
                         .weight(1f)
                         .heightIn(min = LmcSpacing.ButtonPrimaryHeight),
@@ -1173,6 +1254,196 @@ private fun OnboardingScreen(
     }
 }
 
+/**
+ * Optional, child-friendly placement check. Shows one vocabulary word at a time with big
+ * tappable meaning cards. Non-punitive: no wrong/failure framing, encouraging tone. On the
+ * last item it scores via [ReadingLevelAssessmentUseCases.scoreAssessment] and reports the
+ * resulting reading level (1..3). A fixed, deterministic seed is used (MVP). The result is a
+ * local reading-level preference only — never child PII (AGENTS.md §7).
+ */
+@Composable
+private fun PlacementCheckFlow(
+    stories: List<Story>,
+    onComplete: (Int) -> Unit,
+    onSkip: () -> Unit,
+) {
+    val assessmentUseCases = remember { ReadingLevelAssessmentUseCases() }
+    val items = remember(stories) {
+        // Deterministic seed derived from the catalog size keeps selection stable for MVP.
+        assessmentUseCases.selectAssessmentItems(stories = stories, seed = stories.size, itemCount = 5)
+    }
+    var currentIndex by remember(items) { mutableIntStateOf(0) }
+    val answers = remember(items) { mutableStateMapOf<String, String>() }
+    var assessedLevel by remember(items) { mutableStateOf<Int?>(null) }
+
+    if (items.isEmpty()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(LmcSpacing.ScreenPadding),
+            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space4, Alignment.CenterVertically),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = stringResource(R.string.placement_no_items),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            Button(
+                onClick = onSkip,
+                modifier = Modifier.heightIn(min = LmcSpacing.ButtonPrimaryHeight),
+                shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+            ) {
+                Text(text = stringResource(R.string.placement_result_continue))
+            }
+        }
+        return
+    }
+
+    val resolvedLevel = assessedLevel
+    if (resolvedLevel != null) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(LmcSpacing.ScreenPadding),
+            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space4, Alignment.CenterVertically),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = stringResource(R.string.placement_result_title),
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            Text(
+                text = stringResource(R.string.placement_result_level, resolvedLevel),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Text(
+                text = stringResource(R.string.placement_result_privacy),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Button(
+                onClick = { onComplete(resolvedLevel) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = LmcSpacing.ButtonPrimaryHeight),
+                shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+            ) {
+                Text(text = stringResource(R.string.placement_result_continue))
+            }
+        }
+        return
+    }
+
+    val item = items[currentIndex]
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+        contentPadding = PaddingValues(
+            horizontal = LmcSpacing.ScreenPadding,
+            vertical = LmcSpacing.Space6,
+        ),
+        verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space5),
+    ) {
+        item {
+            TopLevelHeader(
+                title = stringResource(R.string.placement_intro_title),
+                subtitle = stringResource(R.string.placement_progress, currentIndex + 1, items.size),
+            )
+        }
+        item {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+                color = MaterialTheme.colorScheme.tertiaryContainer,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(LmcSpacing.CardPadding),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+                ) {
+                    Text(
+                        text = item.pinyin,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                    )
+                    Text(
+                        text = item.word,
+                        style = MaterialTheme.typography.displaySmall,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                    )
+                }
+            }
+        }
+        item {
+            Text(
+                text = stringResource(R.string.placement_question),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+        }
+        items(item.options, key = { it }) { option ->
+            PlacementOptionCard(
+                label = option,
+                onClick = {
+                    answers[item.id] = option
+                    if (currentIndex < items.lastIndex) {
+                        currentIndex += 1
+                    } else {
+                        assessedLevel = assessmentUseCases.scoreAssessment(items, answers.toMap()).level
+                    }
+                },
+            )
+        }
+        item {
+            TextButton(
+                onClick = onSkip,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = LmcSpacing.ButtonSecondaryHeight),
+            ) {
+                Text(text = stringResource(R.string.placement_skip))
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlacementOptionCard(
+    label: String,
+    onClick: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = LmcSpacing.ButtonPrimaryHeight)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = LmcSpacing.CardElevation,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(LmcSpacing.CardPadding),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+    }
+}
+
 @Composable
 private fun TodayScreen(
     appInfo: AppInfo,
@@ -1181,6 +1452,8 @@ private fun TodayScreen(
     streakSummary: StreakSummary,
     progressRecords: List<CompletionRecord>,
     readingPositions: Map<String, Int>,
+    recommendedStoryId: String?,
+    reviewWordCount: Int,
     storyPresentationUseCases: StoryPresentationUseCases,
     snackbarHostState: SnackbarHostState,
     onRead: (String) -> Unit,
@@ -1192,10 +1465,11 @@ private fun TodayScreen(
     val completedStoryIds = remember(progressRecords) {
         storyPresentationUseCases.completedStoryIds(progressRecords)
     }
-    val todayStories = remember(stories, completedStoryIds) {
+    val todayStories = remember(stories, completedStoryIds, recommendedStoryId) {
         storyPresentationUseCases.selectTodayStories(
             stories = stories,
             completedStoryIds = completedStoryIds,
+            recommendedStoryId = recommendedStoryId,
         )
     }
     val todayStory = todayStories.todayStory ?: return
@@ -1284,6 +1558,13 @@ private fun TodayScreen(
                     progressStats.completedCount,
                 ),
             )
+        }
+        if (reviewWordCount > 0) {
+            item {
+                ProgressSummaryBanner(
+                    text = stringResource(R.string.today_review_words, reviewWordCount),
+                )
+            }
         }
         if (upNextStory != null) {
             item {
@@ -2999,6 +3280,7 @@ private fun SettingsScreen(
     parentGatePassed: Boolean,
     onParentGatePassed: () -> Unit,
     onParentReport: () -> Unit,
+    onRecheckLevel: () -> Unit,
     onPrivacy: () -> Unit,
 ) {
     var showFeedbackForm by remember { mutableStateOf(false) }
@@ -3081,6 +3363,11 @@ private fun SettingsScreen(
                     SettingsNavigationRow(
                         label = stringResource(R.string.settings_parent_report),
                         onClick = onParentReport,
+                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    SettingsNavigationRow(
+                        label = stringResource(R.string.settings_recheck_level),
+                        onClick = onRecheckLevel,
                     )
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     SettingsNavigationRow(

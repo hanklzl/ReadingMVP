@@ -29,13 +29,15 @@ struct ContentView: View {
                     .padding(LMCSpace.s4)
             } else if viewModel.launchGate == .onboarding {
                 OnboardingFlow(
+                    viewModel: viewModel,
                     initialLocaleIdentifier: Self.defaultAppLocaleIdentifier(),
-                    complete: { ageBand, languageTag, dailyGoal in
+                    complete: { ageBand, languageTag, dailyGoal, assessedLevel in
                         localeIdentifier = languageTag
                         await viewModel.finishOnboarding(
                             ageBand: ageBand,
                             languageTag: languageTag,
-                            dailyGoalStories: dailyGoal
+                            dailyGoalStories: dailyGoal,
+                            assessedReadingLevel: assessedLevel
                         )
                         selectedTab = .today
                         flowRoute = nil
@@ -328,6 +330,7 @@ final class ReaderViewModel: ObservableObject {
     @Published private(set) var wordBookSummary: WordBookSummary?
     @Published private(set) var streakSummary: StreakSummary?
     @Published private(set) var lastCompletionStreakSummary: StreakSummary?
+    @Published private(set) var onboardingPreferences: OnboardingPreferences?
 
     private let repository = DefaultStoryRepository(
         resourceReader: IosStoryResourceReaderKt.defaultStoryResourceReader(),
@@ -340,6 +343,8 @@ final class ReaderViewModel: ObservableObject {
     private let vocabReviewService = IosVocabReviewServiceKt.createPlatformVocabReviewService()
     private let ttsService = IosTtsServiceKt.createTtsService()
     private let storyPresentationUseCases = StoryPresentationUseCases()
+    private let readingLevelAssessmentUseCases = ReadingLevelAssessmentUseCases()
+    private let readingPathRecommender = AdaptiveReadingPathRecommender()
     private let buildParentReportSummaryUseCase = BuildParentReportSummaryUseCase()
     private let readingSessionReducer = ReadingSessionReducer()
     private let karaokeReducer = ReadAlongKaraokeReducer()
@@ -400,8 +405,72 @@ final class ReaderViewModel: ObservableObject {
         storyPresentationUseCases.selectTodayStories(
             stories: stories,
             completedStoryIds: completedStoryIds,
-            policy: .firstincomplete
+            policy: .firstincomplete,
+            recommendedStoryId: readingPathRecommendation.nextStory?.id
         )
+    }
+
+    // Adaptive recommendation driven by the local reading level, history, in-progress
+    // positions and due-vocab count. Pure shared logic; never child PII (AGENTS.md §7).
+    private var readingPathRecommendation: ReadingPathRecommendation {
+        let level = onboardingPreferences?.recommendedLevel ?? 1
+        return readingPathRecommender.recommend(
+            stories: stories,
+            readingLevel: level,
+            completionRecords: completionRecords,
+            readingPositions: readingPositionsForRecommender,
+            dueVocabWordCount: Int32(wordBookSummary?.dueCount ?? 0)
+        )
+    }
+
+    var reviewWordCount: Int {
+        Int(readingPathRecommendation.reviewWordCount)
+    }
+
+    private var completionRecords: [CompletionRecord] {
+        parentReport?.recentCompletions ?? []
+    }
+
+    private var readingPositionsForRecommender: [String: KotlinInt] {
+        readingPositions.mapValues { KotlinInt(int: Int32($0)) }
+    }
+
+    /// Build the optional placement-check items. Deterministic seed (catalog size) for MVP.
+    func assessmentItems() -> [AssessmentItem] {
+        readingLevelAssessmentUseCases.selectAssessmentItems(
+            stories: stories,
+            seed: Int32(stories.count),
+            itemCount: 5
+        )
+    }
+
+    /// Score the placement check, persist the resulting reading level locally, return the level.
+    @discardableResult
+    func applyAssessment(items: [AssessmentItem], answersByItemId: [String: String]) async -> Int {
+        let assessed = readingLevelAssessmentUseCases.scoreAssessment(
+            items: items,
+            answersByItemId: answersByItemId
+        )
+        await setAssessedReadingLevel(KotlinInt(int: assessed.level))
+        return Int(assessed.level)
+    }
+
+    func setAssessedReadingLevel(_ level: KotlinInt?) async {
+        do {
+            let current = try await onboardingService.read()
+            let updated = current.doCopy(
+                completed: true,
+                skipped: current.skipped,
+                childAgeBand: current.childAgeBand,
+                language: current.language,
+                dailyGoalStories: current.dailyGoalStories,
+                assessedReadingLevel: level
+            )
+            try await onboardingService.complete(preferences: updated)
+            onboardingPreferences = try await onboardingService.read()
+        } catch {
+            loadingState = .failed
+        }
     }
 
     func load() async {
@@ -422,6 +491,7 @@ final class ReaderViewModel: ObservableObject {
 
     func loadLaunchState() async {
         let preferences = try? await onboardingService.read()
+        onboardingPreferences = preferences
         if let preferences, preferences.completed {
             try? await streakUseCase.setDailyGoal(dailyGoalStories: preferences.dailyGoalStories)
             launchGate = .ready
@@ -431,7 +501,12 @@ final class ReaderViewModel: ObservableObject {
         try? await refreshStreak()
     }
 
-    func finishOnboarding(ageBand: LMCOnboardingAgeBand, languageTag: String, dailyGoalStories: Int) async {
+    func finishOnboarding(
+        ageBand: LMCOnboardingAgeBand,
+        languageTag: String,
+        dailyGoalStories: Int,
+        assessedReadingLevel: KotlinInt? = nil
+    ) async {
         do {
             let language = ReaderLanguage.companion.fromTag(tag: languageTag)
             try await settingsService.setLanguage(language: language)
@@ -441,9 +516,11 @@ final class ReaderViewModel: ObservableObject {
                     skipped: false,
                     childAgeBand: ageBand.sharedValue,
                     language: language,
-                    dailyGoalStories: Int32(dailyGoalStories)
+                    dailyGoalStories: Int32(dailyGoalStories),
+                    assessedReadingLevel: assessedReadingLevel
                 )
             )
+            onboardingPreferences = try await onboardingService.read()
             try await streakUseCase.setDailyGoal(dailyGoalStories: Int32(dailyGoalStories))
             try await refreshStreak()
             launchGate = .ready
@@ -469,8 +546,10 @@ final class ReaderViewModel: ObservableObject {
                     childAgeBand: .age5to8,
                     language: language,
                     dailyGoalStories: 1,
+                    assessedReadingLevel: nil
                 )
             )
+            onboardingPreferences = try await onboardingService.read()
             try await streakUseCase.setDailyGoal(dailyGoalStories: 1)
             try await refreshStreak()
             launchGate = .ready
@@ -2097,6 +2176,16 @@ private struct TodayScreen: View {
                             )
                         }
 
+                        if viewModel.reviewWordCount > 0 {
+                            Text(LMCStrings.format("today_review_words", viewModel.reviewWordCount))
+                                .font(.system(size: 15, weight: .bold))
+                                .foregroundStyle(LMCColor.tertiary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(LMCSpace.s4)
+                                .background(LMCColor.tertiaryContainer)
+                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        }
+
                         if let upNext = viewModel.upNextStory {
                             VStack(alignment: .leading, spacing: LMCSpace.s3) {
                                 SectionTitle("today_up_next")
@@ -2137,15 +2226,33 @@ private struct TodayScreen: View {
 }
 
 private struct OnboardingFlow: View {
+    @ObservedObject var viewModel: ReaderViewModel
     let initialLocaleIdentifier: String
-    let complete: (LMCOnboardingAgeBand, String, Int) async -> Void
+    let complete: (LMCOnboardingAgeBand, String, Int, KotlinInt?) async -> Void
     let skip: () async -> Void
 
     @State private var selectedAgeBand: LMCOnboardingAgeBand = .age5To6
     @State private var selectedLanguage: LMCAppLocale = .english
     @State private var dailyGoal = 1
+    @State private var showPlacementCheck = false
 
     var body: some View {
+        if showPlacementCheck {
+            PlacementCheckView(
+                viewModel: viewModel,
+                onComplete: { level in
+                    await complete(selectedAgeBand, selectedLanguage.rawValue, dailyGoal, level)
+                },
+                onSkip: {
+                    await complete(selectedAgeBand, selectedLanguage.rawValue, dailyGoal, nil)
+                }
+            )
+        } else {
+            onboardingForm
+        }
+    }
+
+    private var onboardingForm: some View {
         LMCScreen(maxWidth: LMCSpace.readingMaxWidth) {
             VStack(alignment: .leading, spacing: LMCSpace.s2) {
                 Text("onboarding_title")
@@ -2204,6 +2311,21 @@ private struct OnboardingFlow: View {
             .background(LMCColor.tertiaryContainer)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
+            SettingsSection(titleKey: "placement_section_title") {
+                VStack(alignment: .leading, spacing: LMCSpace.s2) {
+                    Text("placement_intro_body")
+                        .font(.system(size: 15))
+                        .foregroundStyle(LMCColor.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Button("placement_start") {
+                        showPlacementCheck = true
+                    }
+                    .buttonStyle(LMCSecondaryButtonStyle())
+                    .disabled(viewModel.stories.isEmpty)
+                }
+                .padding(LMCSpace.s4)
+            }
+
             Text("onboarding_privacy_note")
                 .font(.system(size: 15))
                 .foregroundStyle(LMCColor.textSecondary)
@@ -2217,7 +2339,7 @@ private struct OnboardingFlow: View {
 
                 Button("onboarding_get_started") {
                     Task {
-                        await complete(selectedAgeBand, selectedLanguage.rawValue, dailyGoal)
+                        await complete(selectedAgeBand, selectedLanguage.rawValue, dailyGoal, nil)
                     }
                 }
                 .buttonStyle(LMCPrimaryButtonStyle())
@@ -2226,6 +2348,140 @@ private struct OnboardingFlow: View {
         .background(LMCColor.background.ignoresSafeArea())
         .onAppear {
             selectedLanguage = LMCAppLocale(rawValue: initialLocaleIdentifier) ?? .english
+        }
+    }
+}
+
+/// Optional, child-friendly placement check shown during onboarding and re-check. Big tappable
+/// meaning cards, encouraging non-punitive tone. Result is a local reading-level preference only.
+private struct PlacementCheckView: View {
+    @ObservedObject var viewModel: ReaderViewModel
+    let onComplete: (KotlinInt?) async -> Void
+    let onSkip: () async -> Void
+
+    @State private var items: [AssessmentItem] = []
+    @State private var currentIndex = 0
+    @State private var answers: [String: String] = [:]
+    @State private var resolvedLevel: Int?
+
+    var body: some View {
+        Group {
+            if items.isEmpty {
+                emptyState
+            } else if let level = resolvedLevel {
+                resultState(level: level)
+            } else {
+                questionState
+            }
+        }
+        .background(LMCColor.background.ignoresSafeArea())
+        .onAppear {
+            if items.isEmpty {
+                items = viewModel.assessmentItems()
+            }
+        }
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: LMCSpace.s4) {
+            Text("placement_no_items")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(LMCColor.textPrimary)
+                .multilineTextAlignment(.center)
+            Button("placement_result_continue") {
+                Task { await onSkip() }
+            }
+            .buttonStyle(LMCPrimaryButtonStyle())
+        }
+        .padding(LMCSpace.s4)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func resultState(level: Int) -> some View {
+        VStack(spacing: LMCSpace.s4) {
+            Spacer()
+            Text("placement_result_title")
+                .font(.system(size: 24, weight: .bold))
+                .foregroundStyle(LMCColor.textPrimary)
+            Text(LMCStrings.format("placement_result_level", level))
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(LMCColor.tertiary)
+            Text("placement_result_privacy")
+                .font(.system(size: 15))
+                .foregroundStyle(LMCColor.textSecondary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer()
+            Button("placement_result_continue") {
+                Task { await onComplete(KotlinInt(int: Int32(level))) }
+            }
+            .buttonStyle(LMCPrimaryButtonStyle())
+        }
+        .padding(LMCSpace.s4)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var questionState: some View {
+        let item = items[currentIndex]
+        return LMCScreen(maxWidth: LMCSpace.readingMaxWidth) {
+            VStack(alignment: .leading, spacing: LMCSpace.s2) {
+                Text("placement_intro_title")
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundStyle(LMCColor.textPrimary)
+                Text(LMCStrings.format("placement_progress", currentIndex + 1, items.count))
+                    .font(.system(size: 16))
+                    .foregroundStyle(LMCColor.textSecondary)
+            }
+
+            VStack(spacing: LMCSpace.s2) {
+                Text(item.pinyin)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(LMCColor.textPrimary)
+                Text(item.word)
+                    .font(.system(size: 40, weight: .bold))
+                    .foregroundStyle(LMCColor.textPrimary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(LMCSpace.s4)
+            .background(LMCColor.tertiaryContainer)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+            Text("placement_question")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundStyle(LMCColor.textPrimary)
+
+            ForEach(item.options, id: \.self) { option in
+                Button {
+                    answers[item.id] = option
+                    if currentIndex < items.count - 1 {
+                        currentIndex += 1
+                    } else {
+                        Task {
+                            resolvedLevel = await viewModel.applyAssessment(
+                                items: items,
+                                answersByItemId: answers
+                            )
+                        }
+                    }
+                } label: {
+                    HStack {
+                        Text(option)
+                            .font(.system(size: 17))
+                            .foregroundStyle(LMCColor.textPrimary)
+                        Spacer()
+                    }
+                    .padding(LMCSpace.s4)
+                    .frame(maxWidth: .infinity)
+                    .background(LMCColor.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+                .buttonStyle(.plain)
+            }
+
+            Button("placement_skip") {
+                Task { await onSkip() }
+            }
+            .buttonStyle(LMCSecondaryButtonStyle())
         }
     }
 }
@@ -3736,6 +3992,7 @@ private struct SettingsScreen: View {
     let includeTitle: Bool
     @State private var showPrivacy = false
     @State private var showFeedback = false
+    @State private var showRecheckLevel = false
     @State private var adultSettingsUnlocked = false
 
     var body: some View {
@@ -3760,6 +4017,18 @@ private struct SettingsScreen: View {
             FeedbackSheet(viewModel: viewModel)
                 .environment(\.locale, Locale(identifier: localeIdentifier))
                 .preferredColorScheme(.light)
+        }
+        .sheet(isPresented: $showRecheckLevel) {
+            PlacementCheckView(
+                viewModel: viewModel,
+                onComplete: { level in
+                    await viewModel.setAssessedReadingLevel(level)
+                    showRecheckLevel = false
+                },
+                onSkip: { showRecheckLevel = false }
+            )
+            .environment(\.locale, Locale(identifier: localeIdentifier))
+            .preferredColorScheme(.light)
         }
     }
 
@@ -3875,6 +4144,8 @@ private struct SettingsScreen: View {
     private var adultSettingsContent: some View {
         VStack(alignment: .leading, spacing: LMCSpace.s3) {
             SettingsNavigationRow(titleKey: "parent_title", systemName: "chart.bar.xaxis", action: openParent)
+            Divider().background(LMCColor.outlineVariant)
+            SettingsNavigationRow(titleKey: "settings_recheck_level", systemName: "checkmark.seal", action: { showRecheckLevel = true })
             Divider().background(LMCColor.outlineVariant)
             SettingsNavigationRow(titleKey: "settings_give_feedback", systemName: "bubble.left.and.bubble.right.fill", action: { showFeedback = true })
             Divider().background(LMCColor.outlineVariant)

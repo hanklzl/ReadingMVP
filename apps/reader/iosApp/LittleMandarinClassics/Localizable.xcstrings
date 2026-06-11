@@ -2742,6 +2742,104 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开始今日阅读" } }
       }
     },
+    "placement_section_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reading level check" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "阅读等级测评" } }
+      }
+    },
+    "placement_intro_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Quick word game" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "趣味词语小游戏" } }
+      }
+    },
+    "placement_intro_body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Tap the meaning of each word. It is just for fun and helps us pick stories at the right level. There are no wrong answers." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "点一点每个词的意思。这只是个小游戏，帮我们挑选合适等级的故事，没有答错之说。" } }
+      }
+    },
+    "placement_start" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Try the word game" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "玩词语小游戏" } }
+      }
+    },
+    "placement_progress" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Word %d of %d" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "第 %d 个，共 %d 个" } }
+      }
+    },
+    "placement_question" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "What does this word mean?" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "这个词是什么意思？" } }
+      }
+    },
+    "placement_result_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "All done. Great job!" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "全部完成，真棒！" } }
+      }
+    },
+    "placement_result_level" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "We will start you at Level %d." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "我们将从第 %d 级开始。" } }
+      }
+    },
+    "placement_result_privacy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This only personalizes recommendations on this device. No name or personal info is saved." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "这只用于在本设备上个性化推荐，不会保存姓名或个人信息。" } }
+      }
+    },
+    "placement_result_continue" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Continue" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "继续" } }
+      }
+    },
+    "placement_skip" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Skip the game" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "跳过小游戏" } }
+      }
+    },
+    "placement_no_items" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The word game is not available right now." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "词语小游戏暂时不可用。" } }
+      }
+    },
+    "settings_recheck_level" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Re-check reading level" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "重新测评阅读等级" } }
+      }
+    },
+    "today_review_words" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Review %d words today" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "今日复习 %d 个词" } }
+      }
+    },
     "onboarding_goal_one_story" : {
       "extractionState" : "manual",
       "localizations" : {
