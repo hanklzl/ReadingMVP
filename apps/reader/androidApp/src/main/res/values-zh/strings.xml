@@ -217,6 +217,19 @@
     <string name="reading_ask_error">暂时无法解释这段故事。</string>
     <string name="ai_answer_stub">这句话在帮助讲故事。继续读，看看接下来发生什么。</string>
 
+    <!-- Tap-word lookup -->
+    <string name="word_lookup_title">词语</string>
+    <string name="word_lookup_curated_source">本故事词汇</string>
+    <string name="word_lookup_example_label">例句</string>
+    <string name="word_lookup_close">关闭</string>
+    <string name="word_lookup_explain_button">用 AI 解释</string>
+    <string name="word_lookup_no_entry">这个词还没有收录的解释。</string>
+    <string name="word_lookup_ai_badge">AI 解释</string>
+    <string name="word_lookup_ai_boundary">只解释当前故事里的词，不是开放聊天。</string>
+    <string name="word_lookup_ai_loading">正在解释...</string>
+    <string name="word_lookup_ai_error">暂时无法解释这个词。</string>
+    <string name="word_lookup_hint">点一个词就能查它的意思</string>
+
     <!-- Vocabulary -->
     <string name="vocab_title">生字</string>
     <string name="vocab_empty">还没有生字。</string>

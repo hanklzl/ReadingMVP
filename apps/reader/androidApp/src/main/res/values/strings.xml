@@ -219,6 +219,19 @@
     <string name="reading_ask_error">Story explanation is not available right now.</string>
     <string name="ai_answer_stub">This part helps explain the story. Keep reading to see what happens next.</string>
 
+    <!-- Tap-word lookup -->
+    <string name="word_lookup_title">Word</string>
+    <string name="word_lookup_curated_source">From this story</string>
+    <string name="word_lookup_example_label">Example</string>
+    <string name="word_lookup_close">Close</string>
+    <string name="word_lookup_explain_button">Explain with AI</string>
+    <string name="word_lookup_no_entry">No saved entry for this word yet.</string>
+    <string name="word_lookup_ai_badge">AI explanation</string>
+    <string name="word_lookup_ai_boundary">Only explains words in the current story. No open chat.</string>
+    <string name="word_lookup_ai_loading">Explaining...</string>
+    <string name="word_lookup_ai_error">Explanation is not available right now.</string>
+    <string name="word_lookup_hint">Tap a word to look it up</string>
+
     <!-- Vocabulary -->
     <string name="vocab_title">New Words</string>
     <string name="vocab_empty">No words yet.</string>

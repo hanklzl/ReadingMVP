@@ -161,6 +161,8 @@ import com.littlemandarin.classics.shared.presentation.BuildAiExplanationRequest
 import com.littlemandarin.classics.shared.presentation.BuildFeedbackSubmissionUseCase
 import com.littlemandarin.classics.shared.presentation.BuildParentReportSummaryUseCase
 import com.littlemandarin.classics.shared.presentation.BuildSpeechTextUseCase
+import com.littlemandarin.classics.shared.presentation.WordLookupResult
+import com.littlemandarin.classics.shared.presentation.WordLookupUseCase
 import com.littlemandarin.classics.shared.presentation.ChildAgeBand
 import com.littlemandarin.classics.shared.presentation.FeedbackOption
 import com.littlemandarin.classics.shared.presentation.FeedbackPresentationOptions
@@ -2196,6 +2198,12 @@ private fun ReadingScreen(
     val aiOutOfScopeText = stringResource(R.string.prompt_story_only_reply)
     val buildAiExplanationRequestUseCase = remember { BuildAiExplanationRequestUseCase() }
 
+    // Tap-word dictionary lookup. Resolving happens in shared (WordLookupUseCase);
+    // the AI fallback reuses the same controlled explain flow, targeted at one word.
+    val wordLookupUseCase = remember { WordLookupUseCase() }
+    var wordLookup by remember(story.id) { mutableStateOf<WordLookupResult?>(null) }
+    var wordLookupAiState by remember(story.id) { mutableStateOf<AiUiState>(AiUiState.Idle) }
+
     LaunchedEffect(story.id, paragraphIndex) {
         onReadingPositionChange(story.id, paragraphIndex)
     }
@@ -2659,6 +2667,15 @@ private fun ReadingScreen(
         else -> LmcSpacing.BottomActionHeight + LmcSpacing.Space6
     }
 
+    // Tapping a word resolves it via shared and opens the lookup sheet. It must NOT
+    // start audio: per-character cells consume the tap before the sentence surface.
+    val onWordTap: (String) -> Unit = remember(story.id) {
+        { token ->
+            wordLookupAiState = AiUiState.Idle
+            wordLookup = wordLookupUseCase.lookup(story, token)
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -2724,6 +2741,7 @@ private fun ReadingScreen(
                                     sentenceCount = sentenceSegments.size,
                                     onSentenceClick = { playSentenceFromTap(sentenceIndex) },
                                     onSpeakerClick = { replaySentenceOnly(sentenceIndex) },
+                                    onWordTap = onWordTap,
                                 )
                             }
                         } else {
@@ -2732,6 +2750,7 @@ private fun ReadingScreen(
                                     paragraph = paragraph,
                                     showPinyin = settings.showPinyinByDefault,
                                     readingType = readingType,
+                                    onWordTap = onWordTap,
                                 )
                             }
                         }
@@ -2859,6 +2878,59 @@ private fun ReadingScreen(
                 playbackState = playbackState.copy(playbackSpeed = speed)
             },
             onDismiss = { showSettingsSheet = false },
+        )
+    }
+
+    wordLookup?.let { lookup ->
+        WordLookupSheet(
+            lookup = lookup,
+            aiState = wordLookupAiState,
+            onExplainWithAi = {
+                if (lookup !is WordLookupResult.NeedsAi) return@WordLookupSheet
+                val request = buildAiExplanationRequestUseCase.forSelectedText(
+                    storyId = story.id,
+                    selectedText = lookup.token,
+                    questionType = AiQuestionTypes.ExplainWord,
+                )
+                if (request == null) {
+                    wordLookupAiState = AiUiState.Error
+                    return@WordLookupSheet
+                }
+                wordLookupAiState = AiUiState.Loading
+                scope.launch {
+                    runCatching { aiService.explain(request) }
+                        .onSuccess { response ->
+                            val answer = response.toLimitedDisplayText(
+                                stubText = aiStubText,
+                                outOfScopeText = aiOutOfScopeText,
+                            )
+                            analytics.track(
+                                ReaderAnalyticsEvents.aiExplainRequest(
+                                    storyId = story.id,
+                                    requestType = AiQuestionTypes.ExplainWord,
+                                    targetType = "word",
+                                    safetyOutcome = response.safetyOutcome(answer, aiOutOfScopeText),
+                                ),
+                            )
+                            wordLookupAiState = AiUiState.Answer(answer)
+                        }
+                        .onFailure {
+                            analytics.track(
+                                ReaderAnalyticsEvents.aiExplainRequest(
+                                    storyId = story.id,
+                                    requestType = AiQuestionTypes.ExplainWord,
+                                    targetType = "word",
+                                    safetyOutcome = "error",
+                                ),
+                            )
+                            wordLookupAiState = AiUiState.Error
+                        }
+                }
+            },
+            onDismiss = {
+                wordLookup = null
+                wordLookupAiState = AiUiState.Idle
+            },
         )
     }
 }
@@ -4655,6 +4727,7 @@ private fun PinyinTextBlock(
     paragraph: Paragraph,
     showPinyin: Boolean,
     readingType: ReadingTypeStyles,
+    onWordTap: (String) -> Unit,
 ) {
     SentenceSurface(isHighlighted = false) {
         if (showPinyin && paragraph.cells.isNotEmpty()) {
@@ -4663,12 +4736,15 @@ private fun PinyinTextBlock(
                 cells = paragraph.cells,
                 readingType = readingType,
                 isHighlighted = false,
+                onWordTap = onWordTap,
             )
         } else {
-            Text(
+            TappableHanziText(
                 text = paragraph.text,
                 style = readingType.hanzi,
-                color = MaterialTheme.colorScheme.onSurface,
+                isHighlighted = false,
+                activeCharIndex = null,
+                onWordTap = onWordTap,
             )
         }
     }
@@ -4686,6 +4762,7 @@ private fun SentenceTextBlock(
     sentenceCount: Int,
     onSentenceClick: () -> Unit,
     onSpeakerClick: () -> Unit,
+    onWordTap: (String) -> Unit,
 ) {
     val sentenceCells = remember(paragraph.cells, sentence.startOffset, sentence.endOffset) {
         paragraph.cellsFor(sentence)
@@ -4727,13 +4804,15 @@ private fun SentenceTextBlock(
                     readingType = readingType,
                     isHighlighted = isHighlighted,
                     activeCharIndex = activeCharIndex,
+                    onWordTap = onWordTap,
                 )
             } else {
-                KaraokeHanziText(
+                TappableHanziText(
                     text = sentence.text,
                     style = readingType.hanzi,
                     isHighlighted = isHighlighted,
                     activeCharIndex = activeCharIndex,
+                    onWordTap = onWordTap,
                 )
             }
         }
@@ -4771,6 +4850,7 @@ private fun RubyFlowText(
     readingType: ReadingTypeStyles,
     isHighlighted: Boolean,
     activeCharIndex: Int? = null,
+    onWordTap: ((String) -> Unit)? = null,
 ) {
     FlowRow(
         modifier = Modifier
@@ -4790,6 +4870,9 @@ private fun RubyFlowText(
                 // cells are 1:1 with the sentence code points, so the cell index
                 // matches the karaoke character index from shared.
                 isActiveChar = isHighlighted && activeCharIndex == index,
+                onTap = onWordTap?.takeIf { cell.c.isNotBlank() }?.let { tap ->
+                    { tap(cell.c) }
+                },
             )
         }
     }
@@ -4802,20 +4885,35 @@ private fun RubyCell(
     readingType: ReadingTypeStyles,
     isHighlighted: Boolean,
     isActiveChar: Boolean = false,
+    onTap: (() -> Unit)? = null,
 ) {
     val activeCharColor = MaterialTheme.colorScheme.onPrimaryContainer
+    val baseModifier = if (isActiveChar) {
+        Modifier
+            .background(
+                color = MaterialTheme.colorScheme.primaryContainer,
+                shape = RoundedCornerShape(LmcSpacing.RadiusSm),
+            )
+            .padding(horizontal = LmcSpacing.Space1)
+    } else {
+        Modifier
+    }
+    // Per-character tap opens the word lookup WITHOUT starting sentence audio:
+    // the cell's clickable consumes the tap before the sentence surface sees it.
+    // >=48dp tap target via heightIn on the cell.
+    val tapModifier = if (onTap != null) {
+        Modifier
+            .clip(RoundedCornerShape(LmcSpacing.RadiusSm))
+            .clickable(onClick = onTap)
+            .heightIn(min = LmcSpacing.MinTouchTarget)
+            .widthIn(min = LmcSpacing.MinTouchTarget)
+    } else {
+        Modifier
+    }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = if (isActiveChar) {
-            Modifier
-                .background(
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    shape = RoundedCornerShape(LmcSpacing.RadiusSm),
-                )
-                .padding(horizontal = LmcSpacing.Space1)
-        } else {
-            Modifier
-        },
+        verticalArrangement = Arrangement.Center,
+        modifier = baseModifier.then(tapModifier),
     ) {
         val hasPinyin = pinyin.isNotBlank()
         Text(
@@ -4895,6 +4993,214 @@ private fun KaraokeHanziText(
         }
     }
     Text(text = annotated, style = style, color = baseColor)
+}
+
+/**
+ * Hanzi without ruby, where every character is an individual tap target that opens the
+ * word lookup. Karaoke highlight is preserved via [activeCharIndex] (code-point index).
+ * Each character's tap is consumed by its own cell so sentence audio is NOT triggered.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun TappableHanziText(
+    text: String,
+    style: TextStyle,
+    isHighlighted: Boolean,
+    activeCharIndex: Int?,
+    onWordTap: (String) -> Unit,
+) {
+    val baseColor = if (isHighlighted) {
+        MaterialTheme.colorScheme.onSecondaryContainer
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+    val activeColor = MaterialTheme.colorScheme.primary
+    val codePoints = remember(text) {
+        buildList {
+            var offset = 0
+            while (offset < text.length) {
+                val isSurrogatePair = text[offset].isHighSurrogate() &&
+                    offset + 1 < text.length &&
+                    text[offset + 1].isLowSurrogate()
+                val charLength = if (isSurrogatePair) 2 else 1
+                add(text.substring(offset, offset + charLength))
+                offset += charLength
+            }
+        }
+    }
+    FlowRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clearAndSetSemantics { contentDescription = text },
+        horizontalArrangement = Arrangement.Start,
+    ) {
+        codePoints.forEachIndexed { index, chunk ->
+            val isActive = isHighlighted && activeCharIndex == index
+            val tappable = chunk.isNotBlank()
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(LmcSpacing.RadiusSm))
+                    .then(
+                        if (tappable) {
+                            Modifier.clickable { onWordTap(chunk) }
+                        } else {
+                            Modifier
+                        },
+                    )
+                    .heightIn(min = LmcSpacing.MinTouchTarget),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = chunk,
+                    style = style,
+                    color = if (isActive) activeColor else baseColor,
+                    fontWeight = if (isActive) FontWeight.Bold else null,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Tap-word lookup sheet. Shows a trusted curated entry (from the story's reviewed vocab),
+ * or, for a [WordLookupResult.NeedsAi] token, a single controlled "Explain with AI" action
+ * whose answer is clearly badged as AI. No free-text input, no open chat (AGENTS.md §7).
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun WordLookupSheet(
+    lookup: WordLookupResult,
+    aiState: AiUiState,
+    onExplainWithAi: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = LmcSpacing.ScreenPadding)
+                .padding(bottom = LmcSpacing.Space6),
+            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space3),
+        ) {
+            when (lookup) {
+                is WordLookupResult.Curated -> {
+                    Text(
+                        text = lookup.word,
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    if (lookup.pinyin.isNotBlank()) {
+                        Text(
+                            text = lookup.pinyin,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.secondary,
+                        )
+                    }
+                    LmcBadge(text = stringResource(R.string.word_lookup_curated_source))
+                    Text(
+                        text = lookup.meaning,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    lookup.example?.takeIf { it.isNotBlank() }?.let { example ->
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                        Text(
+                            text = stringResource(R.string.word_lookup_example_label),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = example,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+
+                is WordLookupResult.NeedsAi -> {
+                    Text(
+                        text = lookup.token,
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = stringResource(R.string.word_lookup_no_entry),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Button(
+                        onClick = onExplainWithAi,
+                        enabled = aiState !is AiUiState.Loading,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = LmcSpacing.MinTouchTarget),
+                    ) {
+                        Text(text = stringResource(R.string.word_lookup_explain_button))
+                    }
+                    when (val state = aiState) {
+                        AiUiState.Idle -> Unit
+                        AiUiState.Loading -> Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.secondary,
+                            )
+                            Text(
+                                text = stringResource(R.string.word_lookup_ai_loading),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        is AiUiState.Answer -> Column(
+                            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+                        ) {
+                            LmcBadge(text = stringResource(R.string.word_lookup_ai_badge))
+                            Text(
+                                text = state.text,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Text(
+                                text = stringResource(R.string.word_lookup_ai_boundary),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        AiUiState.Error -> Text(
+                            text = stringResource(R.string.word_lookup_ai_error),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LmcBadge(text: String) {
+    Surface(
+        shape = RoundedCornerShape(LmcSpacing.RadiusSm),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSecondaryContainer,
+            modifier = Modifier.padding(
+                horizontal = LmcSpacing.Space2,
+                vertical = LmcSpacing.Space1,
+            ),
+        )
+    }
 }
 
 @Composable

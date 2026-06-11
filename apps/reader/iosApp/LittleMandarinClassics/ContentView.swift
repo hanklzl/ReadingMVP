@@ -380,6 +380,7 @@ final class ReaderViewModel: ObservableObject {
     private let analytics = LMCUserDefaultsAnalyticsAdapter()
     private let feedbackRepository = LMCSharedFeedbackRepository()
     private let aiService = LMCAiExplanationAdapter()
+    private let wordLookupUseCase = WordLookupUseCase()
     private var speechTask: Task<Void, Never>?
     private var readingAudioTask: Task<Void, Never>?
     private var activeSentenceShouldAutoContinue = true
@@ -967,6 +968,36 @@ final class ReaderViewModel: ObservableObject {
                 requestType: questionType,
                 safetyOutcome: result.analyticsOutcome.rawValue,
                 targetType: "paragraph"
+            )
+        )
+        switch result {
+        case .answer(let answer, _):
+            return .answered(answer)
+        case .failure:
+            return .failed
+        }
+    }
+
+    // Resolve a tapped token against the story's curated vocab (shared WordLookupUseCase).
+    func lookupWord(story: Story, token: String) -> WordLookupResult {
+        wordLookupUseCase.lookup(story: story, token: token)
+    }
+
+    // Controlled AI fallback for a single word (question_type = explain_word). No open chat.
+    func explainWord(story: Story, token: String, baseURL: String) async -> LMCAiAskState {
+        let questionType = AiQuestionTypes.shared.ExplainWord
+        let result = await aiService.explain(
+            storyId: story.id,
+            selectedText: token,
+            questionType: questionType,
+            baseURL: baseURL
+        )
+        analytics.track(
+            ReaderAnalyticsEvents.shared.aiExplainRequest(
+                storyId: story.id,
+                requestType: questionType,
+                safetyOutcome: result.analyticsOutcome.rawValue,
+                targetType: "word"
             )
         )
         switch result {
@@ -1823,6 +1854,15 @@ enum LMCAiAskState: Equatable {
     case loading
     case answered(String)
     case failed
+}
+
+// Identifiable wrapper so the tap-word lookup can drive a SwiftUI .sheet(item:).
+struct LMCWordLookup: Identifiable {
+    let id = UUID()
+    let result: WordLookupResult
+
+    var curated: WordLookupResultCurated? { result as? WordLookupResultCurated }
+    var needsAi: WordLookupResultNeedsAi? { result as? WordLookupResultNeedsAi }
 }
 
 enum LMCAiExplanationResult {
@@ -3162,6 +3202,8 @@ private struct ReadingScreen: View {
     @State private var askState: LMCAiAskState = .idle
     @State private var autoFollowReading = true
     @State private var showSettingsSheet = false
+    @State private var wordLookup: LMCWordLookup?
+    @State private var wordLookupAskState: LMCAiAskState = .idle
     @AppStorage("reading_coachmark_tts_row_dismissed") private var didDismissReadAlongCoachmark = false
 
     private var activeSentenceLocation: LMCSentenceLocation? {
@@ -3285,6 +3327,10 @@ private struct ReadingScreen: View {
                                             paragraphIndex: index,
                                             sentenceIndex: sentenceIndex
                                         )
+                                    },
+                                    onWordTap: { token in
+                                        wordLookupAskState = .idle
+                                        wordLookup = LMCWordLookup(result: viewModel.lookupWord(story: story, token: token))
                                     }
                                 )
                                 .id(paragraphScrollId(index))
@@ -3390,6 +3436,28 @@ private struct ReadingScreen: View {
                 autoContinueBinding: autoContinueBinding,
                 playbackSpeed: viewModel.playbackSpeed,
                 setPlaybackSpeed: viewModel.setPlaybackSpeed
+            )
+            .presentationDetents([.medium])
+        }
+        .sheet(item: $wordLookup) { lookup in
+            WordLookupSheet(
+                lookup: lookup,
+                askState: wordLookupAskState,
+                explainWithAi: {
+                    guard let token = lookup.needsAi?.token else { return }
+                    wordLookupAskState = .loading
+                    Task {
+                        wordLookupAskState = await viewModel.explainWord(
+                            story: story,
+                            token: token,
+                            baseURL: aiBackendBaseURL
+                        )
+                    }
+                },
+                dismiss: {
+                    wordLookup = nil
+                    wordLookupAskState = .idle
+                }
             )
             .presentationDetents([.medium])
         }
@@ -3526,6 +3594,124 @@ private struct ReadingScreen: View {
                 baseURL: aiBackendBaseURL
             )
         }
+    }
+}
+
+// Tap-word lookup sheet: trusted curated entry, or a single controlled "Explain with AI"
+// action whose answer is clearly badged as AI. No free-text input, no open chat (§7).
+private struct WordLookupSheet: View {
+    let lookup: LMCWordLookup
+    let askState: LMCAiAskState
+    let explainWithAi: () -> Void
+    let dismiss: () -> Void
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: LMCSpace.s3) {
+                if let curated = lookup.curated {
+                    Text(curated.word)
+                        .font(.system(size: 34, weight: .bold))
+                        .foregroundStyle(LMCColor.textPrimary)
+                    if !curated.pinyin.isEmpty {
+                        Text(curated.pinyin)
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundStyle(LMCColor.secondary)
+                    }
+                    LMCWordLookupBadge(textKey: "word_lookup_curated_source")
+                    Text(curated.meaning)
+                        .font(.system(size: 18))
+                        .foregroundStyle(LMCColor.textPrimary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if let example = curated.example, !example.isEmpty {
+                        Divider()
+                        Text("word_lookup_example_label")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(LMCColor.textSecondary)
+                        Text(example)
+                            .font(.system(size: 18))
+                            .foregroundStyle(LMCColor.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                } else if let needsAi = lookup.needsAi {
+                    Text(needsAi.token)
+                        .font(.system(size: 34, weight: .bold))
+                        .foregroundStyle(LMCColor.textPrimary)
+                    Text("word_lookup_no_entry")
+                        .font(.system(size: 16))
+                        .foregroundStyle(LMCColor.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Button(action: explainWithAi) {
+                        Label("word_lookup_explain_button", systemImage: "sparkles")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(LMCPrimaryButtonStyle())
+                    .disabled(askState == .loading)
+
+                    aiSection
+                }
+
+                Button(action: dismiss) {
+                    Text("word_lookup_close")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(LMCSecondaryButtonStyle())
+                .padding(.top, LMCSpace.s2)
+            }
+            .padding(LMCSpace.s4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(LMCColor.background.ignoresSafeArea())
+    }
+
+    @ViewBuilder
+    private var aiSection: some View {
+        switch askState {
+        case .idle:
+            EmptyView()
+        case .loading:
+            HStack(spacing: LMCSpace.s2) {
+                ProgressView().tint(LMCColor.primary)
+                Text("word_lookup_ai_loading")
+                    .font(.system(size: 16))
+                    .foregroundStyle(LMCColor.textSecondary)
+            }
+            .frame(minHeight: LMCSpace.minTouch)
+        case .answered(let answer):
+            VStack(alignment: .leading, spacing: LMCSpace.s2) {
+                LMCWordLookupBadge(textKey: "word_lookup_ai_badge")
+                Text(answer)
+                    .font(.system(size: 18))
+                    .foregroundStyle(LMCColor.textPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("word_lookup_ai_boundary")
+                    .font(.system(size: 14))
+                    .foregroundStyle(LMCColor.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(LMCSpace.s4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(LMCColor.infoContainer)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        case .failed:
+            Text("word_lookup_ai_error")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(LMCColor.error)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
+private struct LMCWordLookupBadge: View {
+    let textKey: LocalizedStringKey
+
+    var body: some View {
+        Text(textKey)
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(LMCColor.onSecondaryContainer)
+            .padding(.horizontal, LMCSpace.s2)
+            .padding(.vertical, LMCSpace.s1)
+            .background(LMCColor.secondaryContainer)
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 }
 
@@ -5285,6 +5471,7 @@ private struct ReadingParagraphView: View {
     let activeCharIndex: Int?
     let playSentence: (Int) -> Void
     let playSentenceOnly: (Int) -> Void
+    var onWordTap: ((String) -> Void)? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: LMCSpace.s3) {
@@ -5297,7 +5484,8 @@ private struct ReadingParagraphView: View {
                     isActive: isActiveSentence,
                     activeCharIndex: isActiveSentence ? activeCharIndex : nil,
                     playSentence: { playSentence(sentence.index) },
-                    playSentenceOnly: { playSentenceOnly(sentence.index) }
+                    playSentenceOnly: { playSentenceOnly(sentence.index) },
+                    onWordTap: onWordTap
                 )
                 .id(LMCSentenceLocation(
                     storyId: storyId,
@@ -5323,6 +5511,7 @@ private struct ReadingSentenceView: View {
     var activeCharIndex: Int? = nil
     let playSentence: () -> Void
     let playSentenceOnly: () -> Void
+    var onWordTap: ((String) -> Void)? = nil
 
     @ViewBuilder
     var body: some View {
@@ -5339,6 +5528,8 @@ private struct ReadingSentenceView: View {
             .accessibilityLabel(Text("reading_sentence_play"))
 
             sentenceContent
+                // Sentence tap plays audio; per-character word taps run as a higher
+                // priority gesture (see LMCRubyCellView / character cells) so they win.
                 .onTapGesture(perform: playSentence)
                 .accessibilityAddTraits(.isButton)
         }
@@ -5348,7 +5539,7 @@ private struct ReadingSentenceView: View {
     @ViewBuilder
     private var sentenceContent: some View {
         if showPinyin {
-            LMCRubyTextFlow(cells: sentence.cells, size: size, activeCharIndex: activeCharIndex)
+            LMCRubyTextFlow(cells: sentence.cells, size: size, activeCharIndex: activeCharIndex, onWordTap: onWordTap)
                 .padding(.horizontal, LMCSpace.s2)
                 .padding(.vertical, LMCSpace.s1)
                 .background(sentenceBackground)
@@ -5356,9 +5547,7 @@ private struct ReadingSentenceView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .frame(maxWidth: .infinity, alignment: .leading)
         } else {
-            karaokeHanziText
-                .lineSpacing(size.hanziLineSpacing)
-                .fixedSize(horizontal: false, vertical: true)
+            tappableHanziText
                 .padding(.horizontal, LMCSpace.s3)
                 .padding(.vertical, LMCSpace.s2)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -5368,24 +5557,23 @@ private struct ReadingSentenceView: View {
         }
     }
 
-    // Sentence hanzi without ruby; highlights the active code point if any.
-    private var karaokeHanziText: Text {
-        guard let activeCharIndex else {
-            return Text(sentence.text)
-                .font(size.hanziFont)
-                .foregroundColor(LMCColor.textPrimary)
-        }
+    // Sentence hanzi without ruby: each character is its own tap target (word lookup),
+    // while preserving the karaoke active-character highlight.
+    @ViewBuilder
+    private var tappableHanziText: some View {
         let codePoints = Array(sentence.text.unicodeScalars).map { String($0) }
-        var result = Text("")
-        for (index, scalar) in codePoints.enumerated() {
-            let run = Text(scalar).font(size.hanziFont)
-            if index == activeCharIndex {
-                result = result + run.foregroundColor(LMCColor.primary).fontWeight(.bold)
-            } else {
-                result = result + run.foregroundColor(LMCColor.textPrimary)
+        LMCRubyFlowLayout(horizontalSpacing: 0, verticalSpacing: LMCSpace.s2) {
+            ForEach(Array(codePoints.enumerated()), id: \.offset) { index, scalar in
+                let isActiveChar = activeCharIndex == index
+                LMCTappableHanziCharacter(
+                    character: scalar,
+                    font: size.hanziFont,
+                    color: isActiveChar ? LMCColor.primary : LMCColor.textPrimary,
+                    isBold: isActiveChar,
+                    onTap: onWordTap
+                )
             }
         }
-        return result
     }
 
     private var sentenceBackground: Color {
@@ -5664,13 +5852,14 @@ private struct LMCRubyTextFlow: View {
     let cells: [LMCRubyCellData]
     let size: LMCReadingSize
     var activeCharIndex: Int? = nil
+    var onWordTap: ((String) -> Void)? = nil
 
     var body: some View {
         LMCRubyFlowLayout(horizontalSpacing: LMCSpace.s1, verticalSpacing: LMCSpace.s2) {
             ForEach(Array(cells.enumerated()), id: \.offset) { index, cell in
                 // Ruby cells are 1:1 with sentence code points, so the cell index
                 // matches the karaoke character index from shared.
-                LMCRubyCellView(cell: cell, size: size, isActiveChar: activeCharIndex == index)
+                LMCRubyCellView(cell: cell, size: size, isActiveChar: activeCharIndex == index, onTap: onWordTap)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -5681,8 +5870,23 @@ private struct LMCRubyCellView: View {
     let cell: LMCRubyCellData
     let size: LMCReadingSize
     var isActiveChar: Bool = false
+    var onTap: ((String) -> Void)? = nil
 
+    @ViewBuilder
     var body: some View {
+        if let onTap, !cell.character.isEmpty {
+            cellContent
+                .contentShape(Rectangle())
+                .frame(minWidth: LMCSpace.minTouch, minHeight: LMCSpace.minTouch)
+                // Per-character tap opens the word lookup. It is a higher-priority gesture
+                // than the sentence tap, so tapping a word never starts sentence audio.
+                .highPriorityGesture(TapGesture().onEnded { onTap(cell.character) })
+        } else {
+            cellContent
+        }
+    }
+
+    private var cellContent: some View {
         VStack(spacing: 0) {
             Text(cell.pinyin.isEmpty ? " " : cell.pinyin)
                 .font(size.pinyinFont)
@@ -5707,6 +5911,32 @@ private struct LMCRubyCellView: View {
             RoundedRectangle(cornerRadius: 6, style: .continuous)
                 .fill(isActiveChar ? LMCColor.primaryContainer : Color.clear)
         )
+    }
+}
+
+// A single hanzi character (no ruby) that is its own >=48dp tap target for word lookup.
+private struct LMCTappableHanziCharacter: View {
+    let character: String
+    let font: Font
+    let color: Color
+    let isBold: Bool
+    var onTap: ((String) -> Void)? = nil
+
+    @ViewBuilder
+    var body: some View {
+        let text = Text(character)
+            .font(font)
+            .fontWeight(isBold ? .bold : nil)
+            .foregroundColor(color)
+            .fixedSize(horizontal: true, vertical: true)
+        if let onTap, !character.isEmpty {
+            text
+                .frame(minWidth: LMCSpace.minTouch, minHeight: LMCSpace.minTouch)
+                .contentShape(Rectangle())
+                .highPriorityGesture(TapGesture().onEnded { onTap(character) })
+        } else {
+            text
+        }
     }
 }
 
