@@ -6538,26 +6538,131 @@ private struct StoryTitleBlock: View {
     }
 }
 
+/// A warm, kid-friendly storybook palette for a programmatic cover.
+/// `gradient` is the background; `ink` is the prominent Chinese title; `subtitle` the English line;
+/// `badge`/`onBadge` the small level pill. Pairings keep legible contrast on the gradient's lighter
+/// (top-leading) tones. To use a real cover image later, replace only the gradient layer.
+private struct StoryCoverPalette {
+    let gradient: [Color]
+    let ink: Color
+    let subtitle: Color
+    let badge: Color
+    let onBadge: Color
+}
+
+private enum StoryCoverPalettes {
+    // 6 fixed palettes drawn from the LMC design tokens. paletteIndex (0..5) maps 1:1, so the
+    // same story always gets the same palette — matching the Android mapping.
+    static let all: [StoryCoverPalette] = [
+        // 0 — warm vermilion
+        StoryCoverPalette(
+            gradient: [Color(hex: 0xFFE0D6), Color(hex: 0xFFC4B2)],
+            ink: Color(hex: 0x3D0E08), subtitle: Color(hex: 0x6E2417),
+            badge: Color(hex: 0xB84535), onBadge: .white
+        ),
+        // 1 — calm teal
+        StoryCoverPalette(
+            gradient: [Color(hex: 0xD9F1EE), Color(hex: 0xB6E3DE)],
+            ink: Color(hex: 0x063432), subtitle: Color(hex: 0x14534F),
+            badge: Color(hex: 0x126B68), onBadge: .white
+        ),
+        // 2 — warm gold
+        StoryCoverPalette(
+            gradient: [Color(hex: 0xFFF4D8), Color(hex: 0xFFE3A8)],
+            ink: Color(hex: 0x5A4000), subtitle: Color(hex: 0x7A5800),
+            badge: Color(hex: 0x8A6100), onBadge: .white
+        ),
+        // 3 — leaf green
+        StoryCoverPalette(
+            gradient: [Color(hex: 0xE1F3DC), Color(hex: 0xC2E6BC)],
+            ink: Color(hex: 0x1E3D1E), subtitle: Color(hex: 0x2E5A2E),
+            badge: Color(hex: 0x3B7A3B), onBadge: .white
+        ),
+        // 4 — soft sky
+        StoryCoverPalette(
+            gradient: [Color(hex: 0xDCEEFF), Color(hex: 0xB9DCF7)],
+            ink: Color(hex: 0x0F2E48), subtitle: Color(hex: 0x1E4E78),
+            badge: Color(hex: 0x2B6CA3), onBadge: .white
+        ),
+        // 5 — rice paper / ink
+        StoryCoverPalette(
+            gradient: [Color(hex: 0xFFF8EC), Color(hex: 0xF1E4C9)],
+            ink: Color(hex: 0x202523), subtitle: Color(hex: 0x4F5E58),
+            badge: Color(hex: 0x8A6100), onBadge: .white
+        ),
+    ]
+}
+
 private struct StoryCover: View {
     let story: Story
     let size: CGFloat
 
+    private static let useCases = StoryCoverUseCases()
+
+    private var theme: StoryCoverTheme {
+        Self.useCases.coverThemeFor(story: story, paletteCount: Int32(StoryCoverPalettes.all.count))
+    }
+
+    private var isHero: Bool { size >= 148 }
+
     var body: some View {
+        let t = theme
+        let idx = max(0, min(Int(t.paletteIndex), StoryCoverPalettes.all.count - 1))
+        let palette = StoryCoverPalettes.all[idx]
+        let pad: CGFloat = isHero ? LMCSpace.s3 : LMCSpace.s2
+        let motifSize: CGFloat = isHero ? 40 : 26
+        let titleSize: CGFloat = isHero ? 22 : 15
+        let subtitleSize: CGFloat = isHero ? 12 : 10
+        let badgeSize: CGFloat = isHero ? 12 : 10
+
         RoundedRectangle(cornerRadius: 8, style: .continuous)
             .fill(
                 LinearGradient(
-                    colors: [LMCColor.tertiaryContainer, LMCColor.primaryContainer, LMCColor.secondaryContainer],
+                    colors: palette.gradient,
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
             )
-            .overlay {
-                Image(systemName: "book.pages.fill")
-                    .font(.system(size: max(28, size * 0.32), weight: .bold))
-                    .foregroundStyle(LMCColor.primary)
+            .overlay(alignment: .topLeading) {
+                Text(LMCStrings.format("level_value", Int(t.level)))
+                    .font(.system(size: badgeSize, weight: .bold))
+                    .foregroundStyle(palette.onBadge)
+                    .padding(.horizontal, LMCSpace.s2)
+                    .padding(.vertical, 2)
+                    .background(palette.badge)
+                    .clipShape(Capsule())
+                    .padding(pad)
+            }
+            .overlay(alignment: .topTrailing) {
+                Text(t.motif)
+                    .font(.system(size: motifSize))
+                    .padding(pad)
                     .accessibilityHidden(true)
             }
+            .overlay(alignment: .bottomLeading) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(story.titleZh)
+                        .font(.system(size: titleSize, weight: .bold))
+                        .foregroundStyle(palette.ink)
+                        .lineLimit(isHero ? 3 : 2)
+                        .multilineTextAlignment(.leading)
+                    if isHero {
+                        Text(story.titleEn)
+                            .font(.system(size: subtitleSize, weight: .semibold))
+                            .foregroundStyle(palette.subtitle)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(pad)
+            }
             .frame(width: size, height: size)
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(LMCColor.outlineVariant, lineWidth: 1)
+            )
+            .accessibilityElement(children: .ignore)
             .accessibilityLabel("\(story.titleZh), \(story.titleEn)")
     }
 }

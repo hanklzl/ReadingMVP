@@ -113,6 +113,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -171,6 +172,8 @@ import com.littlemandarin.classics.shared.presentation.AdaptiveReadingPathRecomm
 import com.littlemandarin.classics.shared.presentation.AndroidReaderSettingsServiceProvider
 import com.littlemandarin.classics.shared.presentation.AndroidVocabReviewServiceProvider
 import com.littlemandarin.classics.shared.presentation.AssessmentItem
+import com.littlemandarin.classics.shared.presentation.StoryCoverTheme
+import com.littlemandarin.classics.shared.presentation.StoryCoverUseCases
 import com.littlemandarin.classics.shared.presentation.ReadingLevelAssessmentUseCases
 import com.littlemandarin.classics.shared.presentation.BuildAiExplanationRequestUseCase
 import com.littlemandarin.classics.shared.presentation.BuildFeedbackSubmissionUseCase
@@ -5185,22 +5188,107 @@ private fun StoryCardText(
     }
 }
 
+/**
+ * A warm, kid-friendly storybook palette for a programmatic cover. The gradient is the
+ * background; [ink] is used for the prominent Chinese title; [subtitle] for the English line;
+ * [badge]/[onBadge] for the small level pill. All pairings are chosen for legible contrast on
+ * the gradient's lighter (top-leading) tones. Swap to a real image later by replacing the
+ * gradient layer only.
+ */
+private data class StoryCoverPalette(
+    val gradient: List<Color>,
+    val ink: Color,
+    val subtitle: Color,
+    val badge: Color,
+    val onBadge: Color,
+)
+
+// 6 fixed palettes drawn from the LMC design tokens (vermilion / teal / leaf-gold / rice).
+// paletteIndex (0..5) maps 1:1 here, so the same story always gets the same palette.
+private val LmcStoryCoverPalettes: List<StoryCoverPalette> = listOf(
+    // 0 — warm vermilion
+    StoryCoverPalette(
+        gradient = listOf(Color(0xFFFFE0D6), Color(0xFFFFC4B2)),
+        ink = Color(0xFF3D0E08),
+        subtitle = Color(0xFF6E2417),
+        badge = Color(0xFFB84535),
+        onBadge = Color.White,
+    ),
+    // 1 — calm teal
+    StoryCoverPalette(
+        gradient = listOf(Color(0xFFD9F1EE), Color(0xFFB6E3DE)),
+        ink = Color(0xFF063432),
+        subtitle = Color(0xFF14534F),
+        badge = Color(0xFF126B68),
+        onBadge = Color.White,
+    ),
+    // 2 — warm gold
+    StoryCoverPalette(
+        gradient = listOf(Color(0xFFFFF4D8), Color(0xFFFFE3A8)),
+        ink = Color(0xFF5A4000),
+        subtitle = Color(0xFF7A5800),
+        badge = Color(0xFF8A6100),
+        onBadge = Color.White,
+    ),
+    // 3 — leaf green
+    StoryCoverPalette(
+        gradient = listOf(Color(0xFFE1F3DC), Color(0xFFC2E6BC)),
+        ink = Color(0xFF1E3D1E),
+        subtitle = Color(0xFF2E5A2E),
+        badge = Color(0xFF3B7A3B),
+        onBadge = Color.White,
+    ),
+    // 4 — soft sky
+    StoryCoverPalette(
+        gradient = listOf(Color(0xFFDCEEFF), Color(0xFFB9DCF7)),
+        ink = Color(0xFF0F2E48),
+        subtitle = Color(0xFF1E4E78),
+        badge = Color(0xFF2B6CA3),
+        onBadge = Color.White,
+    ),
+    // 5 — rice paper / ink
+    StoryCoverPalette(
+        gradient = listOf(Color(0xFFFFF8EC), Color(0xFFF1E4C9)),
+        ink = Color(0xFF202523),
+        subtitle = Color(0xFF4F5E58),
+        badge = Color(0xFF8A6100),
+        onBadge = Color.White,
+    ),
+)
+
+private val storyCoverUseCases = StoryCoverUseCases()
+
 @Composable
 private fun StoryCover(
     story: Story,
     coverSize: Dp,
 ) {
+    val theme: StoryCoverTheme = remember(story.id, story.level) {
+        storyCoverUseCases.coverThemeFor(story, paletteCount = LmcStoryCoverPalettes.size)
+    }
+    val palette = LmcStoryCoverPalettes[theme.paletteIndex.coerceIn(0, LmcStoryCoverPalettes.lastIndex)]
+    val isHero = coverSize >= LmcSpacing.StoryCoverHero
     val coverDescription = stringResource(
         R.string.story_cover_content_description,
         story.titleZh,
         story.titleEn,
     )
 
+    // Scale typography with the cover footprint so it reads well at both hero and list sizes.
+    val motifSize = if (isHero) 40.sp else 26.sp
+    val titleSize = if (isHero) 24.sp else 16.sp
+    val titleLineHeight = if (isHero) 30.sp else 20.sp
+    val subtitleSize = if (isHero) 12.sp else 10.sp
+    val badgeSize = if (isHero) 12.sp else 10.sp
+    val pad = if (isHero) LmcSpacing.Space3 else LmcSpacing.Space2
+
     Box(
         modifier = Modifier
             .size(coverSize)
             .clip(RoundedCornerShape(LmcSpacing.RadiusSm))
-            .background(MaterialTheme.colorScheme.tertiaryContainer)
+            .background(
+                Brush.linearGradient(colors = palette.gradient),
+            )
             .border(
                 width = 1.dp,
                 color = MaterialTheme.colorScheme.outlineVariant,
@@ -5209,31 +5297,75 @@ private fun StoryCover(
             .semantics {
                 contentDescription = coverDescription
             },
-        contentAlignment = Alignment.Center,
     ) {
+        // Subtle storybook brush strokes behind the content.
         Canvas(modifier = Modifier.fillMaxSize()) {
-            val stroke = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
             drawLine(
-                color = Color(0x33B84535),
-                start = Offset(size.width * 0.18f, size.height * 0.26f),
-                end = Offset(size.width * 0.82f, size.height * 0.22f),
-                strokeWidth = stroke.width,
+                color = palette.ink.copy(alpha = 0.10f),
+                start = Offset(size.width * 0.12f, size.height * 0.22f),
+                end = Offset(size.width * 0.88f, size.height * 0.16f),
+                strokeWidth = 2.dp.toPx(),
                 cap = StrokeCap.Round,
             )
             drawLine(
-                color = Color(0x33126B68),
-                start = Offset(size.width * 0.22f, size.height * 0.74f),
-                end = Offset(size.width * 0.78f, size.height * 0.68f),
-                strokeWidth = stroke.width,
+                color = palette.ink.copy(alpha = 0.08f),
+                start = Offset(size.width * 0.14f, size.height * 0.86f),
+                end = Offset(size.width * 0.86f, size.height * 0.80f),
+                strokeWidth = 2.dp.toPx(),
                 cap = StrokeCap.Round,
             )
         }
+        // Level badge, top-start.
+        Surface(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(pad),
+            color = palette.badge,
+            shape = RoundedCornerShape(999.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.story_level, theme.level),
+                style = MaterialTheme.typography.labelMedium.copy(fontSize = badgeSize),
+                color = palette.onBadge,
+                modifier = Modifier.padding(horizontal = LmcSpacing.Space2, vertical = 2.dp),
+            )
+        }
+        // Motif glyph, top-end.
         Text(
-            text = story.titleZh.take(1),
-            style = MaterialTheme.typography.displaySmall,
-            color = MaterialTheme.colorScheme.primary,
-            textAlign = TextAlign.Center,
+            text = theme.motif,
+            fontSize = motifSize,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(pad),
         )
+        // Storybook title + English subtitle, bottom.
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .fillMaxWidth()
+                .padding(pad),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = story.titleZh,
+                fontSize = titleSize,
+                lineHeight = titleLineHeight,
+                fontWeight = FontWeight.Bold,
+                color = palette.ink,
+                maxLines = if (isHero) 3 else 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (isHero) {
+                Text(
+                    text = story.titleEn,
+                    fontSize = subtitleSize,
+                    fontWeight = FontWeight.SemiBold,
+                    color = palette.subtitle,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
     }
 }
 
