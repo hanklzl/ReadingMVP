@@ -438,4 +438,24 @@
     <string name="a11y_selected_option_format">Selected: %1$s</string>
     <string name="a11y_correct_answer">Correct answer</string>
     <string name="a11y_incorrect_answer">Incorrect answer</string>
+
+    <!-- Next-day review pack -->
+    <string name="review_pack_title">Today\'s review</string>
+    <string name="review_pack_intro">A quick, friendly look back so today sticks.</string>
+    <string name="review_pack_all_correct">Great job! You answered everything correctly today.</string>
+    <string name="review_pack_missed_title">Let\'s look again</string>
+    <string name="review_pack_correct_answer_label">Correct answer</string>
+    <string name="review_pack_why_label">Why</string>
+    <string name="review_pack_words_title">Words to practise</string>
+    <string name="review_pack_reread_title">Read this again</string>
+    <string name="review_pack_parent_tip_title">For the grown-up</string>
+    <string name="review_pack_tip_read_together">Read this story together again and talk about what happened.</string>
+    <string name="review_pack_tip_review_due_words">A few words are due for review — practise them in the Word Book today.</string>
+    <string name="review_pack_tip_praise">Praise the effort and pick one new word to use today.</string>
+    <string name="review_pack_done">Done</string>
+    <string name="review_pack_view">Open review</string>
+    <string name="today_review_pending_title">Finish today\'s review</string>
+    <string name="today_review_pending_body">A short review from your last story is ready.</string>
+    <string name="today_review_fresh_body">Wrap up today with a quick review.</string>
+    <string name="parent_review_pack_title">Review pack ready</string>
 </resources>

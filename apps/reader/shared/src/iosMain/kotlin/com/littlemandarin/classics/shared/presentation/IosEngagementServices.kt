@@ -8,6 +8,31 @@ actual fun createPlatformOnboardingService(): OnboardingService =
 actual fun createPlatformStreakService(): StreakService =
     StoredStreakService(IosStreakStateStore())
 
+actual fun createPlatformReviewPackService(): ReviewPackService =
+    StoredReviewPackService(IosReviewPackStore())
+
+private class IosReviewPackStore(
+    private val userDefaults: NSUserDefaults = NSUserDefaults.standardUserDefaults,
+) : ReviewPackStore {
+    override fun readPack(): StoredReviewPack? =
+        ReviewPackJsonCodec.decode(userDefaults.stringForKey(ReviewPackKey))
+
+    override fun writePack(pack: StoredReviewPack) {
+        userDefaults.setObject(
+            ReviewPackJsonCodec.encode(pack),
+            forKey = ReviewPackKey,
+        )
+    }
+
+    override fun clearPack() {
+        userDefaults.removeObjectForKey(ReviewPackKey)
+    }
+
+    private companion object {
+        const val ReviewPackKey: String = "lmc_review_pack"
+    }
+}
+
 private class IosOnboardingPreferencesStore(
     private val userDefaults: NSUserDefaults = NSUserDefaults.standardUserDefaults,
 ) : OnboardingPreferencesStore {

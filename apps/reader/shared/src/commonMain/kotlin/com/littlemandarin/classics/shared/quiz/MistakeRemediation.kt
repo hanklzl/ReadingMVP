@@ -1,6 +1,7 @@
 package com.littlemandarin.classics.shared.quiz
 
 import com.littlemandarin.classics.shared.story.Story
+import kotlinx.serialization.Serializable
 
 /**
  * A question the child missed, with the correct answer and its child-friendly
@@ -21,6 +22,7 @@ data class ReviewWord(
 )
 
 /** A templated coaching line for the parent. Rendered/localized in the UI layer. */
+@Serializable
 enum class ReviewParentTip {
     ReadTogether,
     ReviewDueWords,

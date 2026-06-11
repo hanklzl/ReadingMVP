@@ -433,4 +433,24 @@
     <string name="a11y_selected_option_format">已选择：%1$s</string>
     <string name="a11y_correct_answer">正确答案</string>
     <string name="a11y_incorrect_answer">错误答案</string>
+
+    <!-- 次日复习包 -->
+    <string name="review_pack_title">今日复习</string>
+    <string name="review_pack_intro">快速温习一下，今天学得更牢。</string>
+    <string name="review_pack_all_correct">太棒了！今天的题目全部答对啦。</string>
+    <string name="review_pack_missed_title">我们再看一看</string>
+    <string name="review_pack_correct_answer_label">正确答案</string>
+    <string name="review_pack_why_label">为什么</string>
+    <string name="review_pack_words_title">要练习的字词</string>
+    <string name="review_pack_reread_title">再读一遍</string>
+    <string name="review_pack_parent_tip_title">给家长的话</string>
+    <string name="review_pack_tip_read_together">和孩子一起再读这个故事，聊聊发生了什么。</string>
+    <string name="review_pack_tip_review_due_words">有几个字词到复习时间了——今天在生字本里练一练。</string>
+    <string name="review_pack_tip_praise">表扬孩子的努力，再挑一个新词今天用一用。</string>
+    <string name="review_pack_done">完成</string>
+    <string name="review_pack_view">打开复习</string>
+    <string name="today_review_pending_title">完成今日复习</string>
+    <string name="today_review_pending_body">上一篇故事的小复习已准备好。</string>
+    <string name="today_review_fresh_body">用一个小复习来结束今天吧。</string>
+    <string name="parent_review_pack_title">复习包已准备</string>
 </resources>

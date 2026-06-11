@@ -185,6 +185,8 @@ import com.littlemandarin.classics.shared.presentation.ReadingPlaybackSpeed
 import com.littlemandarin.classics.shared.presentation.ReadingSessionMode
 import com.littlemandarin.classics.shared.presentation.ReadingTextSize
 import com.littlemandarin.classics.shared.presentation.SentenceSegment
+import com.littlemandarin.classics.shared.presentation.PendingReview
+import com.littlemandarin.classics.shared.presentation.ReviewPackUseCase
 import com.littlemandarin.classics.shared.presentation.SentenceSegmenter
 import com.littlemandarin.classics.shared.presentation.StreakSummary
 import com.littlemandarin.classics.shared.presentation.StreakUseCase
@@ -197,6 +199,7 @@ import com.littlemandarin.classics.shared.presentation.WordBookItem
 import com.littlemandarin.classics.shared.presentation.WordBookSummary
 import com.littlemandarin.classics.shared.presentation.createPlatformOnboardingService
 import com.littlemandarin.classics.shared.presentation.createPlatformReaderSettingsService
+import com.littlemandarin.classics.shared.presentation.createPlatformReviewPackService
 import com.littlemandarin.classics.shared.presentation.createPlatformStreakService
 import com.littlemandarin.classics.shared.presentation.createPlatformVocabReviewService
 import com.littlemandarin.classics.shared.presentation.isMockAiBackend
@@ -211,7 +214,10 @@ import com.littlemandarin.classics.shared.progress.ParentProgressReport
 import com.littlemandarin.classics.shared.progress.ProgressService
 import com.littlemandarin.classics.shared.progress.ProgressStats
 import com.littlemandarin.classics.shared.progress.createPlatformProgressService
+import com.littlemandarin.classics.shared.quiz.MistakeRemediationUseCases
 import com.littlemandarin.classics.shared.quiz.QuestionResult
+import com.littlemandarin.classics.shared.quiz.ReviewPack
+import com.littlemandarin.classics.shared.quiz.ReviewParentTip
 import com.littlemandarin.classics.shared.service.AiExplainBackendClient
 import com.littlemandarin.classics.shared.service.AiExplanationRequest
 import com.littlemandarin.classics.shared.service.AiExplanationResponse
@@ -287,6 +293,7 @@ private object ReaderRoutes {
     const val Vocabulary = "story/{storyId}/vocabulary?source={source}"
     const val Quiz = "story/{storyId}/quiz"
     const val WordReview = "word_book/review"
+    const val ReviewPack = "review_pack"
 
     fun reading(storyId: String): String = "story/$storyId/read"
 
@@ -302,6 +309,7 @@ private object ReaderRoutes {
             route == Privacy ||
             route == PlacementCheck ||
             route == WordReview ||
+            route == ReviewPack ||
             route?.startsWith("story/") == true
 }
 
@@ -482,10 +490,12 @@ private fun ReaderAppContent(
     val progressService = remember { createPlatformProgressService() }
     val streakService = remember { createPlatformStreakService() }
     val vocabReviewService = remember { createPlatformVocabReviewService() }
+    val reviewPackService = remember { createPlatformReviewPackService() }
     val audioService = remember { createAudioService() }
     val ttsService = remember { createTtsService() }
     val storyPresentationUseCases = remember { StoryPresentationUseCases() }
     val streakUseCase = remember(streakService) { StreakUseCase(streakService) }
+    val reviewPackUseCase = remember(reviewPackService) { ReviewPackUseCase(reviewPackService) }
     val vocabReviewUseCase = remember(repository, progressService, vocabReviewService) {
         VocabReviewUseCase(
             storyRepository = repository,
@@ -542,6 +552,9 @@ private fun ReaderAppContent(
         mutableStateOf<Map<String, Int>>(emptyMap())
     }
     var wordReviewVersion by remember { mutableIntStateOf(0) }
+    var reviewPackVersion by remember { mutableIntStateOf(0) }
+    var pendingReview by remember { mutableStateOf<PendingReview?>(null) }
+    var activeReviewPack by remember { mutableStateOf<ReviewPack?>(null) }
     var wordBookSummary by remember {
         mutableStateOf(WordBookSummary(totalWords = 0, dueCount = 0, items = emptyList()))
     }
@@ -622,6 +635,10 @@ private fun ReaderAppContent(
         vocabReviewUseCase.syncLearnedWords(todayEpochMillis = now)
         wordBookSummary = vocabReviewUseCase.wordBook(todayEpochMillis = now)
         streakSummary = streakUseCase.summary(todayEpochMillis = now)
+    }
+
+    LaunchedEffect(reviewPackVersion) {
+        pendingReview = reviewPackUseCase.pendingReview(todayEpochMillis = System.currentTimeMillis())
     }
 
     val readingPathRecommender = remember { AdaptiveReadingPathRecommender() }
@@ -770,6 +787,7 @@ private fun ReaderAppContent(
                         readingPositions = readingPositions,
                         recommendedStoryId = readingPathRecommendation.nextStory?.id,
                         reviewWordCount = readingPathRecommendation.reviewWordCount,
+                        pendingReview = pendingReview,
                         storyPresentationUseCases = storyPresentationUseCases,
                         snackbarHostState = snackbarHostState,
                         onRead = { storyId ->
@@ -780,6 +798,10 @@ private fun ReaderAppContent(
                             navController.navigate(ReaderRoutes.vocabulary(storyId, VocabularyEntrySource.Today))
                         },
                         onQuiz = { storyId -> navController.navigate(ReaderRoutes.quiz(storyId)) },
+                        onReview = {
+                            activeReviewPack = pendingReview?.pack
+                            navController.navigate(ReaderRoutes.ReviewPack)
+                        },
                         onParent = {
                             analytics.track(ReaderAnalyticsEvents.parentReportOpen("today_header"))
                             navController.navigateTopLevel(ReaderRoutes.Parent)
@@ -838,6 +860,7 @@ private fun ReaderAppContent(
                         progressRecords = progressRecords,
                         readingPositions = readingPositions,
                         storyPresentationUseCases = storyPresentationUseCases,
+                        pendingReview = pendingReview,
                         parentGatePassed = parentGatePassed,
                         onParentGatePassed = { parentGatePassed = true },
                         onStoryClick = { storyId ->
@@ -845,6 +868,10 @@ private fun ReaderAppContent(
                             navController.navigate(ReaderRoutes.reading(storyId))
                         },
                         onReviewWords = { navController.navigateTopLevel(ReaderRoutes.WordBook) },
+                        onOpenReview = {
+                            activeReviewPack = pendingReview?.pack
+                            navController.navigate(ReaderRoutes.ReviewPack)
+                        },
                         onSettings = { navController.navigateTopLevel(ReaderRoutes.Settings) },
                         onPrivacy = { navController.navigate(ReaderRoutes.Privacy) },
                     )
@@ -961,11 +988,22 @@ private fun ReaderAppContent(
                         progressService = progressService,
                         streakUseCase = streakUseCase,
                         vocabReviewUseCase = vocabReviewUseCase,
+                        reviewPackUseCase = reviewPackUseCase,
+                        dueWords = wordBookSummary.items
+                            .filter { it.due }
+                            .map { it.word }
+                            .toSet(),
                         onAnswerSubmitted = playQuizAnswerSfx,
                         onCompletionSfx = playCompletionSfx,
+                        onReviewPack = { pack ->
+                            activeReviewPack = pack
+                            reviewPackVersion += 1
+                            navController.navigate(ReaderRoutes.ReviewPack)
+                        },
                         onBack = { navController.popBackStack() },
                         onCompletionRecorded = {
                             wordReviewVersion += 1
+                            reviewPackVersion += 1
                         },
                         onReadAgain = {
                             appScope.launch {
@@ -1003,6 +1041,27 @@ private fun ReaderAppContent(
                     },
                     onClose = {
                         navController.navigateTopLevel(ReaderRoutes.WordBook)
+                    },
+                )
+            }
+            composable(ReaderRoutes.ReviewPack) {
+                ReviewPackScreen(
+                    pack = activeReviewPack ?: pendingReview?.pack,
+                    onDone = {
+                        appScope.launch {
+                            reviewPackUseCase.markCompleted(System.currentTimeMillis())
+                            reviewPackVersion += 1
+                        }
+                        activeReviewPack = null
+                        navController.navigate(ReaderRoutes.Today) {
+                            popUpTo(ReaderRoutes.Today) { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    },
+                    onBack = {
+                        if (!navController.popBackStack()) {
+                            navController.navigateTopLevel(ReaderRoutes.Today)
+                        }
                     },
                 )
             }
@@ -1445,6 +1504,43 @@ private fun PlacementOptionCard(
 }
 
 @Composable
+private fun TodayReviewCard(
+    isFromPreviousDay: Boolean,
+    onClick: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        shadowElevation = LmcSpacing.CardElevation,
+    ) {
+        Column(
+            modifier = Modifier.padding(LmcSpacing.CardPadding),
+            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+        ) {
+            Text(
+                text = stringResource(R.string.today_review_pending_title),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+            Text(
+                text = stringResource(
+                    if (isFromPreviousDay) {
+                        R.string.today_review_pending_body
+                    } else {
+                        R.string.today_review_fresh_body
+                    },
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+        }
+    }
+}
+
+@Composable
 private fun TodayScreen(
     appInfo: AppInfo,
     stories: List<Story>,
@@ -1454,11 +1550,13 @@ private fun TodayScreen(
     readingPositions: Map<String, Int>,
     recommendedStoryId: String?,
     reviewWordCount: Int,
+    pendingReview: PendingReview?,
     storyPresentationUseCases: StoryPresentationUseCases,
     snackbarHostState: SnackbarHostState,
     onRead: (String) -> Unit,
     onVocabulary: (String) -> Unit,
     onQuiz: (String) -> Unit,
+    onReview: () -> Unit,
     onParent: () -> Unit,
     onSettings: () -> Unit,
 ) {
@@ -1523,6 +1621,14 @@ private fun TodayScreen(
         }
         item {
             DailyGoalStreakCard(streakSummary = streakSummary)
+        }
+        if (pendingReview != null) {
+            item {
+                TodayReviewCard(
+                    isFromPreviousDay = pendingReview.isFromPreviousDay,
+                    onClick = onReview,
+                )
+            }
         }
         item {
             Row(
@@ -3007,8 +3113,11 @@ private fun QuizScreen(
     progressService: ProgressService,
     streakUseCase: StreakUseCase,
     vocabReviewUseCase: VocabReviewUseCase,
+    reviewPackUseCase: ReviewPackUseCase,
+    dueWords: Set<String>,
     onAnswerSubmitted: (Boolean) -> Unit,
     onCompletionSfx: (Int?) -> Unit,
+    onReviewPack: (ReviewPack) -> Unit,
     onBack: () -> Unit,
     onCompletionRecorded: () -> Unit,
     onReadAgain: () -> Unit,
@@ -3030,6 +3139,8 @@ private fun QuizScreen(
     var completionHandled by remember(story.id) { mutableStateOf(false) }
     var completionStreakSummary by remember(story.id) { mutableStateOf<StreakSummary?>(null) }
     var completionJustRecorded by remember(story.id) { mutableStateOf(false) }
+    var completionReviewPack by remember(story.id) { mutableStateOf<ReviewPack?>(null) }
+    val reviewRemediationUseCases = remember { MistakeRemediationUseCases() }
 
     LaunchedEffect(story.id) {
         analytics.track(ReaderAnalyticsEvents.quizStart(story))
@@ -3061,6 +3172,13 @@ private fun QuizScreen(
                 ),
             )
             vocabReviewUseCase.syncLearnedWords(todayEpochMillis = now)
+            val reviewPack = reviewRemediationUseCases.buildReviewPack(
+                story = story,
+                quizScore = score,
+                dueWords = dueWords,
+            )
+            completionReviewPack = reviewPack
+            reviewPackUseCase.savePack(reviewPack, todayEpochMillis = now)
             completionStreakSummary = if (wasAlreadyCompleted) {
                 streakUseCase.summary(todayEpochMillis = now)
             } else {
@@ -3089,6 +3207,8 @@ private fun QuizScreen(
             totalQuestions = score.totalQuestions,
             streakSummary = completionStreakSummary,
             completionJustRecorded = completionJustRecorded,
+            reviewPack = completionReviewPack,
+            onOpenReview = { completionReviewPack?.let(onReviewPack) },
             onReadAgain = onReadAgain,
             onDone = onDone,
         )
@@ -3165,10 +3285,12 @@ private fun ParentReportScreen(
     progressRecords: List<CompletionRecord>,
     readingPositions: Map<String, Int>,
     storyPresentationUseCases: StoryPresentationUseCases,
+    pendingReview: PendingReview?,
     parentGatePassed: Boolean,
     onParentGatePassed: () -> Unit,
     onStoryClick: (String) -> Unit,
     onReviewWords: () -> Unit,
+    onOpenReview: () -> Unit,
     onSettings: () -> Unit,
     onPrivacy: () -> Unit,
 ) {
@@ -3240,6 +3362,22 @@ private fun ParentReportScreen(
                     onStoryClick = onStoryClick,
                     onReviewWords = onReviewWords,
                 )
+            }
+            if (pendingReview != null) {
+                item {
+                    ReviewSectionCard(
+                        modifier = Modifier.clickable(onClick = onOpenReview),
+                        title = stringResource(R.string.parent_review_pack_title),
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                    ) {
+                        Text(
+                            text = reviewParentTipText(pendingReview.pack.parentTip),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                        )
+                    }
+                }
             }
             item {
                 SectionTitle(text = stringResource(R.string.parent_story_progress))
@@ -5304,6 +5442,8 @@ private fun QuizCompletionScreen(
     totalQuestions: Int,
     streakSummary: StreakSummary?,
     completionJustRecorded: Boolean,
+    reviewPack: ReviewPack?,
+    onOpenReview: () -> Unit,
     onReadAgain: () -> Unit,
     onDone: () -> Unit,
 ) {
@@ -5383,6 +5523,40 @@ private fun QuizCompletionScreen(
                         )
                     }
                 }
+                if (reviewPack != null) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        shadowElevation = LmcSpacing.CardElevation,
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(LmcSpacing.CardPadding),
+                            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+                        ) {
+                            Text(
+                                text = stringResource(R.string.review_pack_title),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            )
+                            Text(
+                                text = if (reviewPack.missedQuestions.isEmpty()) {
+                                    stringResource(R.string.review_pack_all_correct)
+                                } else {
+                                    stringResource(R.string.review_pack_intro)
+                                },
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            )
+                            Button(
+                                onClick = onOpenReview,
+                                shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+                            ) {
+                                Text(text = stringResource(R.string.review_pack_view))
+                            }
+                        }
+                    }
+                }
             }
             Row(
                 modifier = Modifier
@@ -5413,6 +5587,168 @@ private fun QuizCompletionScreen(
                     Text(text = stringResource(R.string.action_done))
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun reviewParentTipText(tip: ReviewParentTip): String = stringResource(
+    when (tip) {
+        ReviewParentTip.ReadTogether -> R.string.review_pack_tip_read_together
+        ReviewParentTip.ReviewDueWords -> R.string.review_pack_tip_review_due_words
+        ReviewParentTip.PraiseAndOneWord -> R.string.review_pack_tip_praise
+    },
+)
+
+@Composable
+private fun ReviewPackScreen(
+    pack: ReviewPack?,
+    onDone: () -> Unit,
+    onBack: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+    ) {
+        FlowTopBar(
+            title = stringResource(R.string.review_pack_title),
+            onBack = onBack,
+        )
+        if (pack == null) {
+            CenterStateMessage(text = stringResource(R.string.review_pack_all_correct))
+            return@Column
+        }
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(LmcSpacing.ScreenPadding),
+            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space4),
+        ) {
+            Text(
+                text = stringResource(R.string.review_pack_intro),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            if (pack.missedQuestions.isEmpty()) {
+                ReviewSectionCard(title = stringResource(R.string.review_pack_missed_title)) {
+                    Text(
+                        text = stringResource(R.string.review_pack_all_correct),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+            } else {
+                ReviewSectionCard(title = stringResource(R.string.review_pack_missed_title)) {
+                    pack.missedQuestions.forEach { missed ->
+                        Text(
+                            text = missed.prompt,
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = stringResource(
+                                R.string.review_pack_correct_answer_label,
+                            ) + ": " + missed.correctAnswer,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        Text(
+                            text = stringResource(R.string.review_pack_why_label) + ": " + missed.explanation,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+
+            if (pack.reviewWords.isNotEmpty()) {
+                ReviewSectionCard(title = stringResource(R.string.review_pack_words_title)) {
+                    pack.reviewWords.forEach { word ->
+                        Text(
+                            text = "${word.word} · ${word.pinyin}",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = word.meaning,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+
+            pack.rereadSentence?.let { sentence ->
+                ReviewSectionCard(title = stringResource(R.string.review_pack_reread_title)) {
+                    Text(
+                        text = sentence,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+            }
+
+            ReviewSectionCard(
+                title = stringResource(R.string.review_pack_parent_tip_title),
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+            ) {
+                Text(
+                    text = reviewParentTipText(pack.parentTip),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                )
+            }
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(
+                    horizontal = LmcSpacing.ScreenPadding,
+                    vertical = LmcSpacing.Space3,
+                ),
+        ) {
+            Button(
+                onClick = onDone,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = LmcSpacing.ButtonPrimaryHeight),
+                shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+            ) {
+                Text(text = stringResource(R.string.review_pack_done))
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReviewSectionCard(
+    title: String,
+    modifier: Modifier = Modifier,
+    containerColor: Color = MaterialTheme.colorScheme.surface,
+    contentColor: Color = MaterialTheme.colorScheme.onSurface,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+        color = containerColor,
+        shadowElevation = LmcSpacing.CardElevation,
+    ) {
+        Column(
+            modifier = Modifier.padding(LmcSpacing.CardPadding),
+            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = contentColor,
+            )
+            content()
         }
     }
 }

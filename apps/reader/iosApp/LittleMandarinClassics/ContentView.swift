@@ -146,6 +146,10 @@ struct ContentView: View {
                     }
                 },
                 openParent: { selectTab(.parent, parentEntryPoint: .todayHeader) },
+                openReview: {
+                    viewModel.openPendingReview()
+                    flowRoute = .reviewPack
+                },
                 openSettings: { flowRoute = .settings }
             )
         case .library:
@@ -170,6 +174,10 @@ struct ContentView: View {
                 openWords: {
                     selectedTab = .wordBook
                     flowRoute = nil
+                },
+                openReview: {
+                    viewModel.openPendingReview()
+                    flowRoute = .reviewPack
                 }
             )
         }
@@ -219,6 +227,10 @@ struct ContentView: View {
                     story: story,
                     close: { flowRoute = .vocabulary(storyId: story.id, openSource: .quizBack) },
                     readAgain: { restartStoryFromBeginning(story, source: .quizCompletion) },
+                    openReview: {
+                        viewModel.openCompletionReview()
+                        flowRoute = .reviewPack
+                    },
                     done: {
                         selectedTab = .today
                         flowRoute = nil
@@ -234,6 +246,16 @@ struct ContentView: View {
                     selectedTab = .wordBook
                     flowRoute = nil
                 }
+            )
+        case .reviewPack:
+            ReviewPackScreen(
+                pack: viewModel.activeReviewPack ?? viewModel.pendingReview?.pack,
+                done: {
+                    Task { await viewModel.markReviewCompleted() }
+                    selectedTab = .today
+                    flowRoute = nil
+                },
+                close: { flowRoute = nil }
             )
         case .settings:
             VStack(spacing: 0) {
@@ -331,6 +353,9 @@ final class ReaderViewModel: ObservableObject {
     @Published private(set) var streakSummary: StreakSummary?
     @Published private(set) var lastCompletionStreakSummary: StreakSummary?
     @Published private(set) var onboardingPreferences: OnboardingPreferences?
+    @Published private(set) var pendingReview: PendingReview?
+    @Published var activeReviewPack: ReviewPack?
+    @Published private(set) var lastCompletionReviewPack: ReviewPack?
 
     private let repository = DefaultStoryRepository(
         resourceReader: IosStoryResourceReaderKt.defaultStoryResourceReader(),
@@ -341,6 +366,7 @@ final class ReaderViewModel: ObservableObject {
     private let onboardingService = IosEngagementServicesKt.createPlatformOnboardingService()
     private let streakService = IosEngagementServicesKt.createPlatformStreakService()
     private let vocabReviewService = IosVocabReviewServiceKt.createPlatformVocabReviewService()
+    private let reviewPackService = IosEngagementServicesKt.createPlatformReviewPackService()
     private let ttsService = IosTtsServiceKt.createTtsService()
     private let storyPresentationUseCases = StoryPresentationUseCases()
     private let readingLevelAssessmentUseCases = ReadingLevelAssessmentUseCases()
@@ -374,6 +400,8 @@ final class ReaderViewModel: ObservableObject {
     private lazy var getProgressStatsUseCase = GetProgressStatsUseCase(progressService: progressService)
     private lazy var buildParentReportUseCase = BuildParentReportUseCase(progressService: progressService)
     private lazy var streakUseCase = StreakUseCase(streakService: streakService)
+    private let mistakeRemediationUseCases = MistakeRemediationUseCases()
+    private lazy var reviewPackUseCase = ReviewPackUseCase(service: reviewPackService)
     private lazy var vocabReviewUseCase = VocabReviewUseCase(
         storyRepository: repository,
         progressService: progressService,
@@ -483,6 +511,7 @@ final class ReaderViewModel: ObservableObject {
             try await refreshReadingPositions()
             try await refreshWordBook()
             try await refreshStreak()
+            try await refreshPendingReview()
             loadingState = .loaded
         } catch {
             loadingState = .failed
@@ -595,6 +624,16 @@ final class ReaderViewModel: ObservableObject {
             let wasAlreadyCompleted = try await progressService.getRecords().contains { $0.storyId == story.id }
             try await markStoryCompletedUseCase.invoke(record: completionRecord(story, state: quizState))
             try await vocabReviewUseCase.syncLearnedWords(todayEpochMillis: now)
+            let dueWords = Set((wordBookSummary?.items ?? []).filter { $0.due }.map { $0.word })
+            let reviewPack = mistakeRemediationUseCases.buildReviewPack(
+                story: story,
+                quizScore: score,
+                dueWords: dueWords,
+                maxReviewWords: 3
+            )
+            lastCompletionReviewPack = reviewPack
+            try await reviewPackUseCase.savePack(pack: reviewPack, todayEpochMillis: now)
+            try await refreshPendingReview()
             if wasAlreadyCompleted {
                 lastCompletionStreakSummary = try await streakUseCase.summary(todayEpochMillis: now)
             } else {
@@ -610,6 +649,26 @@ final class ReaderViewModel: ObservableObject {
             loadingState = .failed
         }
         return (score, wasNewCompletion, newMilestoneDays)
+    }
+
+    func refreshPendingReview() async throws {
+        let now = Int64(Date().timeIntervalSince1970 * 1_000)
+        pendingReview = try await reviewPackUseCase.pendingReview(todayEpochMillis: now)
+    }
+
+    func markReviewCompleted() async {
+        let now = Int64(Date().timeIntervalSince1970 * 1_000)
+        try? await reviewPackUseCase.markCompleted(todayEpochMillis: now)
+        try? await refreshPendingReview()
+        activeReviewPack = nil
+    }
+
+    func openCompletionReview() {
+        activeReviewPack = lastCompletionReviewPack
+    }
+
+    func openPendingReview() {
+        activeReviewPack = pendingReview?.pack
     }
 
     func progressValue(for story: Story) -> Double {
@@ -1491,6 +1550,7 @@ enum LMCFlowRoute {
     case quiz(storyId: String)
     case wordReview
     case settings
+    case reviewPack
 }
 
 enum LMCAppOpenType: String {
@@ -2137,6 +2197,7 @@ private struct TodayScreen: View {
     let openVocabulary: (Story) -> Void
     let openQuiz: (Story) -> Void
     let openParent: () -> Void
+    let openReview: () -> Void
     let openSettings: () -> Void
 
     var body: some View {
@@ -2152,6 +2213,24 @@ private struct TodayScreen: View {
                 if let story = viewModel.todayStory {
                     VStack(alignment: .leading, spacing: LMCSpace.s6) {
                         StreakCard(summary: viewModel.streakSummary)
+                        if let pending = viewModel.pendingReview {
+                            Button(action: openReview) {
+                                VStack(alignment: .leading, spacing: LMCSpace.s2) {
+                                    Text("today_review_pending_title")
+                                        .font(.system(size: 18, weight: .bold))
+                                        .foregroundStyle(LMCColor.textPrimary)
+                                    Text(pending.isFromPreviousDay ? "today_review_pending_body" : "today_review_fresh_body")
+                                        .font(.system(size: 15))
+                                        .foregroundStyle(LMCColor.textSecondary)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(LMCSpace.s4)
+                                .background(LMCColor.secondaryContainer)
+                                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            }
+                            .buttonStyle(.plain)
+                        }
                         SectionTitle("today_title")
                         StoryHeroCard(
                             story: story,
@@ -3543,6 +3622,7 @@ private struct QuizScreen: View {
     let story: Story
     let close: () -> Void
     let readAgain: () -> Void
+    let openReview: () -> Void
     let done: () -> Void
 
     @State private var quizState: QuizSessionState?
@@ -3717,6 +3797,22 @@ private struct QuizScreen: View {
                         .padding(LMCSpace.s4)
                         .background(LMCColor.tertiaryContainer)
                         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+                        if let reviewPack = viewModel.lastCompletionReviewPack {
+                            VStack(alignment: .leading, spacing: LMCSpace.s3) {
+                                SectionTitle("review_pack_title")
+                                Text(reviewPack.missedQuestions.isEmpty ? "review_pack_all_correct" : "review_pack_intro")
+                                    .font(.system(size: 16))
+                                    .foregroundStyle(LMCColor.textSecondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                Button("review_pack_view", action: openReview)
+                                    .buttonStyle(LMCPrimaryButtonStyle())
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(LMCSpace.s4)
+                            .background(LMCColor.secondaryContainer)
+                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        }
                     }
                     .padding(LMCSpace.s4)
                     .frame(maxWidth: LMCSpace.readingMaxWidth)
@@ -3750,12 +3846,130 @@ private struct QuizScreen: View {
     }
 }
 
+private func reviewParentTipKey(_ tip: ReviewParentTip) -> LocalizedStringKey {
+    if tip == ReviewParentTip.readtogether {
+        return "review_pack_tip_read_together"
+    } else if tip == ReviewParentTip.reviewduewords {
+        return "review_pack_tip_review_due_words"
+    } else {
+        return "review_pack_tip_praise"
+    }
+}
+
+private struct ReviewPackScreen: View {
+    let pack: ReviewPack?
+    let done: () -> Void
+    let close: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            LMCFlowTopBar(titleKey: "review_pack_title", trailingText: nil, close: close)
+            if let pack {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: LMCSpace.s5) {
+                        Text("review_pack_intro")
+                            .font(.system(size: 16))
+                            .foregroundStyle(LMCColor.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        reviewCard(titleKey: "review_pack_missed_title") {
+                            if pack.missedQuestions.isEmpty {
+                                Text("review_pack_all_correct")
+                                    .font(.system(size: 17))
+                                    .foregroundStyle(LMCColor.textPrimary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            } else {
+                                ForEach(pack.missedQuestions, id: \.questionId) { missed in
+                                    VStack(alignment: .leading, spacing: LMCSpace.s1) {
+                                        Text(missed.prompt)
+                                            .font(.system(size: 17, weight: .semibold))
+                                            .foregroundStyle(LMCColor.textPrimary)
+                                        Text("\(LMCStrings.localized("review_pack_correct_answer_label")): \(missed.correctAnswer)")
+                                            .font(.system(size: 15))
+                                            .foregroundStyle(LMCColor.primary)
+                                        Text("\(LMCStrings.localized("review_pack_why_label")): \(missed.explanation)")
+                                            .font(.system(size: 15))
+                                            .foregroundStyle(LMCColor.textSecondary)
+                                    }
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                }
+                            }
+                        }
+
+                        if !pack.reviewWords.isEmpty {
+                            reviewCard(titleKey: "review_pack_words_title") {
+                                ForEach(pack.reviewWords, id: \.word) { word in
+                                    VStack(alignment: .leading, spacing: LMCSpace.s1) {
+                                        Text("\(word.word) · \(word.pinyin)")
+                                            .font(.system(size: 17, weight: .semibold))
+                                            .foregroundStyle(LMCColor.textPrimary)
+                                        Text(word.meaning)
+                                            .font(.system(size: 15))
+                                            .foregroundStyle(LMCColor.textSecondary)
+                                    }
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                }
+                            }
+                        }
+
+                        if let sentence = pack.rereadSentence {
+                            reviewCard(titleKey: "review_pack_reread_title") {
+                                Text(sentence)
+                                    .font(.system(size: 18, weight: .medium))
+                                    .foregroundStyle(LMCColor.textPrimary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+
+                        reviewCard(titleKey: "review_pack_parent_tip_title", background: LMCColor.tertiaryContainer) {
+                            Text(reviewParentTipKey(pack.parentTip))
+                                .font(.system(size: 15))
+                                .foregroundStyle(LMCColor.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    .padding(LMCSpace.s4)
+                    .frame(maxWidth: LMCSpace.readingMaxWidth)
+                    .frame(maxWidth: .infinity)
+                }
+            } else {
+                Spacer()
+                Text("review_pack_all_correct")
+                    .foregroundStyle(LMCColor.textSecondary)
+                Spacer()
+            }
+            LMCBottomActionBar {
+                Button("review_pack_done", action: done)
+                    .buttonStyle(LMCPrimaryButtonStyle())
+            }
+        }
+        .background(LMCColor.background.ignoresSafeArea())
+    }
+
+    @ViewBuilder
+    private func reviewCard<Content: View>(
+        titleKey: LocalizedStringKey,
+        background: Color = LMCColor.surface,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: LMCSpace.s3) {
+            SectionTitle(titleKey)
+            content()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(LMCSpace.s4)
+        .background(background)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+}
+
 private struct ParentReportScreen: View {
     @ObservedObject var viewModel: ReaderViewModel
     let entryPoint: LMCParentReportEntryPoint
     let openSettings: () -> Void
     let openStory: (Story) -> Void
     let openWords: () -> Void
+    let openReview: () -> Void
     @State private var gatePassed = false
     @State private var showPrivacy = false
 
@@ -3801,6 +4015,23 @@ private struct ParentReportScreen: View {
                 reviewWords: openWords,
                 openStory: openStory
             )
+
+            if let pending = viewModel.pendingReview {
+                Button(action: openReview) {
+                    VStack(alignment: .leading, spacing: LMCSpace.s2) {
+                        SectionTitle("parent_review_pack_title")
+                        Text(reviewParentTipKey(pending.pack.parentTip))
+                            .font(.system(size: 15))
+                            .foregroundStyle(LMCColor.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(LMCSpace.s4)
+                    .background(LMCColor.tertiaryContainer)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                }
+                .buttonStyle(.plain)
+            }
 
             VStack(alignment: .leading, spacing: LMCSpace.s3) {
                 SectionTitle("parent_story_progress")

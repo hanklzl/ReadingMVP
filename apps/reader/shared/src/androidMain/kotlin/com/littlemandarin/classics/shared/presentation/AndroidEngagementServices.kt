@@ -29,6 +29,32 @@ actual fun createPlatformOnboardingService(): OnboardingService =
 actual fun createPlatformStreakService(): StreakService =
     StoredStreakService(AndroidStreakStateStore(AndroidEngagementServiceProvider.sharedPreferences()))
 
+actual fun createPlatformReviewPackService(): ReviewPackService =
+    StoredReviewPackService(AndroidReviewPackStore(AndroidEngagementServiceProvider.sharedPreferences()))
+
+private class AndroidReviewPackStore(
+    private val sharedPreferences: SharedPreferences,
+) : ReviewPackStore {
+    override fun readPack(): StoredReviewPack? =
+        ReviewPackJsonCodec.decode(sharedPreferences.getString(ReviewPackKey, null))
+
+    override fun writePack(pack: StoredReviewPack) {
+        sharedPreferences.edit()
+            .putString(ReviewPackKey, ReviewPackJsonCodec.encode(pack))
+            .apply()
+    }
+
+    override fun clearPack() {
+        sharedPreferences.edit()
+            .remove(ReviewPackKey)
+            .apply()
+    }
+
+    private companion object {
+        const val ReviewPackKey: String = "review_pack"
+    }
+}
+
 private class AndroidOnboardingPreferencesStore(
     private val sharedPreferences: SharedPreferences,
 ) : OnboardingPreferencesStore {
