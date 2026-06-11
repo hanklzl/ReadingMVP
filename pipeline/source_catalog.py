@@ -2,13 +2,18 @@ STORY_IDS = [
     "peach-garden-oath",
     "three-heroes-vs-lubu",
     "quench-thirst-plums",
+    "green-plum-heroes",
+    "thousand-mile-loyalty",
     "three-visits-cottage",
     "zhaoyun-changban",
+    "debate-scholars",
     "borrow-arrows-boats",
+    "borrow-east-wind",
     "red-cliffs",
     "huarong-path",
     "seven-captures",
     "empty-fort",
+    "wooden-ox-flowing-horse",
 ]
 
 
@@ -76,6 +81,36 @@ SOURCE_RECORDS = {
         ],
         "rewrite_focus": "突出尊重、耐心和请教精神，弱化政治争夺。",
     },
+    "green-plum-heroes": {
+        "title": "青梅亭里谈英雄",
+        "source_title": "《三国演义》第021回 曹操煮酒论英雄 关公赚城斩车胄",
+        "source_url": "https://zh.wikisource.org/wiki/三國演義/第021回",
+        "related_urls": ["https://zh.wikisource.org/wiki/三國演義/第021回"],
+        "license": PUBLIC_DOMAIN_NOTE,
+        "summary": "曹操借青梅小亭中的谈话试探刘备对英雄的看法，刘备保持谦虚与从容。",
+        "excerpts": [
+            "第021回回目写有：曹操煮酒论英雄。",
+            "原桥段核心是曹操问天下英雄，刘备谨慎作答并保持沉着。",
+        ],
+        "rewrite_focus": "保留观察、谦虚和从容应答，不写饮酒细节、谋害或后续冲突。",
+    },
+    "thousand-mile-loyalty": {
+        "title": "千里寻兄守忠义",
+        "source_title": "《三国演义》第027回 美髯公千里走单骑 汉寿侯五关斩六将",
+        "source_url": "https://zh.wikisource.org/wiki/三國演義/第027回",
+        "related_urls": [
+            "https://zh.wikisource.org/wiki/三國演義/第026回",
+            "https://zh.wikisource.org/wiki/三國演義/第027回",
+            "https://zh.wikisource.org/wiki/三國演義/第028回",
+        ],
+        "license": PUBLIC_DOMAIN_NOTE,
+        "summary": "关羽得知刘备消息后辞别曹操，归还礼物，护送家人，千里寻找兄长。",
+        "excerpts": [
+            "第027回回目写有：美髯公千里走单骑。",
+            "曹操称赞关羽不忘故主，来去明白。",
+        ],
+        "rewrite_focus": "只写守信、辞别、护送和寻亲，不写过关争斗或伤害。",
+    },
     "zhaoyun-changban": {
         "title": "赵云长坂坡救主",
         "source_title": "《三国演义》第041回 刘玄德携民渡江 赵子龙单骑救主",
@@ -89,6 +124,19 @@ SOURCE_RECORDS = {
         ],
         "rewrite_focus": "只写寻找、守护和平安返回，不写战斗伤害。",
     },
+    "debate-scholars": {
+        "title": "诸葛亮舌战群儒",
+        "source_title": "《三国演义》第043回 诸葛亮舌战群儒 鲁子敬力排众议",
+        "source_url": "https://zh.wikisource.org/wiki/三國演義/第043回",
+        "related_urls": ["https://zh.wikisource.org/wiki/三國演義/第043回"],
+        "license": PUBLIC_DOMAIN_NOTE,
+        "summary": "诸葛亮随鲁肃到江东，面对众人提问，冷静说明合作的重要。",
+        "excerpts": [
+            "第043回回目写有：诸葛亮舌战群儒，鲁子敬力排众议。",
+            "鲁肃请诸葛亮暂歇，先去见孙权；众人随后商议对策。",
+        ],
+        "rewrite_focus": "把激烈辩论改写成礼貌问答与说服，突出倾听、证据和合作。",
+    },
     "borrow-arrows-boats": {
         "title": "草船借箭",
         "source_title": "《三国演义》第046回 用奇谋孔明借箭 献密计黄盖受刑",
@@ -101,6 +149,19 @@ SOURCE_RECORDS = {
             "诸葛亮约定三日交箭，并准备草船、草把和鼓声。",
         ],
         "rewrite_focus": "强调观察天气、守约和巧思，避免战争伤害描写。",
+    },
+    "borrow-east-wind": {
+        "title": "借东风",
+        "source_title": "《三国演义》第049回 七星坛诸葛祭风 三江口周瑜纵火",
+        "source_url": "https://zh.wikisource.org/wiki/三國演義/第049回",
+        "related_urls": ["https://zh.wikisource.org/wiki/三國演義/第049回"],
+        "license": PUBLIC_DOMAIN_NOTE,
+        "summary": "赤壁前，周瑜需要东南风，诸葛亮观察天时，提醒大家按时准备。",
+        "excerpts": [
+            "第049回回目写有：七星坛诸葛祭风。",
+            "原文写诸葛亮预告东南风到来的时间。",
+        ],
+        "rewrite_focus": "将借风写成观察云色、风向和时机，不写火攻伤害或惊吓场面。",
     },
     "red-cliffs": {
         "title": "火烧赤壁",
@@ -160,6 +221,19 @@ SOURCE_RECORDS = {
             "原桥段核心是诸葛亮临危不乱，以沉着和判断化解危机。",
         ],
         "rewrite_focus": "强调冷静判断和心理策略，不渲染危险。",
+    },
+    "wooden-ox-flowing-horse": {
+        "title": "木牛流马",
+        "source_title": "《三国演义》第102回 司马懿占北原渭桥 诸葛亮造木牛流马",
+        "source_url": "https://zh.wikisource.org/wiki/三國演義/第102回",
+        "related_urls": ["https://zh.wikisource.org/wiki/三國演義/第102回"],
+        "license": PUBLIC_DOMAIN_NOTE,
+        "summary": "诸葛亮带工匠改进运粮工具，用木牛流马帮助队伍省力、安全地走山路。",
+        "excerpts": [
+            "第102回回目写有：诸葛亮造木牛流马。",
+            "原桥段核心是用木牛流马运送粮草。",
+        ],
+        "rewrite_focus": "突出观察问题、发明工具、团队试验和改进，不写追击或战斗。",
     },
 }
 

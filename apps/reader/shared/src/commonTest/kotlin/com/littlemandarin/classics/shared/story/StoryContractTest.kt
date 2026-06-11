@@ -39,7 +39,7 @@ class StoryContractTest {
 
         val stories = repository.listStories()
 
-        assertEquals(10, stories.size)
+        assertEquals(15, stories.size)
         assertEquals(expectedStoryIds, stories.map { it.id })
         stories.forEach(::assertCompleteStoryModel)
 
@@ -55,7 +55,7 @@ class StoryContractTest {
 
         val stories = repository.listStories()
 
-        assertEquals(10, stories.size)
+        assertEquals(15, stories.size)
         stories.forEach { story ->
             story.paragraphs.forEachIndexed { index, paragraph ->
                 assertPinyinCellsMatchParagraphText(
@@ -140,13 +140,18 @@ private val expectedStoryIds = listOf(
     "peach-garden-oath",
     "three-heroes-vs-lubu",
     "quench-thirst-plums",
+    "green-plum-heroes",
+    "thousand-mile-loyalty",
     "three-visits-cottage",
     "zhaoyun-changban",
+    "debate-scholars",
     "borrow-arrows-boats",
+    "borrow-east-wind",
     "red-cliffs",
     "huarong-path",
     "seven-captures",
     "empty-fort",
+    "wooden-ox-flowing-horse",
 )
 
 private val storyJsonWithPinyinCells = """

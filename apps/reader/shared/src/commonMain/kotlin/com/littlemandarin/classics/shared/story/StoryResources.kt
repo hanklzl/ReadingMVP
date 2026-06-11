@@ -20,6 +20,14 @@ object StoryResourceCatalog {
             path = "stories/quench-thirst-plums/story.json",
         ),
         StoryResourceEntry(
+            id = "green-plum-heroes",
+            path = "stories/green-plum-heroes/story.json",
+        ),
+        StoryResourceEntry(
+            id = "thousand-mile-loyalty",
+            path = "stories/thousand-mile-loyalty/story.json",
+        ),
+        StoryResourceEntry(
             id = "three-visits-cottage",
             path = "stories/three-visits-cottage/story.json",
         ),
@@ -28,8 +36,16 @@ object StoryResourceCatalog {
             path = "stories/zhaoyun-changban/story.json",
         ),
         StoryResourceEntry(
+            id = "debate-scholars",
+            path = "stories/debate-scholars/story.json",
+        ),
+        StoryResourceEntry(
             id = "borrow-arrows-boats",
             path = "stories/borrow-arrows-boats/story.json",
+        ),
+        StoryResourceEntry(
+            id = "borrow-east-wind",
+            path = "stories/borrow-east-wind/story.json",
         ),
         StoryResourceEntry(
             id = "red-cliffs",
@@ -46,6 +62,10 @@ object StoryResourceCatalog {
         StoryResourceEntry(
             id = "empty-fort",
             path = "stories/empty-fort/story.json",
+        ),
+        StoryResourceEntry(
+            id = "wooden-ox-flowing-horse",
+            path = "stories/wooden-ox-flowing-horse/story.json",
         ),
     )
 }

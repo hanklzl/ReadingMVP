@@ -76,6 +76,7 @@ class _G2PWBackend(_Backend):
         self._pinyin = G2PWPinyin(
             model_dir=str(model_dir),
             model_source=model_source,
+            num_workers=int(os.environ.get("LMC_G2PW_NUM_WORKERS", "0")),
             neutral_tone_with_five=False,
             tone_sandhi=True,
         )
