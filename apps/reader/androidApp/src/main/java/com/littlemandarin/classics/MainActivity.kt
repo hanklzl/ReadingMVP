@@ -1,6 +1,7 @@
 package com.littlemandarin.classics
 
 import android.content.Context
+import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
 import android.os.LocaleList
@@ -177,6 +178,11 @@ import com.littlemandarin.classics.shared.presentation.OnboardingDefaults
 import com.littlemandarin.classics.shared.presentation.OnboardingPreferences
 import com.littlemandarin.classics.shared.presentation.ParentAdviceType
 import com.littlemandarin.classics.shared.presentation.ParentReportSummary
+import com.littlemandarin.classics.shared.presentation.ParentWeeklyPlan
+import com.littlemandarin.classics.shared.presentation.ParentWeeklyPlanUseCases
+import com.littlemandarin.classics.shared.presentation.WeeklyPlanWord
+import com.littlemandarin.classics.shared.presentation.WeeklyPlanWordState
+import com.littlemandarin.classics.shared.presentation.WeeklyShareCard
 import com.littlemandarin.classics.shared.presentation.QuizSessionReducer
 import com.littlemandarin.classics.shared.presentation.ReaderAnalyticsEvents
 import com.littlemandarin.classics.shared.presentation.ReaderLanguage
@@ -520,6 +526,7 @@ private fun ReaderAppContent(
         )
     }
     val progressRecords by progressService.records.collectAsState(initial = emptyList())
+    val vocabRecords by vocabReviewService.records.collectAsState(initial = emptyList())
     var storiesState by remember {
         mutableStateOf<StoriesState>(StoriesState.Loading)
     }
@@ -888,6 +895,8 @@ private fun ReaderAppContent(
                         parentReportSummary = parentReportSummary,
                         abilityMap = abilityMap,
                         progressRecords = progressRecords,
+                        vocabRecords = vocabRecords,
+                        streakSummary = streakSummary,
                         readingPositions = readingPositions,
                         storyPresentationUseCases = storyPresentationUseCases,
                         pendingReview = pendingReview,
@@ -3392,6 +3401,8 @@ private fun ParentReportScreen(
     parentReportSummary: ParentReportSummary,
     abilityMap: AbilityMap,
     progressRecords: List<CompletionRecord>,
+    vocabRecords: List<com.littlemandarin.classics.shared.presentation.VocabSrsRecord>,
+    streakSummary: StreakSummary,
     readingPositions: Map<String, Int>,
     storyPresentationUseCases: StoryPresentationUseCases,
     pendingReview: PendingReview?,
@@ -3406,6 +3417,25 @@ private fun ParentReportScreen(
     val numberFormat = rememberNumberFormat()
     val completedStoryIds = remember(progressRecords) {
         storyPresentationUseCases.completedStoryIds(progressRecords)
+    }
+    val weeklyPlan = remember(stories, progressRecords, vocabRecords, streakSummary) {
+        ParentWeeklyPlanUseCases().buildWeeklyPlan(
+            stories = stories,
+            completionRecords = progressRecords,
+            wordStates = vocabRecords.map { record ->
+                WeeklyPlanWordState(
+                    word = record.word,
+                    pinyin = record.pinyin,
+                    meaning = record.meaning,
+                    intervalDays = record.intervalDays,
+                    dueEpochDay = record.dueEpochDay,
+                    lapses = record.lapses,
+                )
+            },
+            todayEpochDay = (System.currentTimeMillis() / 86_400_000L).toInt(),
+            nowEpochMillis = System.currentTimeMillis(),
+            streakDays = streakSummary.currentStreakDays,
+        )
     }
 
     LazyColumn(
@@ -3474,6 +3504,9 @@ private fun ParentReportScreen(
                     onStoryClick = onStoryClick,
                     onReviewWords = onReviewWords,
                 )
+            }
+            item {
+                ParentWeeklyPlanSection(plan = weeklyPlan, stories = stories)
             }
             if (pendingReview != null) {
                 item {
@@ -6659,6 +6692,192 @@ private fun ParentAdviceCard(
                 ) {
                     Text(text = actionLabel)
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ParentWeeklyPlanSection(
+    plan: ParentWeeklyPlan,
+    stories: List<Story>,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+    ) {
+        Column(
+            modifier = Modifier.padding(LmcSpacing.CardPadding),
+            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space4),
+        ) {
+            Text(
+                text = stringResource(R.string.weekly_plan_title),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            // 1. Stories read this week
+            WeeklyPlanBlock(title = stringResource(R.string.weekly_plan_stories_read)) {
+                if (plan.storiesReadThisWeek.isEmpty()) {
+                    WeeklyPlanBody(stringResource(R.string.weekly_plan_stories_empty))
+                } else {
+                    plan.storiesReadThisWeek.forEach { story ->
+                        WeeklyPlanBody(
+                            stringResource(
+                                R.string.weekly_plan_story_titles_format,
+                                story.titleZh,
+                                story.titleEn,
+                            ),
+                        )
+                    }
+                }
+            }
+
+            // 2. Mastered vs needs-practice words
+            WeeklyPlanBlock(title = stringResource(R.string.weekly_plan_mastered_words)) {
+                WeeklyPlanWordList(
+                    words = plan.masteredWords,
+                    emptyText = stringResource(R.string.weekly_plan_mastered_empty),
+                )
+            }
+            WeeklyPlanBlock(title = stringResource(R.string.weekly_plan_weak_words)) {
+                WeeklyPlanWordList(
+                    words = plan.weakWords,
+                    emptyText = stringResource(R.string.weekly_plan_weak_empty),
+                )
+            }
+
+            // 3. One sentence to re-read (only when present)
+            plan.rereadSentence?.takeIf { it.isNotBlank() }?.let { sentence ->
+                WeeklyPlanBlock(title = stringResource(R.string.weekly_plan_reread_title)) {
+                    WeeklyPlanBody(sentence)
+                    val rereadStory = plan.rereadStoryId?.let { id -> stories.firstOrNull { it.id == id } }
+                    rereadStory?.let {
+                        WeeklyPlanBody(
+                            text = stringResource(R.string.weekly_plan_reread_from_format, it.titleZh),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+            }
+
+            // 4. Weekend retell question (only when present)
+            plan.weekendRetellPrompt?.takeIf { it.isNotBlank() }?.let { prompt ->
+                WeeklyPlanBlock(title = stringResource(R.string.weekly_plan_retell_title)) {
+                    WeeklyPlanBody(prompt)
+                }
+            }
+
+            // 5. Top suggestion
+            WeeklyPlanBlock(title = stringResource(R.string.weekly_plan_advice_title)) {
+                WeeklyPlanBody(weeklyPlanAdviceText(plan.topAdvice))
+            }
+
+            // 6. Shareable, PII-free card
+            WeeklyPlanShareCard(card = plan.shareCard)
+        }
+    }
+}
+
+@Composable
+private fun weeklyPlanAdviceText(advice: ParentAdviceType): String = when (advice) {
+    ParentAdviceType.ReviewDueWords -> stringResource(R.string.weekly_plan_advice_review_due_words)
+    ParentAdviceType.ReadTogetherToday -> stringResource(R.string.weekly_plan_advice_read_together)
+    ParentAdviceType.RevisitRecentStory -> stringResource(R.string.weekly_plan_advice_revisit_story)
+    ParentAdviceType.TryNextStory -> stringResource(R.string.weekly_plan_advice_try_next_story)
+    ParentAdviceType.CelebrateStreak -> stringResource(R.string.weekly_plan_advice_celebrate_streak)
+}
+
+@Composable
+private fun WeeklyPlanBlock(
+    title: String,
+    content: @Composable () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space1)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        content()
+    }
+}
+
+@Composable
+private fun WeeklyPlanBody(
+    text: String,
+    style: androidx.compose.ui.text.TextStyle = MaterialTheme.typography.bodyMedium,
+) {
+    Text(
+        text = text,
+        style = style,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
+@Composable
+private fun WeeklyPlanWordList(
+    words: List<WeeklyPlanWord>,
+    emptyText: String,
+) {
+    if (words.isEmpty()) {
+        WeeklyPlanBody(emptyText)
+    } else {
+        words.forEach { word ->
+            WeeklyPlanBody(
+                stringResource(
+                    R.string.weekly_plan_word_line_format,
+                    word.word,
+                    word.pinyin,
+                    word.meaning,
+                ),
+            )
+        }
+    }
+}
+
+@Composable
+private fun WeeklyPlanShareCard(card: WeeklyShareCard) {
+    val context = LocalContext.current
+    val summary = stringResource(
+        R.string.weekly_plan_share_summary_format,
+        card.storiesThisWeek,
+        card.wordsInNotebook,
+        card.masteredWords,
+        card.streakDays,
+    )
+    val chooserTitle = stringResource(R.string.weekly_plan_share_chooser_title)
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(LmcSpacing.RadiusMd),
+        color = MaterialTheme.colorScheme.primaryContainer,
+    ) {
+        Column(
+            modifier = Modifier.padding(LmcSpacing.CardPadding),
+            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+        ) {
+            Text(
+                text = stringResource(R.string.weekly_plan_share_card_title),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+            Text(
+                text = summary,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+            OutlinedButton(
+                onClick = {
+                    val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, summary)
+                    }
+                    context.startActivity(Intent.createChooser(sendIntent, chooserTitle))
+                },
+                modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
+            ) {
+                Text(text = stringResource(R.string.weekly_plan_share_button))
             }
         }
     }

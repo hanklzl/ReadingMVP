@@ -360,6 +360,7 @@ final class ReaderViewModel: ObservableObject {
     @Published private(set) var playbackSpeed: LMCReadingPlaybackSpeed = .defaultSlow
     @Published private(set) var launchGate: LMCLaunchGate = .loading
     @Published private(set) var wordBookSummary: WordBookSummary?
+    @Published private(set) var vocabRecords: [VocabSrsRecord] = []
     @Published private(set) var streakSummary: StreakSummary?
     @Published private(set) var lastCompletionStreakSummary: StreakSummary?
     @Published private(set) var onboardingPreferences: OnboardingPreferences?
@@ -1519,6 +1520,33 @@ final class ReaderViewModel: ObservableObject {
         )
         wordBookSummary = try await vocabReviewUseCase.wordBook(
             todayEpochMillis: Int64(Date().timeIntervalSince1970 * 1_000)
+        )
+        vocabRecords = try await vocabReviewService.getRecords()
+    }
+
+    private let parentWeeklyPlanUseCases = ParentWeeklyPlanUseCases()
+
+    // Pure shared weekly action plan. Clock is read here (display-time only); the
+    // shared core stays pure. No child PII anywhere (AGENTS.md §7).
+    func parentWeeklyPlan() -> ParentWeeklyPlan {
+        let nowMillis = Int64(Date().timeIntervalSince1970 * 1_000)
+        let wordStates = vocabRecords.map { record in
+            WeeklyPlanWordState(
+                word: record.word,
+                pinyin: record.pinyin,
+                meaning: record.meaning,
+                intervalDays: record.intervalDays,
+                dueEpochDay: record.dueEpochDay,
+                lapses: record.lapses
+            )
+        }
+        return parentWeeklyPlanUseCases.buildWeeklyPlan(
+            stories: stories,
+            completionRecords: completionRecords,
+            wordStates: wordStates,
+            todayEpochDay: Int32(nowMillis / 86_400_000),
+            nowEpochMillis: nowMillis,
+            streakDays: streakSummary?.currentStreakDays ?? 0
         )
     }
 
@@ -4235,6 +4263,11 @@ private struct ParentReportScreen: View {
                 openStory: openStory
             )
 
+            ParentWeeklyPlanSection(
+                plan: viewModel.parentWeeklyPlan(),
+                story: { id in viewModel.story(id: id) }
+            )
+
             if let pending = viewModel.pendingReview {
                 Button(action: openReview) {
                     VStack(alignment: .leading, spacing: LMCSpace.s2) {
@@ -4362,6 +4395,150 @@ private struct ParentAdviceCard: View {
 
     private func shouldOpenStory(for summary: ParentReportSummary) -> Bool {
         summary.advice.type == .revisitrecentstory || summary.advice.type == .trynextstory
+    }
+}
+
+// Parent weekly action plan: stories read, mastered vs needs-practice words,
+// one sentence to re-read, a weekend retell question, a top suggestion, and a
+// PII-free shareable card. Mirrors the Android Compose section (AGENTS.md §7).
+private struct ParentWeeklyPlanSection: View {
+    let plan: ParentWeeklyPlan
+    let story: (String) -> Story?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: LMCSpace.s4) {
+            Label("weekly_plan_title", systemImage: "calendar.badge.clock")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(LMCColor.textPrimary)
+
+            // 1. Stories read this week
+            block(titleKey: "weekly_plan_stories_read") {
+                if plan.storiesReadThisWeek.isEmpty {
+                    bodyText(LMCStrings.localized("weekly_plan_stories_empty"))
+                } else {
+                    ForEach(plan.storiesReadThisWeek, id: \.storyId) { s in
+                        bodyText(LMCStrings.format("weekly_plan_story_titles_format", s.titleZh, s.titleEn))
+                    }
+                }
+            }
+
+            // 2. Mastered vs needs-practice words
+            block(titleKey: "weekly_plan_mastered_words") {
+                wordList(plan.masteredWords, emptyKey: "weekly_plan_mastered_empty")
+            }
+            block(titleKey: "weekly_plan_weak_words") {
+                wordList(plan.weakWords, emptyKey: "weekly_plan_weak_empty")
+            }
+
+            // 3. One sentence to re-read (only when present)
+            if let sentence = plan.rereadSentence, !sentence.isEmpty {
+                block(titleKey: "weekly_plan_reread_title") {
+                    bodyText(sentence)
+                    if let storyId = plan.rereadStoryId, let s = story(storyId) {
+                        Text(LMCStrings.format("weekly_plan_reread_from_format", s.titleZh))
+                            .font(.system(size: 14))
+                            .foregroundStyle(LMCColor.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+
+            // 4. Weekend retell question (only when present)
+            if let prompt = plan.weekendRetellPrompt, !prompt.isEmpty {
+                block(titleKey: "weekly_plan_retell_title") {
+                    bodyText(prompt)
+                }
+            }
+
+            // 5. Top suggestion
+            block(titleKey: "weekly_plan_advice_title") {
+                bodyText(adviceText(plan.topAdvice))
+            }
+
+            // 6. Shareable, PII-free card
+            shareCard
+        }
+        .padding(LMCSpace.s4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(LMCColor.surfaceVariant)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private var shareCard: some View {
+        let summary = LMCStrings.format(
+            "weekly_plan_share_summary_format",
+            Int(plan.shareCard.storiesThisWeek),
+            Int(plan.shareCard.wordsInNotebook),
+            Int(plan.shareCard.masteredWords),
+            Int(plan.shareCard.streakDays)
+        )
+        return VStack(alignment: .leading, spacing: LMCSpace.s2) {
+            Text("weekly_plan_share_card_title")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(LMCColor.textPrimary)
+            Text(summary)
+                .font(.system(size: 16))
+                .foregroundStyle(LMCColor.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+            ShareLink(item: summary) {
+                Text("weekly_plan_share_button")
+            }
+            .buttonStyle(LMCSecondaryButtonStyle())
+        }
+        .padding(LMCSpace.s4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(LMCColor.primaryContainer)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    @ViewBuilder
+    private func block<Content: View>(
+        titleKey: LocalizedStringKey,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: LMCSpace.s1) {
+            Text(titleKey)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(LMCColor.textPrimary)
+            content()
+        }
+    }
+
+    @ViewBuilder
+    private func wordList(_ words: [WeeklyPlanWord], emptyKey: LocalizedStringKey) -> some View {
+        if words.isEmpty {
+            Text(emptyKey)
+                .font(.system(size: 16))
+                .foregroundStyle(LMCColor.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        } else {
+            ForEach(words, id: \.word) { w in
+                bodyText(LMCStrings.format("weekly_plan_word_line_format", w.word, w.pinyin, w.meaning))
+            }
+        }
+    }
+
+    private func bodyText(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 16))
+            .foregroundStyle(LMCColor.textSecondary)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func adviceText(_ advice: ParentAdviceType) -> String {
+        switch advice {
+        case .reviewduewords:
+            return LMCStrings.localized("weekly_plan_advice_review_due_words")
+        case .revisitrecentstory:
+            return LMCStrings.localized("weekly_plan_advice_revisit_story")
+        case .trynextstory:
+            return LMCStrings.localized("weekly_plan_advice_try_next_story")
+        case .celebratestreak:
+            return LMCStrings.localized("weekly_plan_advice_celebrate_streak")
+        default:
+            return LMCStrings.localized("weekly_plan_advice_read_together")
+        }
     }
 }
 

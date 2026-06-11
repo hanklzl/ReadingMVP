@@ -325,6 +325,30 @@
     <string name="parent_quiz_score_format">%1$d / %2$d</string>
     <string name="parent_quiz_correct_count">%1$d / %2$d</string>
 
+    <!-- Parent weekly action plan -->
+    <string name="weekly_plan_title">本周计划</string>
+    <string name="weekly_plan_stories_read">本周读过的故事</string>
+    <string name="weekly_plan_stories_empty">本周还没有读故事。今天读 5 分钟就是很好的开始。</string>
+    <string name="weekly_plan_story_titles_format">%1$s · %2$s</string>
+    <string name="weekly_plan_mastered_words">孩子已掌握的字词</string>
+    <string name="weekly_plan_mastered_empty">还没有已掌握的字词，继续一起复习吧。</string>
+    <string name="weekly_plan_weak_words">需要多练习的字词</string>
+    <string name="weekly_plan_weak_empty">目前没有需要额外练习的字词，做得很好！</string>
+    <string name="weekly_plan_word_line_format">%1$s（%2$s）— %3$s</string>
+    <string name="weekly_plan_reread_title">建议重读的一句话</string>
+    <string name="weekly_plan_reread_from_format">出自《%1$s》</string>
+    <string name="weekly_plan_retell_title">周末复述问题</string>
+    <string name="weekly_plan_advice_title">本周首要建议</string>
+    <string name="weekly_plan_advice_review_due_words">在读下一篇之前，一起复习需要练习的字词。</string>
+    <string name="weekly_plan_advice_read_together">今天一起读一篇短故事，保持阅读习惯。</string>
+    <string name="weekly_plan_advice_revisit_story">重温最近读过的故事，一起读那句较难的句子。</string>
+    <string name="weekly_plan_advice_try_next_story">有 5 分钟安静时间时，试试下一篇故事。</string>
+    <string name="weekly_plan_advice_celebrate_streak">为连续阅读点赞！今天读一篇短故事保持势头。</string>
+    <string name="weekly_plan_share_card_title">分享本周</string>
+    <string name="weekly_plan_share_summary_format">本周：%1$d 个故事 · %2$d 个字词 · 掌握 %3$d 个 · 连续 %4$d 天</string>
+    <string name="weekly_plan_share_button">分享</string>
+    <string name="weekly_plan_share_chooser_title">分享本周进度</string>
+
     <!-- Ability map (child-facing breadth-of-practice view) -->
     <string name="ability_title">我的中文地图</string>
     <string name="ability_subtitle">看看你正在长出多少本领！</string>

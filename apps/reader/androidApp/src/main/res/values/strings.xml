@@ -327,6 +327,30 @@
     <string name="parent_quiz_score_format">%1$d / %2$d</string>
     <string name="parent_quiz_correct_count">%1$d / %2$d</string>
 
+    <!-- Parent weekly action plan -->
+    <string name="weekly_plan_title">This week\'s plan</string>
+    <string name="weekly_plan_stories_read">Stories read this week</string>
+    <string name="weekly_plan_stories_empty">Nothing read yet this week. A 5-minute story today is a great start.</string>
+    <string name="weekly_plan_story_titles_format">%1$s · %2$s</string>
+    <string name="weekly_plan_mastered_words">Words your child has mastered</string>
+    <string name="weekly_plan_mastered_empty">No mastered words yet — keep reviewing together.</string>
+    <string name="weekly_plan_weak_words">Words that need practice</string>
+    <string name="weekly_plan_weak_empty">No words need extra practice right now. Nice work!</string>
+    <string name="weekly_plan_word_line_format">%1$s (%2$s) — %3$s</string>
+    <string name="weekly_plan_reread_title">One sentence to re-read</string>
+    <string name="weekly_plan_reread_from_format">From "%1$s"</string>
+    <string name="weekly_plan_retell_title">Weekend retell question</string>
+    <string name="weekly_plan_advice_title">Top suggestion</string>
+    <string name="weekly_plan_advice_review_due_words">Review the words that need practice together before the next story.</string>
+    <string name="weekly_plan_advice_read_together">Read one short story together today to keep the reading habit going.</string>
+    <string name="weekly_plan_advice_revisit_story">Revisit a recent story and read the tricky sentence together.</string>
+    <string name="weekly_plan_advice_try_next_story">Try the next story when you have a quiet 5-minute window.</string>
+    <string name="weekly_plan_advice_celebrate_streak">Celebrate the streak! A short story today keeps the momentum.</string>
+    <string name="weekly_plan_share_card_title">Share this week</string>
+    <string name="weekly_plan_share_summary_format">This week: %1$d stories · %2$d words · %3$d mastered · %4$d-day streak</string>
+    <string name="weekly_plan_share_button">Share</string>
+    <string name="weekly_plan_share_chooser_title">Share weekly progress</string>
+
     <!-- Ability map (child-facing breadth-of-practice view) -->
     <string name="ability_title">My Chinese map</string>
     <string name="ability_subtitle">Look how many skills you are growing!</string>
