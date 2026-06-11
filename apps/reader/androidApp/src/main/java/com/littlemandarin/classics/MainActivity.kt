@@ -160,8 +160,12 @@ import com.littlemandarin.classics.shared.presentation.BuildSpeechTextUseCase
 import com.littlemandarin.classics.shared.presentation.ChildAgeBand
 import com.littlemandarin.classics.shared.presentation.FeedbackOption
 import com.littlemandarin.classics.shared.presentation.FeedbackPresentationOptions
+import com.littlemandarin.classics.shared.presentation.LibraryStoryAction
+import com.littlemandarin.classics.shared.presentation.LibraryStoryCard
+import com.littlemandarin.classics.shared.presentation.LibraryStoryStatus
 import com.littlemandarin.classics.shared.presentation.OnboardingDefaults
 import com.littlemandarin.classics.shared.presentation.OnboardingPreferences
+import com.littlemandarin.classics.shared.presentation.ParentAdviceType
 import com.littlemandarin.classics.shared.presentation.ParentReportSummary
 import com.littlemandarin.classics.shared.presentation.QuizSessionReducer
 import com.littlemandarin.classics.shared.presentation.ReaderAnalyticsEvents
@@ -192,6 +196,7 @@ import com.littlemandarin.classics.shared.presentation.createPlatformReaderSetti
 import com.littlemandarin.classics.shared.presentation.createPlatformStreakService
 import com.littlemandarin.classics.shared.presentation.createPlatformVocabReviewService
 import com.littlemandarin.classics.shared.presentation.isMockAiBackend
+import com.littlemandarin.classics.shared.presentation.reviewPromptState
 import com.littlemandarin.classics.shared.presentation.toLimitedDisplayText
 import com.littlemandarin.classics.shared.progress.AndroidProgressServiceProvider
 import com.littlemandarin.classics.shared.progress.BuildParentReportUseCase
@@ -271,22 +276,39 @@ private object ReaderRoutes {
     const val WordBook = "word_book"
     const val Parent = "parent"
     const val Settings = "settings"
+    const val Privacy = "privacy"
 
     const val Reading = "story/{storyId}/read"
-    const val Vocabulary = "story/{storyId}/vocabulary"
+    const val Vocabulary = "story/{storyId}/vocabulary?source={source}"
     const val Quiz = "story/{storyId}/quiz"
     const val WordReview = "word_book/review"
 
     fun reading(storyId: String): String = "story/$storyId/read"
 
-    fun vocabulary(storyId: String): String = "story/$storyId/vocabulary"
+    fun vocabulary(
+        storyId: String,
+        source: VocabularyEntrySource = VocabularyEntrySource.Reading,
+    ): String = "story/$storyId/vocabulary?source=${source.routeValue}"
 
     fun quiz(storyId: String): String = "story/$storyId/quiz"
 
     fun isFocusedFlow(route: String?): Boolean =
         route == Onboarding ||
+            route == Privacy ||
             route == WordReview ||
             route?.startsWith("story/") == true
+}
+
+private enum class VocabularyEntrySource(val routeValue: String) {
+    Today("today"),
+    Reading("reading"),
+    Quiz("quiz"),
+    ;
+
+    companion object {
+        fun fromRouteValue(value: String?): VocabularyEntrySource =
+            entries.firstOrNull { it.routeValue == value } ?: Reading
+    }
 }
 
 private data class TopLevelDestination(
@@ -554,7 +576,10 @@ private fun ReaderAppContent(
         analytics.track(ReaderAnalyticsEvents.appOpen(openType = "cold_start"))
     }
 
-    LaunchedEffect(progressService, progressRecords) {
+    LaunchedEffect(progressService, progressRecords, storiesState, wordBookSummary.dueCount) {
+        val stories = (storiesState as? StoriesState.Ready)?.stories.orEmpty()
+        val completedStoryIds = storyPresentationUseCases.completedStoryIds(progressRecords)
+        val nextStoryId = stories.firstOrNull { it.id !in completedStoryIds }?.id
         progressStats = GetProgressStatsUseCase(progressService).invoke()
         parentReport = BuildParentReportUseCase(progressService).invoke(
             nowEpochMillis = System.currentTimeMillis(),
@@ -563,6 +588,8 @@ private fun ReaderAppContent(
             report = parentReport,
             stats = progressStats,
             nowEpochMillis = System.currentTimeMillis(),
+            dueWordCount = wordBookSummary.dueCount,
+            nextStoryId = nextStoryId,
         )
         streakSummary = streakUseCase.summary(todayEpochMillis = System.currentTimeMillis())
     }
@@ -714,7 +741,7 @@ private fun ReaderAppContent(
                             navController.navigate(ReaderRoutes.reading(storyId))
                         },
                         onVocabulary = { storyId ->
-                            navController.navigate(ReaderRoutes.vocabulary(storyId))
+                            navController.navigate(ReaderRoutes.vocabulary(storyId, VocabularyEntrySource.Today))
                         },
                         onQuiz = { storyId -> navController.navigate(ReaderRoutes.quiz(storyId)) },
                         onParent = {
@@ -726,7 +753,19 @@ private fun ReaderAppContent(
                 }
             }
             composable(ReaderRoutes.Library) {
-                StoryStateContent(storiesState = storiesState) { stories ->
+                LibraryStateContent(
+                    storiesState = storiesState,
+                    onRetry = {
+                        appScope.launch {
+                            storiesState = StoriesState.Loading
+                            storiesState = runCatching {
+                                StoriesState.Ready(GetStoryListUseCase(repository).invoke())
+                            }.getOrElse {
+                                StoriesState.Error
+                            }
+                        }
+                    },
+                ) { stories ->
                     LibraryScreen(
                         stories = stories,
                         progressRecords = progressRecords,
@@ -769,7 +808,9 @@ private fun ReaderAppContent(
                             analytics.trackStoryOpen(stories, storyId, openSource = "parent_report")
                             navController.navigate(ReaderRoutes.reading(storyId))
                         },
+                        onReviewWords = { navController.navigateTopLevel(ReaderRoutes.WordBook) },
                         onSettings = { navController.navigateTopLevel(ReaderRoutes.Settings) },
+                        onPrivacy = { navController.navigate(ReaderRoutes.Privacy) },
                     )
                 }
             }
@@ -792,6 +833,7 @@ private fun ReaderAppContent(
                         analytics.track(ReaderAnalyticsEvents.parentReportOpen("settings"))
                         navController.navigateTopLevel(ReaderRoutes.Parent)
                     },
+                    onPrivacy = { navController.navigate(ReaderRoutes.Privacy) },
                 )
             }
             composable(
@@ -814,26 +856,48 @@ private fun ReaderAppContent(
                         onTextSizeChange = onTextSizeChange,
                         onPinyinDefaultChange = onPinyinDefaultChange,
                         onReadingPositionChange = onReadingPositionChange,
-                        onVocabulary = { navController.navigate(ReaderRoutes.vocabulary(story.id)) },
+                        onVocabulary = {
+                            navController.navigate(ReaderRoutes.vocabulary(story.id, VocabularyEntrySource.Reading))
+                        },
                     )
                 }
             }
             composable(
                 route = ReaderRoutes.Vocabulary,
-                arguments = listOf(navArgument("storyId") { type = NavType.StringType }),
+                arguments = listOf(
+                    navArgument("storyId") { type = NavType.StringType },
+                    navArgument("source") {
+                        type = NavType.StringType
+                        defaultValue = VocabularyEntrySource.Reading.routeValue
+                    },
+                ),
             ) { backStackEntry ->
                 StoryRouteContent(
                     storiesState = storiesState,
                     storyId = backStackEntry.arguments?.getString("storyId"),
                 ) { story, _ ->
+                    val source = VocabularyEntrySource.fromRouteValue(backStackEntry.arguments?.getString("source"))
                     VocabularyScreen(
                         story = story,
                         analytics = analytics,
                         ttsService = ttsService,
-                        onBack = { navController.popBackStack() },
+                        entrySource = source,
+                        onBack = {
+                            when (source) {
+                                VocabularyEntrySource.Today -> navController.navigateTopLevel(ReaderRoutes.Today)
+                                VocabularyEntrySource.Reading,
+                                VocabularyEntrySource.Quiz,
+                                -> if (!navController.popBackStack()) {
+                                    navController.navigate(ReaderRoutes.reading(story.id))
+                                }
+                            }
+                        },
                         onQuiz = { navController.navigate(ReaderRoutes.quiz(story.id)) },
                     )
                 }
+            }
+            composable(ReaderRoutes.Privacy) {
+                PrivacyScreen(onBack = { navController.popBackStack() })
             }
             composable(
                 route = ReaderRoutes.Quiz,
@@ -910,6 +974,41 @@ private fun StoryStateContent(
         is StoriesState.Ready -> {
             if (storiesState.stories.isEmpty()) {
                 CenterStateMessage(text = stringResource(R.string.today_no_stories))
+            } else {
+                content(storiesState.stories)
+            }
+        }
+    }
+}
+
+@Composable
+private fun LibraryStateContent(
+    storiesState: StoriesState,
+    onRetry: () -> Unit,
+    content: @Composable (List<Story>) -> Unit,
+) {
+    when (storiesState) {
+        StoriesState.Error -> LibraryStateSurface(
+            title = stringResource(R.string.library_error_title),
+            body = stringResource(R.string.library_error_body),
+            actionLabel = stringResource(R.string.common_retry),
+            onAction = onRetry,
+        )
+        StoriesState.Loading -> LibraryStateSurface(
+            title = stringResource(R.string.library_loading_title),
+            body = stringResource(R.string.library_loading_body),
+            actionLabel = stringResource(R.string.common_retry),
+            onAction = onRetry,
+            loading = true,
+        )
+        is StoriesState.Ready -> {
+            if (storiesState.stories.isEmpty()) {
+                LibraryStateSurface(
+                    title = stringResource(R.string.library_empty_title),
+                    body = stringResource(R.string.library_empty_body),
+                    actionLabel = stringResource(R.string.common_retry),
+                    onAction = onRetry,
+                )
             } else {
                 content(storiesState.stories)
             }
@@ -1215,8 +1314,18 @@ private fun LibraryScreen(
     onSettings: () -> Unit,
 ) {
     var selectedLevel by remember { mutableStateOf<Int?>(null) }
-    val filteredStories = remember(stories, selectedLevel) {
-        storyPresentationUseCases.filterStoriesByLevel(stories, selectedLevel)
+    val completedStoryIds = remember(progressRecords) {
+        storyPresentationUseCases.completedStoryIds(progressRecords)
+    }
+    val libraryCards = remember(stories, completedStoryIds, readingPositions) {
+        storyPresentationUseCases.libraryStoryCards(
+            stories = stories,
+            completedStoryIds = completedStoryIds,
+            readingPositions = readingPositions,
+        )
+    }
+    val filteredCards = remember(libraryCards, selectedLevel) {
+        selectedLevel?.let { level -> libraryCards.filter { it.story.level == level } } ?: libraryCards
     }
 
     LazyColumn(
@@ -1246,19 +1355,27 @@ private fun LibraryScreen(
                 onSelectedLevelChange = { selectedLevel = it },
             )
         }
-        if (filteredStories.isEmpty()) {
+        if (filteredCards.isEmpty()) {
             item {
-                CenterStateMessage(text = stringResource(R.string.library_empty))
+                LibraryInlineStateCard(
+                    title = stringResource(R.string.library_no_results_title),
+                    body = stringResource(R.string.library_no_results_body),
+                    actionLabel = stringResource(R.string.action_clear_filter),
+                    onAction = { selectedLevel = null },
+                )
             }
         } else {
             item {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center,
+                ) {
                     AdaptiveStoryList(
-                        stories = filteredStories,
-                        progressRecords = progressRecords,
-                        readingPositions = readingPositions,
-                        storyPresentationUseCases = storyPresentationUseCases,
+                        cards = filteredCards,
                         onRead = onRead,
+                        modifier = Modifier.widthIn(max = LmcSpacing.LibraryMaxWidth),
                     )
+                }
             }
         }
     }
@@ -1266,56 +1383,39 @@ private fun LibraryScreen(
 
 @Composable
 private fun AdaptiveStoryList(
-    stories: List<Story>,
-    progressRecords: List<CompletionRecord>,
-    readingPositions: Map<String, Int>,
-    storyPresentationUseCases: StoryPresentationUseCases,
+    cards: List<LibraryStoryCard>,
     onRead: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    val completedStoryIds = remember(progressRecords) {
-        storyPresentationUseCases.completedStoryIds(progressRecords)
-    }
-    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val useTwoColumns = maxWidth >= 720.dp
         if (useTwoColumns) {
             Column(verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space4)) {
-                stories.chunked(2).forEach { rowStories ->
+                cards.chunked(2).forEach { rowStories ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space4),
-                    ) {
-                        rowStories.forEach { story ->
-	                            StoryListCard(
-	                                story = story,
-	                                completed = story.id in completedStoryIds,
-	                                progress = storyPresentationUseCases.storyProgress(
-	                                    story = story,
-	                                    completedStoryIds = completedStoryIds,
-	                                    savedParagraphIndex = readingPositions[story.id] ?: -1,
-	                                ).fraction.toFloat(),
-	                                modifier = Modifier.weight(1f),
-	                                onClick = { onRead(story.id) },
-	                            )
-                        }
-                        if (rowStories.size == 1) {
-                            Spacer(modifier = Modifier.weight(1f))
+                ) {
+                    rowStories.forEach { card ->
+                        StoryListCard(
+                            card = card,
+                            modifier = Modifier.weight(1f),
+                            onClick = { onRead(card.story.id) },
+                        )
+                    }
+                    if (rowStories.size == 1) {
+                        Spacer(modifier = Modifier.weight(1f))
                         }
                     }
                 }
             }
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space4)) {
-                stories.forEach { story ->
-	                    StoryListCard(
-	                        story = story,
-	                        completed = story.id in completedStoryIds,
-	                        progress = storyPresentationUseCases.storyProgress(
-	                            story = story,
-	                            completedStoryIds = completedStoryIds,
-	                            savedParagraphIndex = readingPositions[story.id] ?: -1,
-	                        ).fraction.toFloat(),
-	                        onClick = { onRead(story.id) },
-	                    )
+                cards.forEach { card ->
+                    StoryListCard(
+                        card = card,
+                        onClick = { onRead(card.story.id) },
+                    )
                 }
             }
         }
@@ -1335,6 +1435,7 @@ private fun WordBookScreen(
     var selectedFilter by remember { mutableStateOf(WordBookFilter.All) }
     val scope = rememberCoroutineScope()
     val storyTitles = remember(stories) { stories.associate { it.id to it.titleZh } }
+    val reviewPromptState = wordBookSummary.reviewPromptState()
     val filteredItems = remember(wordBookSummary.items, selectedFilter) {
         wordBookSummary.items.filter { item ->
             when (selectedFilter) {
@@ -1396,16 +1497,26 @@ private fun WordBookScreen(
                 )
             }
         }
-        item {
-            Button(
-                enabled = wordBookSummary.dueCount > 0,
-                onClick = onStartReview,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = LmcSpacing.ButtonPrimaryHeight),
-                shape = RoundedCornerShape(LmcSpacing.RadiusLg),
-            ) {
-                Text(text = stringResource(R.string.action_start_review))
+        if (reviewPromptState.showStartReview) {
+            item {
+                Button(
+                    onClick = onStartReview,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = LmcSpacing.ButtonPrimaryHeight),
+                    shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+                ) {
+                    Text(text = stringResource(R.string.action_start_review))
+                }
+            }
+        } else if (wordBookSummary.totalWords > 0) {
+            item {
+                WordBookEmptyState(
+                    title = stringResource(R.string.word_book_no_due_title),
+                    body = stringResource(R.string.word_book_no_due_body),
+                    actionLabel = stringResource(R.string.action_start_reading),
+                    onAction = onReadToday,
+                )
             }
         }
         item {
@@ -1426,8 +1537,8 @@ private fun WordBookScreen(
         } else if (filteredItems.isEmpty()) {
             item {
                 WordBookEmptyState(
-                    title = stringResource(R.string.word_book_no_due_title),
-                    body = stringResource(R.string.word_book_no_due_body),
+                    title = stringResource(R.string.word_book_filter_empty_title),
+                    body = stringResource(R.string.word_book_filter_empty_body),
                     actionLabel = null,
                     onAction = null,
                 )
@@ -2489,6 +2600,7 @@ private fun VocabularyScreen(
     story: Story,
     analytics: ReaderAnalytics,
     ttsService: TtsService,
+    entrySource: VocabularyEntrySource,
     onBack: () -> Unit,
     onQuiz: () -> Unit,
 ) {
@@ -2541,7 +2653,12 @@ private fun VocabularyScreen(
             ) {
                 StoryEyebrow(story = story)
                 if (currentWord == null) {
-                    CenterStateMessage(text = stringResource(R.string.vocab_empty))
+                    WordBookEmptyState(
+                        title = stringResource(R.string.vocab_empty_title),
+                        body = stringResource(R.string.vocab_empty_body),
+                        actionLabel = null,
+                        onAction = null,
+                    )
                 } else {
                     VocabularyCard(
                         word = currentWord,
@@ -2560,29 +2677,42 @@ private fun VocabularyScreen(
             }
         }
         BottomActionRow {
-            TextButton(onClick = onBack) {
-                Text(text = stringResource(R.string.action_back))
-            }
-            Button(
-                onClick = {
-                    if (wordIndex < words.lastIndex) {
-                        wordIndex += 1
-                    } else {
-                        onQuiz()
-                    }
-                },
-                modifier = Modifier.heightIn(min = LmcSpacing.ButtonPrimaryHeight),
-                shape = RoundedCornerShape(LmcSpacing.RadiusLg),
-            ) {
-                Text(
-                    text = stringResource(
+            if (words.isEmpty()) {
+                TextButton(onClick = onBack) {
+                    Text(text = stringResource(entrySource.backActionLabelRes()))
+                }
+                Button(
+                    onClick = onQuiz,
+                    modifier = Modifier.heightIn(min = LmcSpacing.ButtonPrimaryHeight),
+                    shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+                ) {
+                    Text(text = stringResource(R.string.action_continue_to_quiz))
+                }
+            } else {
+                TextButton(onClick = onBack) {
+                    Text(text = stringResource(R.string.action_back))
+                }
+                Button(
+                    onClick = {
                         if (wordIndex < words.lastIndex) {
-                            R.string.action_next
+                            wordIndex += 1
                         } else {
-                            R.string.action_quiz
-                        },
-                    ),
-                )
+                            onQuiz()
+                        }
+                    },
+                    modifier = Modifier.heightIn(min = LmcSpacing.ButtonPrimaryHeight),
+                    shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+                ) {
+                    Text(
+                        text = stringResource(
+                            if (wordIndex < words.lastIndex) {
+                                R.string.action_next
+                            } else {
+                                R.string.action_quiz
+                            },
+                        ),
+                    )
+                }
             }
         }
     }
@@ -2757,7 +2887,9 @@ private fun ParentReportScreen(
     parentGatePassed: Boolean,
     onParentGatePassed: () -> Unit,
     onStoryClick: (String) -> Unit,
+    onReviewWords: () -> Unit,
     onSettings: () -> Unit,
+    onPrivacy: () -> Unit,
 ) {
     val numberFormat = rememberNumberFormat()
     val completedStoryIds = remember(progressRecords) {
@@ -2789,7 +2921,7 @@ private fun ParentReportScreen(
                 ParentGateCard(onPassed = onParentGatePassed)
             }
             item {
-                PrivacyNotice()
+                PrivacyNotice(onPrivacy = onPrivacy)
             }
         } else {
             item {
@@ -2821,6 +2953,14 @@ private fun ParentReportScreen(
                 )
             }
             item {
+                ParentAdviceCard(
+                    summary = parentReportSummary,
+                    stories = stories,
+                    onStoryClick = onStoryClick,
+                    onReviewWords = onReviewWords,
+                )
+            }
+            item {
                 SectionTitle(text = stringResource(R.string.parent_story_progress))
                 Spacer(modifier = Modifier.height(LmcSpacing.Space2))
             }
@@ -2837,7 +2977,7 @@ private fun ParentReportScreen(
                 )
             }
             item {
-                PrivacyNotice()
+                PrivacyNotice(onPrivacy = onPrivacy)
             }
         }
     }
@@ -2859,6 +2999,7 @@ private fun SettingsScreen(
     parentGatePassed: Boolean,
     onParentGatePassed: () -> Unit,
     onParentReport: () -> Unit,
+    onPrivacy: () -> Unit,
 ) {
     var showFeedbackForm by remember { mutableStateOf(false) }
     var feedbackSaved by remember { mutableStateOf(false) }
@@ -2882,7 +3023,7 @@ private fun SettingsScreen(
                 }
             }
             item {
-                PrivacyNotice()
+                PrivacyNotice(onPrivacy = onPrivacy)
             }
         } else {
             item {
@@ -2942,9 +3083,9 @@ private fun SettingsScreen(
                         onClick = onParentReport,
                     )
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    SettingsValueRow(
+                    SettingsNavigationRow(
                         label = stringResource(R.string.settings_privacy),
-                        value = stringResource(R.string.settings_privacy_summary),
+                        onClick = onPrivacy,
                     )
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     SettingsNavigationRow(
@@ -3675,12 +3816,14 @@ private fun StoryHeroCard(
 
 @Composable
 private fun StoryListCard(
-    story: Story,
-    completed: Boolean,
-    progress: Float,
+    card: LibraryStoryCard,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val story = card.story
+    val progress = card.progress.fraction.toFloat()
+    val statusText = stringResource(card.status.labelRes())
+    val ctaText = stringResource(card.action.labelRes())
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -3704,13 +3847,39 @@ private fun StoryListCard(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
             ) {
-                StoryCardText(story = story, completed = completed)
+                Text(
+                    text = stringResource(
+                        R.string.library_story_order_series,
+                        card.sequenceNumber,
+                        stringResource(card.seriesKey.seriesLabelRes()),
+                    ),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.tertiary,
+                )
+                StoryCardText(
+                    story = story,
+                    completed = card.status == LibraryStoryStatus.Done,
+                    showMeta = false,
+                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    StoryMetaChip(text = statusText, selected = card.status == LibraryStoryStatus.Done)
+                    StoryMetaChip(text = stringResource(R.string.story_level, story.level))
+                }
                 LmcProgressBar(progress = progress)
                 Text(
-                    text = storyProgressLabel(progress = progress, completed = completed),
+                    text = storyProgressLabel(progress = progress, completed = card.status == LibraryStoryStatus.Done),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                OutlinedButton(
+                    onClick = onClick,
+                    modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
+                ) {
+                    Text(text = ctaText)
+                }
             }
         }
     }
@@ -3771,6 +3940,7 @@ private fun StoryCardText(
     story: Story,
     completed: Boolean,
     modifier: Modifier = Modifier,
+    showMeta: Boolean = true,
 ) {
     Column(
         modifier = modifier,
@@ -3790,17 +3960,19 @@ private fun StoryCardText(
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            StoryMetaChip(text = stringResource(R.string.story_level, story.level))
-            StoryMetaChip(text = story.ageRange)
-            if (completed) {
-                StoryMetaChip(
-                    text = stringResource(R.string.library_completed),
-                    selected = true,
-                )
+        if (showMeta) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                StoryMetaChip(text = stringResource(R.string.story_level, story.level))
+                StoryMetaChip(text = story.ageRange)
+                if (completed) {
+                    StoryMetaChip(
+                        text = stringResource(R.string.library_completed),
+                        selected = true,
+                    )
+                }
             }
         }
     }
@@ -5259,6 +5431,175 @@ private fun ParentGateCard(onPassed: () -> Unit) {
 }
 
 @Composable
+private fun ParentAdviceCard(
+    summary: ParentReportSummary,
+    stories: List<Story>,
+    onStoryClick: (String) -> Unit,
+    onReviewWords: () -> Unit,
+) {
+    val advice = summary.advice
+    val story = advice.storyId?.let { storyId -> stories.firstOrNull { it.id == storyId } }
+    val body = when (advice.type) {
+        ParentAdviceType.ReviewDueWords -> stringResource(
+            R.string.parent_advice_review_due_words_format,
+            advice.dueWordCount,
+        )
+        ParentAdviceType.RevisitRecentStory -> story?.let {
+            stringResource(R.string.parent_advice_revisit_story_format, it.titleZh)
+        } ?: stringResource(R.string.parent_advice_read_together)
+        ParentAdviceType.TryNextStory -> story?.let {
+            stringResource(R.string.parent_advice_try_next_story_format, it.titleZh)
+        } ?: stringResource(R.string.parent_advice_read_together)
+        ParentAdviceType.CelebrateStreak -> stringResource(R.string.parent_advice_keep_streak)
+        ParentAdviceType.ReadTogetherToday -> stringResource(R.string.parent_advice_read_together)
+    }
+    val action = when {
+        advice.type == ParentAdviceType.ReviewDueWords -> onReviewWords
+        story != null -> ({ onStoryClick(story.id) })
+        else -> null
+    }
+    val actionLabel = when {
+        advice.type == ParentAdviceType.ReviewDueWords -> stringResource(R.string.parent_advice_action_review_words)
+        story != null -> stringResource(R.string.parent_advice_action_open_story)
+        else -> null
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+        color = MaterialTheme.colorScheme.tertiaryContainer,
+    ) {
+        Column(
+            modifier = Modifier.padding(LmcSpacing.CardPadding),
+            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space3),
+        ) {
+            Text(
+                text = stringResource(R.string.parent_advice_title),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onTertiaryContainer,
+            )
+            Text(
+                text = body,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onTertiaryContainer,
+            )
+            story?.retellPrompt?.takeIf { it.isNotBlank() }?.let { prompt ->
+                Text(
+                    text = stringResource(R.string.parent_advice_retell_prompt_format, prompt),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                )
+            }
+            if (action != null && actionLabel != null) {
+                OutlinedButton(
+                    onClick = action,
+                    modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
+                ) {
+                    Text(text = actionLabel)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PrivacyScreen(onBack: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+    ) {
+        FlowTopBar(
+            title = stringResource(R.string.privacy_title),
+            onBack = onBack,
+        )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(LmcSpacing.ScreenPadding)
+                .widthIn(max = LmcSpacing.ReadingMaxWidth)
+                .align(Alignment.CenterHorizontally),
+            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space4),
+        ) {
+            Text(
+                text = stringResource(R.string.privacy_summary),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            PrivacyPoint(
+                title = stringResource(R.string.privacy_coppa_gdprk_title),
+                body = stringResource(R.string.privacy_coppa_gdprk),
+            )
+            PrivacyPoint(
+                title = stringResource(R.string.privacy_parent_account_title),
+                body = stringResource(R.string.privacy_parent_account_only),
+            )
+            PrivacyPoint(
+                title = stringResource(R.string.privacy_no_child_details_title),
+                body = stringResource(R.string.privacy_no_child_details),
+            )
+            PrivacyPoint(
+                title = stringResource(R.string.privacy_ai_scope_title),
+                body = stringResource(R.string.privacy_ai_scope),
+            )
+            PrivacyPoint(
+                title = stringResource(R.string.privacy_analytics_title),
+                body = stringResource(R.string.privacy_analytics_anonymous),
+            )
+            PrivacyPoint(
+                title = stringResource(R.string.privacy_local_progress_title),
+                body = stringResource(R.string.privacy_local_progress),
+            )
+            PrivacyPoint(
+                title = stringResource(R.string.privacy_content_title),
+                body = stringResource(R.string.privacy_public_domain_content),
+            )
+            PrivacyPoint(
+                title = stringResource(R.string.privacy_network_title),
+                body = stringResource(R.string.privacy_in_app_no_external_page),
+            )
+            Button(
+                onClick = onBack,
+                modifier = Modifier.heightIn(min = LmcSpacing.ButtonPrimaryHeight),
+                shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+            ) {
+                Text(text = stringResource(R.string.action_done))
+            }
+        }
+    }
+}
+
+@Composable
+private fun PrivacyPoint(
+    title: String,
+    body: String,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(LmcSpacing.RadiusSm),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = LmcSpacing.CardElevation,
+    ) {
+        Column(
+            modifier = Modifier.padding(LmcSpacing.CardPadding),
+            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = body,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
 private fun MetricGrid(metrics: List<Metric>) {
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
         val columns = if (maxWidth >= 720.dp) 4 else 2
@@ -5353,7 +5694,7 @@ private fun StoryProgressRow(
 }
 
 @Composable
-private fun PrivacyNotice() {
+private fun PrivacyNotice(onPrivacy: () -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(LmcSpacing.RadiusLg),
@@ -5373,6 +5714,12 @@ private fun PrivacyNotice() {
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            TextButton(
+                onClick = onPrivacy,
+                modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
+            ) {
+                Text(text = stringResource(R.string.action_open_privacy))
+            }
         }
     }
 }
@@ -5953,6 +6300,78 @@ private fun CenterStateMessage(text: String) {
 }
 
 @Composable
+private fun LibraryStateSurface(
+    title: String,
+    body: String,
+    actionLabel: String,
+    onAction: () -> Unit,
+    loading: Boolean = false,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(LmcSpacing.ScreenPadding),
+        contentAlignment = Alignment.Center,
+    ) {
+        LibraryInlineStateCard(
+            title = title,
+            body = body,
+            actionLabel = actionLabel,
+            onAction = onAction,
+            loading = loading,
+            modifier = Modifier.widthIn(max = LmcSpacing.ReadingMaxWidth),
+        )
+    }
+}
+
+@Composable
+private fun LibraryInlineStateCard(
+    title: String,
+    body: String,
+    actionLabel: String,
+    onAction: () -> Unit,
+    modifier: Modifier = Modifier,
+    loading: Boolean = false,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = LmcSpacing.CardElevation,
+    ) {
+        Column(
+            modifier = Modifier.padding(LmcSpacing.CardPadding),
+            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space3),
+        ) {
+            if (loading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                    strokeWidth = 2.dp,
+                )
+            }
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = body,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedButton(
+                onClick = onAction,
+                modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
+            ) {
+                Text(text = actionLabel)
+            }
+        }
+    }
+}
+
+@Composable
 private fun LmcCanvasIcon(
     icon: LmcIcon,
     color: Color,
@@ -6080,6 +6499,34 @@ private fun storyProgressLabel(
         progress > 0f -> stringResource(R.string.story_progress_percent, formatPercent(progress))
         else -> stringResource(R.string.library_not_started)
     }
+}
+
+@StringRes
+private fun LibraryStoryStatus.labelRes(): Int = when (this) {
+    LibraryStoryStatus.New -> R.string.library_status_new
+    LibraryStoryStatus.Continue -> R.string.library_status_continue
+    LibraryStoryStatus.Done -> R.string.library_status_done
+}
+
+@StringRes
+private fun LibraryStoryAction.labelRes(): Int = when (this) {
+    LibraryStoryAction.Start -> R.string.action_start_reading
+    LibraryStoryAction.Continue -> R.string.action_continue
+    LibraryStoryAction.ReadAgain -> R.string.action_read_again_short
+}
+
+@StringRes
+private fun String.seriesLabelRes(): Int = when (this) {
+    "series_three_kingdoms" -> R.string.series_three_kingdoms
+    else -> R.string.series_three_kingdoms
+}
+
+@StringRes
+private fun VocabularyEntrySource.backActionLabelRes(): Int = when (this) {
+    VocabularyEntrySource.Today -> R.string.action_back_to_today
+    VocabularyEntrySource.Reading,
+    VocabularyEntrySource.Quiz,
+    -> R.string.action_back_to_reading
 }
 
 @Composable
@@ -6469,6 +6916,7 @@ private object LmcSpacing {
     val Space8 = 32.dp
     val ScreenPadding = 16.dp
     val ReadingMaxWidth = 720.dp
+    val LibraryMaxWidth = 960.dp
     val CardPadding = 16.dp
     val ReadingPanelPadding = 16.dp
     val RadiusSm = 8.dp

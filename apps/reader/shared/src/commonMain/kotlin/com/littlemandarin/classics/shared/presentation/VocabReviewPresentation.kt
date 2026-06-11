@@ -50,6 +50,37 @@ data class WordBookItem(
     val due: Boolean,
 )
 
+enum class WordBookReviewPromptType {
+    Empty,
+    CaughtUp,
+    ReadyForReview,
+}
+
+data class WordBookReviewPromptState(
+    val type: WordBookReviewPromptType,
+    val showStartReview: Boolean,
+    val showReadToday: Boolean,
+)
+
+fun WordBookSummary.reviewPromptState(): WordBookReviewPromptState =
+    when {
+        totalWords == 0 -> WordBookReviewPromptState(
+            type = WordBookReviewPromptType.Empty,
+            showStartReview = false,
+            showReadToday = true,
+        )
+        dueCount == 0 -> WordBookReviewPromptState(
+            type = WordBookReviewPromptType.CaughtUp,
+            showStartReview = false,
+            showReadToday = true,
+        )
+        else -> WordBookReviewPromptState(
+            type = WordBookReviewPromptType.ReadyForReview,
+            showStartReview = true,
+            showReadToday = false,
+        )
+    }
+
 class SrsScheduler {
     fun newRecord(
         vocab: Vocab,

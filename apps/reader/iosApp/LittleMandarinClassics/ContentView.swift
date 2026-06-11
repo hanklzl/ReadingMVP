@@ -163,7 +163,12 @@ struct ContentView: View {
             ParentReportScreen(
                 viewModel: viewModel,
                 entryPoint: parentReportEntryPoint,
-                openSettings: { flowRoute = .settings }
+                openSettings: { flowRoute = .settings },
+                openStory: { openStory($0, source: .parentReport) },
+                openWords: {
+                    selectedTab = .wordBook
+                    flowRoute = nil
+                }
             )
         }
     }
@@ -191,7 +196,15 @@ struct ContentView: View {
                     viewModel: viewModel,
                     story: story,
                     openSource: openSource,
-                    close: { flowRoute = .reading(storyId: story.id) },
+                    close: {
+                        switch openSource {
+                        case .todaySummary:
+                            selectedTab = .today
+                            flowRoute = nil
+                        case .readingFlow, .quizBack:
+                            flowRoute = .reading(storyId: story.id)
+                        }
+                    },
                     openQuiz: { flowRoute = .quiz(storyId: story.id) }
                 )
             } else {
@@ -525,7 +538,14 @@ final class ReaderViewModel: ObservableObject {
     }
 
     func progressLabelKey(for story: Story) -> String {
-        storyProgress(for: story).status == .completed ? "status_completed" : "status_not_started"
+        switch storyProgress(for: story).status {
+        case .completed:
+            return "status_completed"
+        case .inprogress:
+            return "status_continue"
+        default:
+            return "status_new"
+        }
     }
 
     func setReadingMode(_ mode: LMCReadingPlaybackMode) {
@@ -979,6 +999,10 @@ final class ReaderViewModel: ObservableObject {
         )
     }
 
+    func availableLibraryLevels() -> [Int] {
+        Array(Set(stories.map { Int($0.level) })).sorted()
+    }
+
     func initialQuizState(_ story: Story) -> QuizSessionState {
         quizSessionReducer.initialState(story: story)
     }
@@ -1009,11 +1033,14 @@ final class ReaderViewModel: ObservableObject {
 
     func parentReportSummary() -> ParentReportSummary? {
         guard let parentReport, let stats else { return nil }
+        let nextStoryId = stories.first { !completedStoryIds.contains($0.id) }?.id
         return buildParentReportSummaryUseCase.invoke(
             report: parentReport,
             stats: stats,
             nowEpochMillis: Int64(Date().timeIntervalSince1970 * 1_000),
-            weekWindowMillis: LMCSevenDaysMillis
+            weekWindowMillis: LMCSevenDaysMillis,
+            dueWordCount: Int32(wordBookSummary?.dueCount ?? 0),
+            nextStoryId: nextStoryId
         )
     }
 
@@ -1396,6 +1423,7 @@ enum LMCStoryOpenSource: String {
     case todayHero = "today_hero"
     case todayUpNext = "today_up_next"
     case library
+    case parentReport = "parent_report"
     case quizCompletion = "quiz_completion"
 }
 
@@ -2286,9 +2314,14 @@ private struct WordBookScreen: View {
                 )
             }
 
-            Button("action_start_review", action: openReview)
-                .buttonStyle(LMCPrimaryButtonStyle())
-                .disabled((viewModel.wordBookSummary?.dueCount ?? 0) == 0)
+            if (viewModel.wordBookSummary?.dueCount ?? 0) > 0 {
+                Button("action_start_review", action: openReview)
+                    .buttonStyle(LMCPrimaryButtonStyle())
+            } else if (viewModel.wordBookSummary?.totalWords ?? 0) > 0 {
+                LMCEmptyState(titleKey: "word_book_no_due_title", messageKey: "word_book_no_due_body")
+                Button("action_start_reading", action: openToday)
+                    .buttonStyle(LMCSecondaryButtonStyle())
+            }
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: LMCSpace.s2) {
@@ -2685,6 +2718,10 @@ private struct LibraryScreen: View {
         viewModel.filteredStories(level: selectedLevel)
     }
 
+    private var availableLevels: [Int] {
+        viewModel.availableLibraryLevels()
+    }
+
     var body: some View {
         GeometryReader { proxy in
             LMCScreen(maxWidth: LMCSpace.gridMaxWidth) {
@@ -2698,16 +2735,40 @@ private struct LibraryScreen: View {
                     filterChips
 
                     if viewModel.loadingState == .failed {
-                        LMCErrorView()
-                    } else if filteredStories.isEmpty && viewModel.loadingState == .loaded {
-                        LMCEmptyState(titleKey: "library_empty_title", messageKey: "library_empty_message")
+                        LMCLibraryStateCard(
+                            titleKey: "library_error_title",
+                            messageKey: "library_error_body",
+                            actionKey: "common_retry",
+                            action: { Task { await viewModel.load() } }
+                        )
                     } else if viewModel.loadingState == .loading || viewModel.loadingState == .idle {
-                        LMCLoadingView()
+                        LMCLibraryStateCard(
+                            titleKey: "library_loading_title",
+                            messageKey: "library_loading_body",
+                            actionKey: "common_retry",
+                            showsProgress: true,
+                            action: { Task { await viewModel.load() } }
+                        )
+                    } else if viewModel.stories.isEmpty {
+                        LMCLibraryStateCard(
+                            titleKey: "empty_library_title",
+                            messageKey: "empty_library_body",
+                            actionKey: "common_retry",
+                            action: { Task { await viewModel.load() } }
+                        )
+                    } else if filteredStories.isEmpty {
+                        LMCLibraryStateCard(
+                            titleKey: "library_no_results_title",
+                            messageKey: "library_no_results_body",
+                            actionKey: "action_clear_filter",
+                            action: { selectedLevel = nil }
+                        )
                     } else {
                         LazyVGrid(columns: columns(for: proxy.size.width), spacing: LMCSpace.s4) {
-                            ForEach(filteredStories, id: \.id) { story in
+                            ForEach(Array(filteredStories.enumerated()), id: \.element.id) { _, story in
                                 StoryListCard(
                                     story: story,
+                                    sequenceNumber: sequenceNumber(for: story),
                                     progress: viewModel.progressValue(for: story),
                                     progressLabelKey: viewModel.progressLabelKey(for: story),
                                     isCompleted: viewModel.isCompleted(story),
@@ -2727,7 +2788,7 @@ private struct LibraryScreen: View {
                 FilterChip(titleKey: "filter_all", isSelected: selectedLevel == nil) {
                     selectedLevel = nil
                 }
-                ForEach([1, 2, 3], id: \.self) { level in
+                ForEach(availableLevels, id: \.self) { level in
                     FilterChip(
                         title: LMCStrings.format("filter_level", level),
                         isSelected: selectedLevel == level,
@@ -2737,6 +2798,10 @@ private struct LibraryScreen: View {
             }
             .padding(.vertical, LMCSpace.s1)
         }
+    }
+
+    private func sequenceNumber(for story: Story) -> Int {
+        (viewModel.stories.firstIndex { $0.id == story.id } ?? 0) + 1
     }
 
     private func columns(for width: CGFloat) -> [GridItem] {
@@ -3172,22 +3237,29 @@ private struct VocabularyScreen: View {
             }
 
             LMCBottomActionBar {
-                Button("action_previous") {
-                    wordIndex = max(0, wordIndex - 1)
-                }
-                    .buttonStyle(LMCSecondaryButtonStyle())
-                    .disabled(wordIndex == 0)
-
-                Button {
-                    if wordIndex >= story.vocab.count - 1 {
-                        openQuiz()
-                    } else {
-                        wordIndex += 1
+                if story.vocab.isEmpty {
+                    Button(backActionKey, action: close)
+                        .buttonStyle(LMCSecondaryButtonStyle())
+                    Button("action_continue_to_quiz", action: openQuiz)
+                        .buttonStyle(LMCPrimaryButtonStyle())
+                } else {
+                    Button("action_previous") {
+                        wordIndex = max(0, wordIndex - 1)
                     }
-                } label: {
-                    Text(LocalizedStringKey(wordIndex >= story.vocab.count - 1 ? "action_start_quiz" : "action_next"))
+                        .buttonStyle(LMCSecondaryButtonStyle())
+                        .disabled(wordIndex == 0)
+
+                    Button {
+                        if wordIndex >= story.vocab.count - 1 {
+                            openQuiz()
+                        } else {
+                            wordIndex += 1
+                        }
+                    } label: {
+                        Text(LocalizedStringKey(wordIndex >= story.vocab.count - 1 ? "action_start_quiz" : "action_next"))
+                    }
+                    .buttonStyle(LMCPrimaryButtonStyle())
                 }
-                .buttonStyle(LMCPrimaryButtonStyle())
             }
         }
         .background(LMCColor.background.ignoresSafeArea())
@@ -3203,6 +3275,10 @@ private struct VocabularyScreen: View {
 
     private func trackCurrentWord() {
         viewModel.trackVocabOpen(story, wordIndex: wordIndex, openSource: openSource)
+    }
+
+    private var backActionKey: LocalizedStringKey {
+        openSource == .todaySummary ? "action_back_to_today" : "action_back_to_reading"
     }
 }
 
@@ -3422,7 +3498,10 @@ private struct ParentReportScreen: View {
     @ObservedObject var viewModel: ReaderViewModel
     let entryPoint: LMCParentReportEntryPoint
     let openSettings: () -> Void
+    let openStory: (Story) -> Void
+    let openWords: () -> Void
     @State private var gatePassed = false
+    @State private var showPrivacy = false
 
     var body: some View {
         LMCScreen(maxWidth: LMCSpace.gridMaxWidth) {
@@ -3438,6 +3517,10 @@ private struct ParentReportScreen: View {
                 parentGate
             }
         }
+        .sheet(isPresented: $showPrivacy) {
+            PrivacyScreen(close: { showPrivacy = false })
+                .preferredColorScheme(.light)
+        }
     }
 
     private var parentGate: some View {
@@ -3449,12 +3532,19 @@ private struct ParentReportScreen: View {
 
     private var reportContent: some View {
         VStack(alignment: .leading, spacing: LMCSpace.s6) {
-	            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: LMCSpace.s3) {
-	                MetricTile(titleKey: "parent_stories_read", value: "\(summary?.storiesCompletedThisWeek ?? 0)")
-	                MetricTile(titleKey: "parent_reading_days", value: "\(readingDays)")
-	                MetricTile(titleKey: "parent_quiz_correct", value: quizCorrectText)
-	                MetricTile(titleKey: "parent_words_reviewed", value: "\(summary?.vocabLearnedThisWeek ?? 0)")
-	            }
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: LMCSpace.s3) {
+                MetricTile(titleKey: "parent_stories_read", value: "\(summary?.storiesCompletedThisWeek ?? 0)")
+                MetricTile(titleKey: "parent_reading_days", value: "\(readingDays)")
+                MetricTile(titleKey: "parent_quiz_correct", value: quizCorrectText)
+                MetricTile(titleKey: "parent_words_reviewed", value: "\(summary?.vocabLearnedThisWeek ?? 0)")
+            }
+
+            ParentAdviceCard(
+                summary: summary,
+                story: adviceStory,
+                reviewWords: openWords,
+                openStory: openStory
+            )
 
             VStack(alignment: .leading, spacing: LMCSpace.s3) {
                 SectionTitle("parent_story_progress")
@@ -3473,6 +3563,10 @@ private struct ParentReportScreen: View {
                     .font(.system(size: 16))
                     .foregroundStyle(LMCColor.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
+                Button("action_open_privacy") {
+                    showPrivacy = true
+                }
+                .buttonStyle(LMCSecondaryButtonStyle())
             }
             .padding(LMCSpace.s4)
             .background(LMCColor.infoContainer)
@@ -3491,6 +3585,77 @@ private struct ParentReportScreen: View {
 
     private var summary: ParentReportSummary? {
         viewModel.parentReportSummary()
+    }
+
+    private var adviceStory: Story? {
+        guard let storyId = summary?.advice.storyId else { return nil }
+        return viewModel.story(id: storyId)
+    }
+}
+
+private struct ParentAdviceCard: View {
+    let summary: ParentReportSummary?
+    let story: Story?
+    let reviewWords: () -> Void
+    let openStory: (Story) -> Void
+
+    var body: some View {
+        if let summary {
+            VStack(alignment: .leading, spacing: LMCSpace.s3) {
+                Label("parent_advice_title", systemImage: "lightbulb.fill")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(LMCColor.textPrimary)
+
+                Text(adviceText(for: summary))
+                    .font(.system(size: 16))
+                    .foregroundStyle(LMCColor.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if shouldShowRetellPrompt(for: summary), let story {
+                    Text(LMCStrings.format("parent_advice_retell_prompt_format", story.retellPrompt))
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(LMCColor.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                if summary.advice.type == .reviewduewords {
+                    Button("parent_advice_action_review_words", action: reviewWords)
+                        .buttonStyle(LMCSecondaryButtonStyle())
+                } else if shouldOpenStory(for: summary), let story {
+                    Button("parent_advice_action_open_story") {
+                        openStory(story)
+                    }
+                    .buttonStyle(LMCSecondaryButtonStyle())
+                }
+            }
+            .padding(LMCSpace.s4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(LMCColor.primaryContainer)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+    }
+
+    private func adviceText(for summary: ParentReportSummary) -> String {
+        switch summary.advice.type {
+        case .reviewduewords:
+            return LMCStrings.format("parent_advice_review_due_words_format", Int(summary.advice.dueWordCount))
+        case .revisitrecentstory:
+            return LMCStrings.format("parent_advice_revisit_story_format", story?.titleZh ?? "")
+        case .trynextstory:
+            return LMCStrings.format("parent_advice_try_next_story_format", story?.titleZh ?? "")
+        case .celebratestreak:
+            return LMCStrings.localized("parent_advice_keep_streak")
+        default:
+            return LMCStrings.localized("parent_advice_read_together")
+        }
+    }
+
+    private func shouldShowRetellPrompt(for summary: ParentReportSummary) -> Bool {
+        summary.advice.type == .revisitrecentstory || summary.advice.type == .trynextstory
+    }
+
+    private func shouldOpenStory(for summary: ParentReportSummary) -> Bool {
+        summary.advice.type == .revisitrecentstory || summary.advice.type == .trynextstory
     }
 }
 
@@ -3587,10 +3752,9 @@ private struct SettingsScreen: View {
                 }
             }
         }
-        .alert("settings_privacy", isPresented: $showPrivacy) {
-            Button("action_ok", role: .cancel) { }
-        } message: {
-            Text("parent_privacy_note")
+        .sheet(isPresented: $showPrivacy) {
+            PrivacyScreen(close: { showPrivacy = false })
+                .preferredColorScheme(.light)
         }
         .sheet(isPresented: $showFeedback) {
             FeedbackSheet(viewModel: viewModel)
@@ -3747,6 +3911,67 @@ private struct SettingsScreen: View {
                 .buttonStyle(LMCSecondaryButtonStyle())
             }
         }
+    }
+}
+
+private struct PrivacyScreen: View {
+    let close: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: LMCSpace.s5) {
+                    VStack(alignment: .leading, spacing: LMCSpace.s2) {
+                        SectionTitle("privacy_title")
+                        Text("privacy_summary")
+                            .font(.system(size: 16))
+                            .foregroundStyle(LMCColor.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    VStack(alignment: .leading, spacing: LMCSpace.s3) {
+                        PrivacyPoint(titleKey: "privacy_coppa_gdprk_title", bodyKey: "privacy_coppa_gdprk")
+                        PrivacyPoint(titleKey: "privacy_parent_account_title", bodyKey: "privacy_parent_account_only")
+                        PrivacyPoint(titleKey: "privacy_no_child_details_title", bodyKey: "privacy_no_child_details")
+                        PrivacyPoint(titleKey: "privacy_ai_scope_title", bodyKey: "privacy_ai_scope")
+                        PrivacyPoint(titleKey: "privacy_analytics_title", bodyKey: "privacy_analytics_anonymous")
+                        PrivacyPoint(titleKey: "privacy_local_progress_title", bodyKey: "privacy_local_progress")
+                        PrivacyPoint(titleKey: "privacy_content_title", bodyKey: "privacy_public_domain_content")
+                        PrivacyPoint(titleKey: "privacy_network_title", bodyKey: "privacy_in_app_no_external_page")
+                    }
+                }
+                .padding(LMCSpace.s4)
+                .frame(maxWidth: LMCSpace.readingMaxWidth, alignment: .leading)
+                .frame(maxWidth: .infinity)
+            }
+            .background(LMCColor.background)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("action_close", action: close)
+                }
+            }
+        }
+    }
+}
+
+private struct PrivacyPoint: View {
+    let titleKey: LocalizedStringKey
+    let bodyKey: LocalizedStringKey
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: LMCSpace.s2) {
+            Text(titleKey)
+                .font(.system(size: 17, weight: .bold))
+                .foregroundStyle(LMCColor.textPrimary)
+            Text(bodyKey)
+                .font(.system(size: 16))
+                .foregroundStyle(LMCColor.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(LMCSpace.s4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(LMCColor.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 
@@ -3978,32 +4203,59 @@ private struct StoryHeroCard: View {
 
 private struct StoryListCard: View {
     let story: Story
+    let sequenceNumber: Int
     let progress: Double
     let progressLabelKey: String
     let isCompleted: Bool
     let action: () -> Void
+
+    private var hasProgress: Bool {
+        progress > 0 && !isCompleted
+    }
+
+    private var statusKey: LocalizedStringKey {
+        if isCompleted { return "library_status_done" }
+        if hasProgress { return "library_status_continue" }
+        return "library_status_new"
+    }
+
+    private var actionKey: LocalizedStringKey {
+        if isCompleted { return "action_read_again_short" }
+        if hasProgress { return "action_continue" }
+        return "action_start_reading"
+    }
 
     var body: some View {
         HStack(alignment: .top, spacing: LMCSpace.s3) {
             StoryCover(story: story, size: 96)
 
             VStack(alignment: .leading, spacing: LMCSpace.s2) {
+                Text(LMCStrings.format("library_story_order_series", sequenceNumber, LMCStrings.localized("series_three_kingdoms")))
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(LMCColor.tertiary)
                 StoryTitleBlock(story: story)
                 HStack(spacing: LMCSpace.s2) {
+                    Text(statusKey)
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(isCompleted ? LMCColor.success : LMCColor.tertiary)
+                        .padding(.horizontal, LMCSpace.s2)
+                        .padding(.vertical, LMCSpace.s1)
+                        .background(isCompleted ? LMCColor.successContainer : LMCColor.tertiaryContainer)
+                        .clipShape(Capsule())
                     LevelChip(level: Int(story.level))
-                    Text(LocalizedStringKey(progressLabelKey))
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(LMCColor.textSecondary)
                 }
                 LMCProgressBar(value: progress)
+                Text(LocalizedStringKey(progressLabelKey))
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(LMCColor.textSecondary)
                 if isCompleted {
                     Button(action: action) {
-                        Text("action_read_again")
+                        Text(actionKey)
                     }
                     .buttonStyle(LMCSecondaryButtonStyle())
                 } else {
                     Button(action: action) {
-                        Text("action_start_reading")
+                        Text(actionKey)
                     }
                     .buttonStyle(LMCPrimaryButtonStyle())
                 }
@@ -5634,6 +5886,37 @@ private struct LMCEmptyState: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(LMCColor.surface)
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+}
+
+private struct LMCLibraryStateCard: View {
+    let titleKey: LocalizedStringKey
+    let messageKey: LocalizedStringKey
+    let actionKey: LocalizedStringKey
+    var showsProgress = false
+    let action: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: LMCSpace.s3) {
+            if showsProgress {
+                ProgressView()
+                    .tint(LMCColor.primary)
+            }
+            Text(titleKey)
+                .font(.system(size: 20, weight: .bold))
+                .foregroundStyle(LMCColor.textPrimary)
+            Text(messageKey)
+                .font(.system(size: 16))
+                .foregroundStyle(LMCColor.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Button(actionKey, action: action)
+                .buttonStyle(LMCSecondaryButtonStyle())
+        }
+        .padding(LMCSpace.s4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(LMCColor.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 1)
     }
 }
 

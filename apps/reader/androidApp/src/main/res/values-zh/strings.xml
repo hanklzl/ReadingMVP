@@ -49,12 +49,16 @@
     <string name="action_start_reading">开始阅读</string>
     <string name="action_continue">继续</string>
     <string name="action_continue_reading">继续阅读</string>
+    <string name="action_continue_to_quiz">继续去小测验</string>
+    <string name="action_back_to_reading">回到阅读</string>
+    <string name="action_back_to_today">回到今日</string>
     <string name="action_previous">上一页</string>
     <string name="action_next">下一步</string>
     <string name="action_submit">提交</string>
     <string name="action_done">完成</string>
     <string name="action_quiz">小测验</string>
     <string name="action_read_again">从第 1 段再读</string>
+    <string name="action_read_again_short">再读一遍</string>
     <string name="action_open_settings">打开设置</string>
     <string name="action_open_parent_report">打开家长报告</string>
     <string name="action_open_privacy">打开隐私说明</string>
@@ -74,6 +78,7 @@
     <string name="action_start_review">开始复习</string>
     <string name="action_show_answer">显示答案</string>
     <string name="action_still_learning">再学学</string>
+    <string name="action_clear_filter">清除筛选</string>
 
     <!-- Onboarding + streak -->
     <string name="onboarding_title">欢迎</string>
@@ -121,13 +126,26 @@
     <string name="today_reading_required_body">读完今日故事后再开始小测验。</string>
 
     <!-- Story library -->
+    <string name="series_three_kingdoms">三国演义</string>
     <string name="library_title">故事库</string>
+    <string name="library_loading_title">正在加载故事库</string>
+    <string name="library_loading_body">正在按阅读顺序准备审核通过的故事。</string>
+    <string name="library_error_title">故事库暂时无法加载</string>
+    <string name="library_error_body">可以再试一次，重新加载故事库。</string>
+    <string name="library_empty_title">还没有故事</string>
+    <string name="library_empty_body">审核通过的故事会按《三国演义》顺序显示在这里。</string>
+    <string name="library_no_results_title">没有这个等级的故事</string>
+    <string name="library_no_results_body">清除等级筛选后，可以看到完整故事顺序。</string>
     <string name="library_empty">没有符合条件的故事。</string>
     <string name="library_filter_all">全部</string>
     <string name="library_filter_level_format">等级 %1$d</string>
     <string name="library_filter_level">等级 %1$d</string>
     <string name="library_completed">已完成</string>
     <string name="library_not_started">未开始</string>
+    <string name="library_status_new">新故事</string>
+    <string name="library_status_continue">继续读</string>
+    <string name="library_status_done">完成</string>
+    <string name="library_story_order_series">第 %1$d 篇 · %2$s</string>
     <string name="library_story_progress">故事进度</string>
     <string name="story_level">等级 %1$d</string>
     <string name="story_progress_percent">完成 %1$s</string>
@@ -188,6 +206,8 @@
     <!-- Vocabulary -->
     <string name="vocab_title">生字</string>
     <string name="vocab_empty">还没有生字。</string>
+    <string name="vocab_empty_title">这篇故事没有生字</string>
+    <string name="vocab_empty_body">可以直接进入小测验，也可以回到阅读页。</string>
     <string name="vocab_review_title">生字复习</string>
     <string name="vocab_progress_count">%1$d / %2$d</string>
     <string name="vocab_progress_accessibility">第 %1$d 个生字，共 %2$d 个</string>
@@ -209,6 +229,8 @@
     <string name="word_book_empty_body">完成一篇故事后，生字会出现在这里。</string>
     <string name="word_book_no_due_title">今天都复习好了</string>
     <string name="word_book_no_due_body">现在没有到期的生字，明天再轻松复习。</string>
+    <string name="word_book_filter_empty_title">这个分组没有生字</string>
+    <string name="word_book_filter_empty_body">可以换一个生字筛选。</string>
     <string name="word_book_source_story">来自《%1$s》</string>
     <string name="word_book_status_due">今日</string>
     <string name="word_book_status_learning">学习中</string>
@@ -259,6 +281,15 @@
     <string name="parent_quiz_correct">测验答对</string>
     <string name="parent_words_reviewed">复习生字</string>
     <string name="parent_story_progress">故事进度</string>
+    <string name="parent_advice_title">建议下一步</string>
+    <string name="parent_advice_read_together">今天一起读 5 分钟故事，然后请孩子复述主要内容。</string>
+    <string name="parent_advice_review_due_words_format">先一起复习 %1$d 个到期生字，再开始下一篇故事。</string>
+    <string name="parent_advice_revisit_story_format">可以重读《%1$s》，一起找找故事提示后再做测验。</string>
+    <string name="parent_advice_try_next_story_format">有安静的 5 分钟时，可以试试下一篇《%1$s》。</string>
+    <string name="parent_advice_keep_streak">保持轻松节奏：今天读一篇短故事，继续阅读习惯。</string>
+    <string name="parent_advice_retell_prompt_format">复述提示：%1$s</string>
+    <string name="parent_advice_action_open_story">打开故事</string>
+    <string name="parent_advice_action_review_words">复习生字</string>
     <string name="parent_privacy_title">隐私</string>
     <string name="parent_privacy_note">不会要求填写儿童姓名、生日、学校、照片、位置或联系方式。AI 只围绕故事解释，数据分析必须匿名。</string>
     <string name="parent_progress_completed">已完成</string>
@@ -340,12 +371,22 @@
     <!-- Privacy -->
     <string name="privacy_title">隐私</string>
     <string name="privacy_summary">小小中文经典只保留必要的儿童阅读数据，并重视隐私保护。</string>
-    <string name="privacy_no_child_details">当前版本不要求填写个人信息。</string>
-    <string name="privacy_parent_account_only">如果以后增加账号，也必须面向家长或照护者。</string>
+    <string name="privacy_coppa_gdprk_title">COPPA / GDPR-K 立场</string>
+    <string name="privacy_no_child_details_title">不收集儿童个人信息</string>
+    <string name="privacy_parent_account_title">仅家长账号</string>
+    <string name="privacy_ai_scope_title">只做受控 AI 解释</string>
+    <string name="privacy_analytics_title">匿名数据分析</string>
+    <string name="privacy_local_progress_title">本地学习数据</string>
+    <string name="privacy_content_title">公有领域故事</string>
+    <string name="privacy_network_title">应用内页面</string>
+    <string name="privacy_no_child_details">我们不收集儿童姓名、生日、学校、照片、精确位置、联系方式或其他身份资料。</string>
+    <string name="privacy_parent_account_only">如果以后增加账号，也只面向家长或照护者，不面向儿童。</string>
     <string name="privacy_ai_scope">AI 解释只围绕当前故事，不做开放聊天。</string>
     <string name="privacy_analytics_anonymous">如使用数据分析，必须匿名，且不包含儿童个人信息。</string>
-    <string name="privacy_local_progress">阅读进度只可保存在本地，或使用经过隐私审核的存储。</string>
+    <string name="privacy_local_progress">MVP 的阅读进度、生字复习、设置和反馈保存在本设备；如以后增加存储路径，必须先通过隐私审核。</string>
     <string name="privacy_coppa_gdprk">设计时遵循 COPPA / GDPR-K 的数据最小化原则。</string>
+    <string name="privacy_public_domain_content">故事改写自公有领域经典文本，并在内容中记录来源说明。</string>
+    <string name="privacy_in_app_no_external_page">本隐私页内置在应用中，不加载外部网站，也不会发起网络请求。</string>
 
     <!-- Empty states -->
     <string name="empty_today_story_title">暂时没有今日故事</string>

@@ -195,6 +195,30 @@ class ReaderPresentationUseCasesTest {
     }
 
     @Test
+    fun libraryStoryCardsExposeSeriesOrderStatusAndAction() {
+        val useCases = StoryPresentationUseCases()
+        val stories = listOf(sampleStory(id = "first"), sampleStory(id = "second"), sampleStory(id = "third"))
+
+        val cards = useCases.libraryStoryCards(
+            stories = stories,
+            completedStoryIds = setOf("third"),
+            readingPositions = mapOf("second" to 0),
+        )
+
+        assertEquals(listOf("first", "second", "third"), cards.map { it.story.id })
+        assertEquals(listOf(1, 2, 3), cards.map { it.sequenceNumber })
+        assertEquals(listOf("series_three_kingdoms", "series_three_kingdoms", "series_three_kingdoms"), cards.map { it.seriesKey })
+        assertEquals(
+            listOf(LibraryStoryStatus.New, LibraryStoryStatus.Continue, LibraryStoryStatus.Done),
+            cards.map { it.status },
+        )
+        assertEquals(
+            listOf(LibraryStoryAction.Start, LibraryStoryAction.Continue, LibraryStoryAction.ReadAgain),
+            cards.map { it.action },
+        )
+    }
+
+    @Test
     fun parentReportSummaryCountsDistinctReadingDaysInsideWeekWindow() {
         val now = 1_800_000_000_000L
         val oneDay = 24L * 60L * 60L * 1_000L
@@ -227,6 +251,66 @@ class ReaderPresentationUseCasesTest {
         assertEquals(11, summary.vocabLearnedThisWeek)
         assertEquals(6, summary.correctCount)
         assertEquals(9, summary.questionCount)
+    }
+
+    @Test
+    fun parentReportAdvicePrioritizesDueWordsNoProgressLowQuizAndNextStory() {
+        val now = 1_800_000_000_000L
+        val oneDay = 24L * 60L * 60L * 1_000L
+        val useCase = BuildParentReportSummaryUseCase()
+        val report = ParentProgressReport(
+            storiesCompletedThisWeek = 1,
+            vocabLearnedThisWeek = 6,
+            averageCorrectPercent = 66.0,
+            recentCompletions = listOf(CompletionRecord("first", now - oneDay, 6, 1, 3)),
+        )
+        val stats = ProgressStats(
+            completedCount = 1,
+            vocabLearnedCount = 6,
+            correctCount = 1,
+            questionCount = 3,
+            averageCorrectPercent = 33.0,
+        )
+
+        val dueAdvice = useCase.invoke(
+            report = report,
+            stats = stats,
+            nowEpochMillis = now,
+            dueWordCount = 4,
+            nextStoryId = "second",
+        ).advice
+        val noProgressAdvice = useCase.invoke(
+            report = report.copy(storiesCompletedThisWeek = 0, recentCompletions = emptyList()),
+            stats = stats.copy(completedCount = 0, questionCount = 0, correctCount = 0, averageCorrectPercent = 0.0),
+            nowEpochMillis = now,
+        ).advice
+        val lowQuizAdvice = useCase.invoke(
+            report = report,
+            stats = stats,
+            nowEpochMillis = now,
+            nextStoryId = "second",
+        ).advice
+        val nextStoryAdvice = useCase.invoke(
+            report = report.copy(averageCorrectPercent = 100.0),
+            stats = stats.copy(correctCount = 3, questionCount = 3, averageCorrectPercent = 100.0),
+            nowEpochMillis = now,
+            nextStoryId = "second",
+        ).advice
+        val celebrateAdvice = useCase.invoke(
+            report = report.copy(storiesCompletedThisWeek = 3, averageCorrectPercent = 100.0),
+            stats = stats.copy(completedCount = 3, correctCount = 3, questionCount = 3, averageCorrectPercent = 100.0),
+            nowEpochMillis = now,
+            nextStoryId = null,
+        ).advice
+
+        assertEquals(ParentAdviceType.ReviewDueWords, dueAdvice.type)
+        assertEquals(4, dueAdvice.dueWordCount)
+        assertEquals(ParentAdviceType.ReadTogetherToday, noProgressAdvice.type)
+        assertEquals(ParentAdviceType.RevisitRecentStory, lowQuizAdvice.type)
+        assertEquals("first", lowQuizAdvice.storyId)
+        assertEquals(ParentAdviceType.TryNextStory, nextStoryAdvice.type)
+        assertEquals("second", nextStoryAdvice.storyId)
+        assertEquals(ParentAdviceType.CelebrateStreak, celebrateAdvice.type)
     }
 
     @Test

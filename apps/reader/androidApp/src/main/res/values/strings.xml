@@ -51,12 +51,16 @@
     <string name="action_start_reading">Start reading</string>
     <string name="action_continue">Continue</string>
     <string name="action_continue_reading">Continue reading</string>
+    <string name="action_continue_to_quiz">Continue to quiz</string>
+    <string name="action_back_to_reading">Back to reading</string>
+    <string name="action_back_to_today">Back to Today</string>
     <string name="action_previous">Previous</string>
     <string name="action_next">Next</string>
     <string name="action_submit">Submit</string>
     <string name="action_done">Done</string>
     <string name="action_quiz">Quiz</string>
     <string name="action_read_again">Read again: paragraph 1</string>
+    <string name="action_read_again_short">Read again</string>
     <string name="action_open_settings">Open settings</string>
     <string name="action_open_parent_report">Open parent report</string>
     <string name="action_open_privacy">Open privacy</string>
@@ -76,6 +80,7 @@
     <string name="action_start_review">Start review</string>
     <string name="action_show_answer">Show answer</string>
     <string name="action_still_learning">Still learning</string>
+    <string name="action_clear_filter">Clear filter</string>
 
     <!-- Onboarding + streak -->
     <string name="onboarding_title">Welcome</string>
@@ -123,13 +128,26 @@
     <string name="today_reading_required_body">Finish today story before starting the quiz.</string>
 
     <!-- Story library -->
+    <string name="series_three_kingdoms">Three Kingdoms</string>
     <string name="library_title">Story Library</string>
+    <string name="library_loading_title">Loading library</string>
+    <string name="library_loading_body">Getting the approved stories in reading order.</string>
+    <string name="library_error_title">Library could not load</string>
+    <string name="library_error_body">Try again to load the story library.</string>
+    <string name="library_empty_title">No stories yet</string>
+    <string name="library_empty_body">Approved stories will appear here in Three Kingdoms order.</string>
+    <string name="library_no_results_title">No stories match this level</string>
+    <string name="library_no_results_body">Clear the level filter to see the full series order.</string>
     <string name="library_empty">No stories match this filter.</string>
     <string name="library_filter_all">All</string>
     <string name="library_filter_level_format">Level %1$d</string>
     <string name="library_filter_level">Level %1$d</string>
     <string name="library_completed">Completed</string>
     <string name="library_not_started">Not started</string>
+    <string name="library_status_new">New</string>
+    <string name="library_status_continue">Continue</string>
+    <string name="library_status_done">Done</string>
+    <string name="library_story_order_series">Story %1$d - %2$s</string>
     <string name="library_story_progress">Story progress</string>
     <string name="story_level">Level %1$d</string>
     <string name="story_progress_percent">%1$s complete</string>
@@ -190,6 +208,8 @@
     <!-- Vocabulary -->
     <string name="vocab_title">New Words</string>
     <string name="vocab_empty">No words yet.</string>
+    <string name="vocab_empty_title">No new words in this story</string>
+    <string name="vocab_empty_body">This story can go straight to the quiz, or you can return to the reading page.</string>
     <string name="vocab_review_title">Word Review</string>
     <string name="vocab_progress_count">%1$d / %2$d</string>
     <string name="vocab_progress_accessibility">Word %1$d of %2$d</string>
@@ -211,6 +231,8 @@
     <string name="word_book_empty_body">Finish a story to add its new words here.</string>
     <string name="word_book_no_due_title">All caught up</string>
     <string name="word_book_no_due_body">No words are due right now. Tomorrow will bring a gentle review.</string>
+    <string name="word_book_filter_empty_title">No words in this group</string>
+    <string name="word_book_filter_empty_body">Try another word filter.</string>
     <string name="word_book_source_story">From %1$s</string>
     <string name="word_book_status_due">Due</string>
     <string name="word_book_status_learning">Learning</string>
@@ -261,6 +283,15 @@
     <string name="parent_quiz_correct">Quiz correct</string>
     <string name="parent_words_reviewed">Words reviewed</string>
     <string name="parent_story_progress">Story progress</string>
+    <string name="parent_advice_title">Suggested next step</string>
+    <string name="parent_advice_read_together">Read today\'s story together for 5 minutes, then ask your child to retell the main idea.</string>
+    <string name="parent_advice_review_due_words_format">Review %1$d due words together before starting the next story.</string>
+    <string name="parent_advice_revisit_story_format">Revisit "%1$s" and read the story clue together before the next quiz.</string>
+    <string name="parent_advice_try_next_story_format">Try the next story, "%1$s", when you have a quiet 5-minute reading window.</string>
+    <string name="parent_advice_keep_streak">Keep the routine light: read one short story today to protect the reading habit.</string>
+    <string name="parent_advice_retell_prompt_format">Retell prompt: %1$s</string>
+    <string name="parent_advice_action_open_story">Open story</string>
+    <string name="parent_advice_action_review_words">Review words</string>
     <string name="parent_privacy_title">Privacy</string>
     <string name="parent_privacy_note">We do not ask for a child name, birthday, school, photo, location, or contact details. AI explanations stay within the story and analytics must be anonymous.</string>
     <string name="parent_progress_completed">completed</string>
@@ -345,12 +376,22 @@
     <!-- Privacy -->
     <string name="privacy_title">Privacy</string>
     <string name="privacy_summary">Little Mandarin Classics keeps child reading data minimal and private.</string>
-    <string name="privacy_no_child_details">This version does not ask for personal details.</string>
-    <string name="privacy_parent_account_only">If an account is added later, it must be for a parent or caregiver.</string>
+    <string name="privacy_coppa_gdprk_title">COPPA / GDPR-K posture</string>
+    <string name="privacy_no_child_details_title">No child personal details</string>
+    <string name="privacy_parent_account_title">Parent-only accounts</string>
+    <string name="privacy_ai_scope_title">Controlled AI only</string>
+    <string name="privacy_analytics_title">Anonymous analytics</string>
+    <string name="privacy_local_progress_title">Local learning data</string>
+    <string name="privacy_content_title">Public-domain stories</string>
+    <string name="privacy_network_title">In-app page only</string>
+    <string name="privacy_no_child_details">We do not collect a child\'s name, birthday, school, photo, precise location, contact details, or other identifying profile fields.</string>
+    <string name="privacy_parent_account_only">If accounts are added later, they are for parents or caregivers only, not children.</string>
     <string name="privacy_ai_scope">AI explanations stay within the current story and do not become open chat.</string>
     <string name="privacy_analytics_anonymous">Any analytics must be anonymous and must not include child personal information.</string>
-    <string name="privacy_local_progress">Reading progress can be stored locally or with privacy-reviewed storage only.</string>
+    <string name="privacy_local_progress">Reading progress, word review, settings, and feedback are kept on this device for the MVP unless a privacy-reviewed storage path is added later.</string>
     <string name="privacy_coppa_gdprk">Designed with COPPA / GDPR-K data minimization in mind.</string>
+    <string name="privacy_public_domain_content">Stories are adapted from public-domain classical sources and record their source notes in the app content.</string>
+    <string name="privacy_in_app_no_external_page">This privacy page is built into the app and does not load an external website or make a network request.</string>
 
     <!-- Empty states -->
     <string name="empty_today_story_title">No story ready yet</string>

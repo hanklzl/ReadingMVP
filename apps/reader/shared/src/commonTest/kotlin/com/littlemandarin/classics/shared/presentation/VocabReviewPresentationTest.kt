@@ -149,6 +149,33 @@ class VocabReviewPresentationTest {
         assertEquals(listOf("勇敢"), dueToday.map { it.word })
         assertEquals(listOf("勇敢", "结义"), dueTomorrow.map { it.word })
     }
+
+    @Test
+    fun wordBookReviewPromptStateHidesStartReviewWhenCaughtUp() {
+        val dueSummary = WordBookSummary(
+            totalWords = 3,
+            dueCount = 2,
+            items = emptyList(),
+        )
+        val caughtUpSummary = WordBookSummary(
+            totalWords = 3,
+            dueCount = 0,
+            items = emptyList(),
+        )
+        val emptySummary = WordBookSummary(
+            totalWords = 0,
+            dueCount = 0,
+            items = emptyList(),
+        )
+
+        assertEquals(WordBookReviewPromptType.ReadyForReview, dueSummary.reviewPromptState().type)
+        assertTrue(dueSummary.reviewPromptState().showStartReview)
+        assertEquals(WordBookReviewPromptType.CaughtUp, caughtUpSummary.reviewPromptState().type)
+        assertFalse(caughtUpSummary.reviewPromptState().showStartReview)
+        assertTrue(caughtUpSummary.reviewPromptState().showReadToday)
+        assertEquals(WordBookReviewPromptType.Empty, emptySummary.reviewPromptState().type)
+        assertFalse(emptySummary.reviewPromptState().showStartReview)
+    }
 }
 
 private class FakeStoryRepository(

@@ -34,6 +34,42 @@ data class ParentReportSummary(
     val averageCorrectPercent: Double,
     val correctCount: Int,
     val questionCount: Int,
+    val advice: ParentAdvice = ParentAdvice(ParentAdviceType.ReadTogetherToday),
+)
+
+enum class LibraryStoryStatus {
+    New,
+    Continue,
+    Done,
+}
+
+enum class LibraryStoryAction {
+    Start,
+    Continue,
+    ReadAgain,
+}
+
+data class LibraryStoryCard(
+    val story: Story,
+    val sequenceNumber: Int,
+    val seriesKey: String,
+    val status: LibraryStoryStatus,
+    val action: LibraryStoryAction,
+    val progress: StoryProgress,
+)
+
+enum class ParentAdviceType {
+    ReadTogetherToday,
+    ReviewDueWords,
+    RevisitRecentStory,
+    TryNextStory,
+    CelebrateStreak,
+}
+
+data class ParentAdvice(
+    val type: ParentAdviceType,
+    val storyId: String? = null,
+    val dueWordCount: Int = 0,
 )
 
 class StoryPresentationUseCases {
@@ -96,10 +132,45 @@ class StoryPresentationUseCases {
     ): List<Story> =
         selectedLevel?.let { level -> stories.filter { it.level == level } } ?: stories
 
+    fun libraryStoryCards(
+        stories: List<Story>,
+        completedStoryIds: Set<String>,
+        readingPositions: Map<String, Int>,
+        seriesKey: String = DefaultSeriesKey,
+    ): List<LibraryStoryCard> =
+        stories.mapIndexed { index, story ->
+            val progress = storyProgress(
+                story = story,
+                completedStoryIds = completedStoryIds,
+                savedParagraphIndex = readingPositions[story.id] ?: -1,
+            )
+            val status = when (progress.status) {
+                StoryProgressStatus.Completed -> LibraryStoryStatus.Done
+                StoryProgressStatus.InProgress -> LibraryStoryStatus.Continue
+                StoryProgressStatus.NotStarted -> LibraryStoryStatus.New
+            }
+            LibraryStoryCard(
+                story = story,
+                sequenceNumber = index + 1,
+                seriesKey = seriesKey,
+                status = status,
+                action = when (status) {
+                    LibraryStoryStatus.Done -> LibraryStoryAction.ReadAgain
+                    LibraryStoryStatus.Continue -> LibraryStoryAction.Continue
+                    LibraryStoryStatus.New -> LibraryStoryAction.Start
+                },
+                progress = progress,
+            )
+        }
+
     fun canOpenQuiz(
         story: Story,
         completedStoryIds: Set<String>,
     ): Boolean = story.id in completedStoryIds
+
+    private companion object {
+        const val DefaultSeriesKey = "series_three_kingdoms"
+    }
 }
 
 class BuildParentReportSummaryUseCase {
@@ -108,6 +179,8 @@ class BuildParentReportSummaryUseCase {
         stats: ProgressStats,
         nowEpochMillis: Long,
         weekWindowMillis: Long = SevenDaysMillis,
+        dueWordCount: Int = 0,
+        nextStoryId: String? = null,
     ): ParentReportSummary {
         val weekStartEpochMillis = nowEpochMillis - weekWindowMillis
         val recordsThisWeek = report.recentCompletions.filter {
@@ -125,13 +198,54 @@ class BuildParentReportSummaryUseCase {
             averageCorrectPercent = report.averageCorrectPercent,
             correctCount = stats.correctCount,
             questionCount = stats.questionCount,
+            advice = parentAdvice(
+                report = report,
+                stats = stats,
+                dueWordCount = dueWordCount,
+                nextStoryId = nextStoryId,
+            ),
         )
     }
 
     private fun Long.floorEpochDay(): Long = this / DayMillis
 
+    private fun parentAdvice(
+        report: ParentProgressReport,
+        stats: ProgressStats,
+        dueWordCount: Int,
+        nextStoryId: String?,
+    ): ParentAdvice {
+        if (dueWordCount > 0) {
+            return ParentAdvice(
+                type = ParentAdviceType.ReviewDueWords,
+                dueWordCount = dueWordCount,
+            )
+        }
+        if (report.storiesCompletedThisWeek == 0) {
+            return ParentAdvice(ParentAdviceType.ReadTogetherToday)
+        }
+        if (stats.questionCount > 0 && stats.averageCorrectPercent < LowQuizAccuracyPercent) {
+            return ParentAdvice(
+                type = ParentAdviceType.RevisitRecentStory,
+                storyId = report.recentCompletions.firstOrNull()?.storyId,
+            )
+        }
+        if (nextStoryId != null) {
+            return ParentAdvice(
+                type = ParentAdviceType.TryNextStory,
+                storyId = nextStoryId,
+            )
+        }
+        if (report.storiesCompletedThisWeek >= StreakCelebrationStoryCount) {
+            return ParentAdvice(ParentAdviceType.CelebrateStreak)
+        }
+        return ParentAdvice(ParentAdviceType.ReadTogetherToday)
+    }
+
     private companion object {
         const val DayMillis: Long = 24L * 60L * 60L * 1_000L
         const val SevenDaysMillis: Long = 7L * DayMillis
+        const val LowQuizAccuracyPercent: Double = 70.0
+        const val StreakCelebrationStoryCount: Int = 3
     }
 }
