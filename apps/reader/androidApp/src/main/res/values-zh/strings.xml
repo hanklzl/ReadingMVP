@@ -291,6 +291,10 @@
     <string name="settings_pinyin_default">默认显示拼音</string>
     <string name="settings_pinyin_default_summary">打开故事时先显示拼音。</string>
     <string name="settings_text_size">字号</string>
+    <string name="settings_sfx_enabled">音效</string>
+    <string name="settings_sfx_volume">音量</string>
+    <string name="settings_sfx_volume_percent">%1$d%%</string>
+    <string name="settings_sfx_preview">试听一下</string>
     <string name="settings_audio_voice">朗读声音</string>
     <string name="settings_audio_system">系统</string>
     <string name="settings_audio_voice_system">系统</string>

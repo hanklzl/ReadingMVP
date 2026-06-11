@@ -296,6 +296,10 @@
     <string name="settings_pinyin_default">Show pinyin by default</string>
     <string name="settings_pinyin_default_summary">Use pinyin when a story opens.</string>
     <string name="settings_text_size">Text size</string>
+    <string name="settings_sfx_enabled">Sound effects</string>
+    <string name="settings_sfx_volume">Sound effects volume</string>
+    <string name="settings_sfx_volume_percent">%1$d%%</string>
+    <string name="settings_sfx_preview">Preview</string>
     <string name="settings_audio_voice">Audio voice</string>
     <string name="settings_audio_system">System</string>
     <string name="settings_audio_voice_system">System</string>

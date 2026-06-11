@@ -43,6 +43,28 @@ private class IosReaderSettingsStore(
         userDefaults.setObject(baseUrl, forKey = KeyAiBackendBaseUrl)
     }
 
+    override fun readSfxEnabled(defaultValue: Boolean): Boolean =
+        if (userDefaults.objectForKey(KeySfxEnabled) == null) {
+            defaultValue
+        } else {
+            userDefaults.boolForKey(KeySfxEnabled)
+        }
+
+    override fun writeSfxEnabled(enabled: Boolean) {
+        userDefaults.setBool(enabled, forKey = KeySfxEnabled)
+    }
+
+    override fun readSfxVolume(defaultValue: Float): Float =
+        if (userDefaults.objectForKey(KeySfxVolume) == null) {
+            defaultValue
+        } else {
+            userDefaults.floatForKey(KeySfxVolume)
+        }
+
+    override fun writeSfxVolume(volume: Float) {
+        userDefaults.setFloat(volume, forKey = KeySfxVolume)
+    }
+
     override fun readReadingParagraphIndex(storyId: String): Int =
         userDefaults.integerForKey(readingProgressKey(storyId)).toInt().let { stored ->
             if (userDefaults.objectForKey(readingProgressKey(storyId)) == null) -1 else stored
@@ -59,6 +81,8 @@ private class IosReaderSettingsStore(
         const val KeyShowPinyinDefault = "lmc_show_pinyin"
         const val KeyReadingTextSize = "lmc_reading_size"
         const val KeyAiBackendBaseUrl = "lmc_ai_backend_base_url"
+        const val KeySfxEnabled = "lmc_sfx_enabled"
+        const val KeySfxVolume = "lmc_sfx_volume"
         const val KeyReadingProgressPrefix = "lmc_reading_progress_"
     }
 }

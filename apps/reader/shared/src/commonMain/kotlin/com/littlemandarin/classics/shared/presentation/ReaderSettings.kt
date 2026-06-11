@@ -1,5 +1,6 @@
 package com.littlemandarin.classics.shared.presentation
 
+import com.littlemandarin.classics.shared.sfx.SfxSettings
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.Serializable
@@ -14,6 +15,7 @@ data class ReaderSettings(
     val showPinyinByDefault: Boolean = DefaultShowPinyinByDefault,
     val readingTextSize: ReadingTextSize = ReadingTextSize.Medium,
     val aiBackendBaseUrl: String = AndroidDefaultAiBackendBaseUrl,
+    val sfxSettings: SfxSettings = SfxSettings(),
 ) {
     val isMockAiBackend: Boolean
         get() = aiBackendBaseUrl.isMockAiBackend()
@@ -87,6 +89,10 @@ interface ReaderSettingsService {
 
     suspend fun setAiBackendBaseUrl(baseUrl: String)
 
+    suspend fun setSfxEnabled(enabled: Boolean)
+
+    suspend fun setSfxVolume(volume: Float)
+
     suspend fun readReadingParagraphIndex(storyId: String): Int
 
     suspend fun setReadingParagraphIndex(storyId: String, paragraphIndex: Int)
@@ -125,6 +131,18 @@ class InMemoryReaderSettingsService(
         )
     }
 
+    override suspend fun setSfxEnabled(enabled: Boolean) {
+        state.value = state.value.copy(
+            sfxSettings = state.value.sfxSettings.withEnabled(enabled),
+        )
+    }
+
+    override suspend fun setSfxVolume(volume: Float) {
+        state.value = state.value.copy(
+            sfxSettings = state.value.sfxSettings.withVolume(volume),
+        )
+    }
+
     override suspend fun readReadingParagraphIndex(storyId: String): Int =
         readingPositions[storyId].orMissingReadingPosition()
 
@@ -152,6 +170,14 @@ internal interface ReaderSettingsStore {
     fun readAiBackendBaseUrl(defaultValue: String): String
 
     fun writeAiBackendBaseUrl(baseUrl: String)
+
+    fun readSfxEnabled(defaultValue: Boolean): Boolean
+
+    fun writeSfxEnabled(enabled: Boolean)
+
+    fun readSfxVolume(defaultValue: Float): Float
+
+    fun writeSfxVolume(volume: Float)
 
     fun readReadingParagraphIndex(storyId: String): Int
 
@@ -193,6 +219,18 @@ internal class StoredReaderSettingsService(
         state.value = state.value.copy(aiBackendBaseUrl = normalized)
     }
 
+    override suspend fun setSfxEnabled(enabled: Boolean) {
+        val sfxSettings = state.value.sfxSettings.withEnabled(enabled)
+        store.writeSfxEnabled(sfxSettings.enabled)
+        state.value = state.value.copy(sfxSettings = sfxSettings)
+    }
+
+    override suspend fun setSfxVolume(volume: Float) {
+        val sfxSettings = state.value.sfxSettings.withVolume(volume)
+        store.writeSfxVolume(sfxSettings.volume)
+        state.value = state.value.copy(sfxSettings = sfxSettings)
+    }
+
     override suspend fun readReadingParagraphIndex(storyId: String): Int =
         store.readReadingParagraphIndex(storyId).orMissingReadingPosition()
 
@@ -209,6 +247,10 @@ internal class StoredReaderSettingsService(
             baseUrl = store.readAiBackendBaseUrl(defaultAiBackendBaseUrl),
             defaultBaseUrl = defaultAiBackendBaseUrl,
         ),
+        sfxSettings = SfxSettings(
+            enabled = store.readSfxEnabled(SfxSettings.DefaultEnabled),
+            volume = store.readSfxVolume(SfxSettings.DefaultVolume),
+        ).sanitized(),
     )
 }
 

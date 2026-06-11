@@ -9,6 +9,8 @@ struct ContentView: View {
     @State private var showPinyin = true
     @State private var readingSize = LMCReadingSize.medium.rawValue
     @State private var aiBackendBaseURL = ""
+    @State private var sfxEnabled = true
+    @State private var sfxVolume = 0.5
     @StateObject private var viewModel = ReaderViewModel()
     @State private var selectedTab: LMCTab = .today
     @State private var flowRoute: LMCFlowRoute?
@@ -85,6 +87,19 @@ struct ContentView: View {
         .onChange(of: aiBackendBaseURL) { newValue in
             Task { await viewModel.setAiBackendBaseURL(newValue) }
         }
+        .onChange(of: sfxEnabled) { newValue in
+            Task {
+                await viewModel.setSfxEnabled(newValue)
+                if newValue {
+                    await viewModel.playSfxPreview()
+                } else {
+                    await viewModel.stopAllSfx()
+                }
+            }
+        }
+        .onChange(of: sfxVolume) { newValue in
+            Task { await viewModel.setSfxVolume(newValue) }
+        }
         .onChange(of: scenePhase) { newPhase in
             switch newPhase {
             case .active:
@@ -98,6 +113,7 @@ struct ContentView: View {
                 viewModel.trackAppOpen(openType: .foreground)
             case .inactive, .background:
                 didLeaveActiveScene = true
+                viewModel.stopAllSfx()
             @unknown default:
                 break
             }
@@ -217,10 +233,13 @@ struct ContentView: View {
                     showPinyin: $showPinyin,
                     readingSize: $readingSize,
                     aiBackendBaseURL: $aiBackendBaseURL,
+                    sfxEnabled: $sfxEnabled,
+                    sfxVolume: $sfxVolume,
                     openParent: {
                         flowRoute = nil
                         selectTab(.parent, parentEntryPoint: .settings)
                     },
+                    previewSfx: { Task { await viewModel.playSfxPreview() } },
                     includeTitle: false
                 )
             }
@@ -273,6 +292,8 @@ struct ContentView: View {
         showPinyin = settings.showPinyinByDefault
         readingSize = settings.readingTextSize.prefValue
         aiBackendBaseURL = settings.aiBackendBaseUrl
+        sfxEnabled = settings.sfxSettings.enabled
+        sfxVolume = Double(settings.sfxSettings.volume)
     }
 }
 
@@ -310,6 +331,7 @@ final class ReaderViewModel: ObservableObject {
     private let readingSessionReducer = ReadingSessionReducer()
     private let karaokeReducer = ReadAlongKaraokeReducer()
     private let quizSessionReducer = QuizSessionReducer(scoreQuizUseCase: ScoreQuizUseCase())
+    private let sfxEventReducer = SfxEventReducer()
     private let buildSpeechTextUseCase = BuildSpeechTextUseCase()
     private let analytics = LMCUserDefaultsAnalyticsAdapter()
     private let feedbackRepository = LMCSharedFeedbackRepository()
@@ -319,6 +341,7 @@ final class ReaderViewModel: ObservableObject {
     private var activeSentenceShouldAutoContinue = true
     private var generatedAudioPlayer: AVAudioPlayer?
     private var generatedAudioDelegate: LMCGeneratedAudioDelegate?
+    private var sfxPlayers: [String: AVAudioPlayer] = [:]
 
     // Per-character ("karaoke") highlight state, driven by the shared reducer.
     private let loadAudioManifestUseCase = LoadStoryAudioManifestUseCase(
@@ -467,9 +490,14 @@ final class ReaderViewModel: ObservableObject {
         )
     }
 
-    func completeStory(_ story: Story, quizState: QuizSessionState) async -> (score: QuizScore, wasNewCompletion: Bool) {
+    func completeStory(_ story: Story, quizState: QuizSessionState) async -> (
+        score: QuizScore,
+        wasNewCompletion: Bool,
+        newMilestoneDays: KotlinInt?
+    ) {
         let score = quizScore(story, state: quizState)
         var wasNewCompletion = false
+        var newMilestoneDays: KotlinInt?
         do {
             let now = Int64(Date().timeIntervalSince1970 * 1_000)
             let wasAlreadyCompleted = try await progressService.getRecords().contains { $0.storyId == story.id }
@@ -481,6 +509,7 @@ final class ReaderViewModel: ObservableObject {
                 lastCompletionStreakSummary = try await streakUseCase.recordStoryCompleted(nowEpochMillis: now)
             }
             wasNewCompletion = !wasAlreadyCompleted
+            newMilestoneDays = lastCompletionStreakSummary?.newMilestoneDays
             try await refreshProgress()
             try await refreshWordBook()
             try await refreshStreak()
@@ -488,7 +517,7 @@ final class ReaderViewModel: ObservableObject {
         } catch {
             loadingState = .failed
         }
-        return (score, wasNewCompletion)
+        return (score, wasNewCompletion, newMilestoneDays)
     }
 
     func progressValue(for story: Story) -> Double {
@@ -816,6 +845,48 @@ final class ReaderViewModel: ObservableObject {
 
     func setAiBackendBaseURL(_ value: String) async {
         try? await settingsService.setAiBackendBaseUrl(baseUrl: value)
+    }
+
+    func setSfxEnabled(_ enabled: Bool) async {
+        try? await settingsService.setSfxEnabled(enabled: enabled)
+        if !enabled {
+            stopAllSfx()
+        }
+    }
+
+    func setSfxVolume(_ value: Double) async {
+        try? await settingsService.setSfxVolume(volume: Float(value))
+    }
+
+    func playSfxForQuizAnswerSubmitted(isCorrect: Bool) async {
+        guard let settings = try? await settingsService.read() else { return }
+        guard let cue = sfxEventReducer.quizAnswerSubmitted(
+            isCorrect: isCorrect,
+            settings: settings.sfxSettings
+        ) else { return }
+        await playSfx(cue)
+    }
+
+    func playSfxForStoryCompletion(milestoneDays: KotlinInt?) async {
+        guard let settings = try? await settingsService.read() else { return }
+        guard let cue = sfxEventReducer.storyCompleted(
+            newMilestoneDays: milestoneDays,
+            settings: settings.sfxSettings
+        ) else { return }
+        await playSfx(cue)
+    }
+
+    func playSfxPreview() async {
+        guard let settings = try? await settingsService.read(),
+              settings.sfxSettings.enabled else { return }
+        await playSfxResource("sound_toggle_preview", volume: settings.sfxSettings.volume)
+    }
+
+    func stopAllSfx() {
+        for player in sfxPlayers.values {
+            player.stop()
+            player.currentTime = 0
+        }
     }
 
     func resetAiBackendBaseURL() async -> String {
@@ -1168,6 +1239,48 @@ final class ReaderViewModel: ObservableObject {
         generatedAudioPlayer?.stop()
         generatedAudioPlayer = nil
         generatedAudioDelegate = nil
+    }
+
+    private func playSfx(_ cue: SfxCue) async {
+        guard let player = await sfxPlayer(for: cue.semanticKey) else { return }
+        await configureSfxAudioSession()
+        player.volume = cue.volume
+        if player.isPlaying {
+            player.stop()
+            player.currentTime = 0
+        }
+        player.prepareToPlay()
+        player.play()
+    }
+
+    private func playSfxResource(_ resourceName: String, volume: Float) async {
+        guard let player = await sfxPlayer(for: resourceName) else { return }
+        await configureSfxAudioSession()
+        player.volume = volume
+        if player.isPlaying {
+            player.stop()
+            player.currentTime = 0
+        }
+        player.prepareToPlay()
+        player.play()
+    }
+
+    private func sfxPlayer(for resourceName: String) async -> AVAudioPlayer? {
+        if let player = sfxPlayers[resourceName] { return player }
+
+        guard let url = Bundle.main.url(forResource: resourceName, withExtension: "wav", subdirectory: "sfx") else {
+            return nil
+        }
+        guard let player = try? AVAudioPlayer(contentsOf: url) else { return nil }
+        player.prepareToPlay()
+        sfxPlayers[resourceName] = player
+        return player
+    }
+
+    private func configureSfxAudioSession() async {
+        let session = AVAudioSession.sharedInstance()
+        try? session.setCategory(.ambient, mode: .default, options: [.mixWithOthers])
+        try? session.setActive(true)
     }
 
     private func refreshProgress() async throws {
@@ -3141,6 +3254,9 @@ private struct QuizScreen: View {
             viewModel.trackQuizComplete(story, score: score)
             let completionResult = await viewModel.completeStory(story, quizState: activeQuizState)
             completionJustRecorded = completionResult.wasNewCompletion
+            if completionResult.wasNewCompletion || completionResult.newMilestoneDays != nil {
+                await viewModel.playSfxForStoryCompletion(milestoneDays: completionResult.newMilestoneDays)
+            }
             completionAnimationToken += 1
         }
     }
@@ -3201,7 +3317,15 @@ private struct QuizScreen: View {
             LMCBottomActionBar {
                 Spacer()
                 Button {
-                    quizState = viewModel.submitOrAdvanceQuiz(story, state: activeQuizState)
+                    let nextQuestionState = viewModel.submitOrAdvanceQuiz(story, state: activeQuizState)
+                    let wasSubmitted = questionState.submitted
+                    quizState = nextQuestionState
+                    if !wasSubmitted,
+                       let result = viewModel.quizQuestionState(story, state: nextQuestionState).result {
+                        Task {
+                            await viewModel.playSfxForQuizAnswerSubmitted(isCorrect: result.isCorrect)
+                        }
+                    }
                 } label: {
                     Text(LocalizedStringKey(quizActionKey))
                 }
@@ -3440,7 +3564,10 @@ private struct SettingsScreen: View {
     @Binding var showPinyin: Bool
     @Binding var readingSize: String
     @Binding var aiBackendBaseURL: String
+    @Binding var sfxEnabled: Bool
+    @Binding var sfxVolume: Double
     let openParent: () -> Void
+    let previewSfx: () -> Void
     let includeTitle: Bool
     @State private var showPrivacy = false
     @State private var showFeedback = false
@@ -3509,6 +3636,58 @@ private struct SettingsScreen: View {
             Divider().background(LMCColor.outlineVariant)
 
             SettingsInfoRow(titleKey: "settings_audio_voice", valueKey: "settings_audio_system")
+
+            Divider().background(LMCColor.outlineVariant)
+
+            SettingsInfoRow(
+                titleKey: "settings_sfx",
+                valueKey: sfxEnabled ? "settings_sfx_enabled" : "settings_sfx_disabled"
+            )
+
+            Toggle(isOn: $sfxEnabled) {
+                Text("settings_sfx_enable")
+                    .font(.system(size: 18))
+                    .foregroundStyle(LMCColor.textPrimary)
+            }
+            .tint(LMCColor.secondary)
+            .frame(minHeight: LMCSpace.minTouch)
+
+            Divider().background(LMCColor.outlineVariant)
+
+            HStack(spacing: LMCSpace.s2) {
+                Text("settings_sfx_volume")
+                    .font(.system(size: 18))
+                    .foregroundStyle(LMCColor.textPrimary)
+                Spacer()
+                Text(LMCStrings.format("settings_sfx_volume_percent", Int(sfxVolume * 100)))
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(LMCColor.textSecondary)
+            }
+            .frame(minHeight: LMCSpace.minTouch)
+
+            Slider(
+                value: $sfxVolume,
+                in: 0...1,
+                onEditingChanged: { isEditing in
+                    if !isEditing && sfxEnabled {
+                        previewSfx()
+                    }
+                }
+            )
+                .disabled(!sfxEnabled)
+
+            Divider().background(LMCColor.outlineVariant)
+
+            HStack(spacing: LMCSpace.s2) {
+                Spacer()
+                Button("settings_sfx_preview") {
+                    previewSfx()
+                }
+                .buttonStyle(LMCSecondaryButtonStyle())
+                .disabled(!sfxEnabled)
+                Spacer()
+            }
+            .frame(minHeight: LMCSpace.minTouch)
         }
 
         SettingsSection(titleKey: "settings_privacy") {

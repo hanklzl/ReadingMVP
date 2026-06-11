@@ -75,6 +75,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
+import androidx.compose.material3.Slider
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -179,6 +180,7 @@ import com.littlemandarin.classics.shared.presentation.SentenceSegment
 import com.littlemandarin.classics.shared.presentation.SentenceSegmenter
 import com.littlemandarin.classics.shared.presentation.StreakSummary
 import com.littlemandarin.classics.shared.presentation.StreakUseCase
+import com.littlemandarin.classics.shared.sfx.SfxEventReducer
 import com.littlemandarin.classics.shared.presentation.StoryPresentationUseCases
 import com.littlemandarin.classics.shared.presentation.StoryProgressStatus
 import com.littlemandarin.classics.shared.presentation.VocabReviewAssessment
@@ -231,6 +233,7 @@ import java.text.NumberFormat
 import java.util.Locale
 import kotlin.math.PI
 import kotlin.math.cos
+import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -390,6 +393,18 @@ private fun ReaderApp() {
                             settings = settingsService.read()
                         }
                     },
+                    onSfxEnabledChange = { enabled ->
+                        analyticsScope.launch {
+                            settingsService.setSfxEnabled(enabled)
+                            settings = settingsService.read()
+                        }
+                    },
+                    onSfxVolumeChange = { volume ->
+                        analyticsScope.launch {
+                            settingsService.setSfxVolume(volume)
+                            settings = settingsService.read()
+                        }
+                    },
                     onReadingPositionChange = { storyId, paragraphIndex ->
                         analyticsScope.launch {
                             settingsService.setReadingParagraphIndex(storyId, paragraphIndex)
@@ -416,9 +431,15 @@ private fun ReaderAppContent(
     onPinyinDefaultChange: (Boolean) -> Unit,
     onTextSizeChange: (ReadingTextSize) -> Unit,
     onAiBackendBaseUrlChange: (String) -> Unit,
+    onSfxEnabledChange: (Boolean) -> Unit,
+    onSfxVolumeChange: (Float) -> Unit,
     onReadingPositionChange: (String, Int) -> Unit,
 ) {
     val navController = rememberNavController()
+    val appContext = LocalContext.current.applicationContext
+    val sfxEventReducer = remember { SfxEventReducer() }
+    val sfxPlayer = remember(appContext) { AndroidSfxPlayer(appContext) }
+    val lifecycleOwner = LocalLifecycleOwner.current
     val appInfo = remember { GetAppInfoUseCase().invoke() }
     val repository = remember { DefaultStoryRepository() }
     val progressService = remember { createPlatformProgressService() }
@@ -499,6 +520,27 @@ private fun ReaderAppContent(
             ),
         )
     }
+    DisposableEffect(sfxPlayer) {
+        onDispose {
+            sfxPlayer.release()
+        }
+    }
+    DisposableEffect(lifecycleOwner, sfxPlayer) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) {
+                sfxPlayer.stopAll()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+    LaunchedEffect(settings.sfxSettings.enabled) {
+        if (!settings.sfxSettings.enabled) {
+            sfxPlayer.stopAll()
+        }
+    }
 
     LaunchedEffect(repository) {
         storiesState = runCatching {
@@ -551,6 +593,53 @@ private fun ReaderAppContent(
         ReaderRoutes.Onboarding
     }
     var parentGatePassed by remember { mutableStateOf(false) }
+    val previewSfxAtVolume: (Float) -> Unit = { volume ->
+        appScope.launch {
+            runCatching { sfxPlayer.playPreview(volume) }
+        }
+    }
+    val playQuizAnswerSfx: (Boolean) -> Unit = { isCorrect ->
+        appScope.launch {
+            val cue = sfxEventReducer.quizAnswerSubmitted(
+                isCorrect = isCorrect,
+                settings = settings.sfxSettings,
+            )
+            if (cue != null) {
+                runCatching { sfxPlayer.play(cue) }
+            }
+        }
+    }
+    val playCompletionSfx: (Int?) -> Unit = { newMilestoneDays ->
+        appScope.launch {
+            val cue = sfxEventReducer.storyCompleted(
+                newMilestoneDays = newMilestoneDays,
+                settings = settings.sfxSettings,
+            )
+            if (cue != null) {
+                runCatching { sfxPlayer.play(cue) }
+            }
+        }
+    }
+    val previewSfx: () -> Unit = {
+        val settingsForPlayback = settings.sfxSettings
+        if (settingsForPlayback.enabled) {
+            previewSfxAtVolume(settingsForPlayback.volume)
+        }
+    }
+    val handleSfxEnabledChange: (Boolean) -> Unit = { enabled ->
+        if (!enabled) {
+            sfxPlayer.stopAll()
+        }
+        onSfxEnabledChange(enabled)
+        if (enabled) {
+            previewSfxAtVolume(settings.sfxSettings.volume)
+        }
+    }
+    val handleSfxVolumePreview: (Float) -> Unit = { volume ->
+        if (settings.sfxSettings.enabled) {
+            previewSfxAtVolume(volume)
+        }
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -693,6 +782,10 @@ private fun ReaderAppContent(
                     onPinyinDefaultChange = onPinyinDefaultChange,
                     onTextSizeChange = onTextSizeChange,
                     onAiBackendBaseUrlChange = onAiBackendBaseUrlChange,
+                    onSfxEnabledChange = handleSfxEnabledChange,
+                    onSfxVolumeChange = onSfxVolumeChange,
+                    onSfxVolumePreview = handleSfxVolumePreview,
+                    onSfxPreview = previewSfx,
                     parentGatePassed = parentGatePassed,
                     onParentGatePassed = { parentGatePassed = true },
                     onParentReport = {
@@ -757,6 +850,8 @@ private fun ReaderAppContent(
                         progressService = progressService,
                         streakUseCase = streakUseCase,
                         vocabReviewUseCase = vocabReviewUseCase,
+                        onAnswerSubmitted = playQuizAnswerSfx,
+                        onCompletionSfx = playCompletionSfx,
                         onBack = { navController.popBackStack() },
                         onCompletionRecorded = {
                             wordReviewVersion += 1
@@ -2501,6 +2596,8 @@ private fun QuizScreen(
     progressService: ProgressService,
     streakUseCase: StreakUseCase,
     vocabReviewUseCase: VocabReviewUseCase,
+    onAnswerSubmitted: (Boolean) -> Unit,
+    onCompletionSfx: (Int?) -> Unit,
     onBack: () -> Unit,
     onCompletionRecorded: () -> Unit,
     onReadAgain: () -> Unit,
@@ -2516,12 +2613,27 @@ private fun QuizScreen(
     val score = remember(story.id, quizState.answers) {
         quizSessionReducer.score(story, quizState)
     }
+    var lastSubmittedQuestionIndex by remember(story.id) {
+        mutableIntStateOf(Int.MIN_VALUE)
+    }
     var completionHandled by remember(story.id) { mutableStateOf(false) }
     var completionStreakSummary by remember(story.id) { mutableStateOf<StreakSummary?>(null) }
     var completionJustRecorded by remember(story.id) { mutableStateOf(false) }
 
     LaunchedEffect(story.id) {
         analytics.track(ReaderAnalyticsEvents.quizStart(story))
+    }
+
+    LaunchedEffect(questionState.submitted, questionState.questionIndex, questionState.result?.questionId) {
+        if (
+            questionState.submitted &&
+            questionState.result != null &&
+            lastSubmittedQuestionIndex != questionState.questionIndex
+        ) {
+            val result = questionState.result ?: return@LaunchedEffect
+            lastSubmittedQuestionIndex = questionState.questionIndex
+            onAnswerSubmitted(result.isCorrect)
+        }
     }
 
     LaunchedEffect(quizState.isComplete) {
@@ -2542,6 +2654,10 @@ private fun QuizScreen(
                 streakUseCase.summary(todayEpochMillis = now)
             } else {
                 streakUseCase.recordStoryCompleted(nowEpochMillis = now)
+            }
+            val newMilestoneDays = completionStreakSummary?.newMilestoneDays
+            if (completionJustRecorded || newMilestoneDays != null) {
+                onCompletionSfx(newMilestoneDays)
             }
             onCompletionRecorded()
             analytics.track(ReaderAnalyticsEvents.quizComplete(story, score))
@@ -2736,6 +2852,10 @@ private fun SettingsScreen(
     onPinyinDefaultChange: (Boolean) -> Unit,
     onTextSizeChange: (ReadingTextSize) -> Unit,
     onAiBackendBaseUrlChange: (String) -> Unit,
+    onSfxEnabledChange: (Boolean) -> Unit,
+    onSfxVolumeChange: (Float) -> Unit,
+    onSfxVolumePreview: (Float) -> Unit,
+    onSfxPreview: () -> Unit,
     parentGatePassed: Boolean,
     onParentGatePassed: () -> Unit,
     onParentReport: () -> Unit,
@@ -2792,6 +2912,26 @@ private fun SettingsScreen(
                     SettingsValueRow(
                         label = stringResource(R.string.settings_audio_voice),
                         value = stringResource(R.string.settings_audio_system),
+                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    SettingsSwitchRow(
+                        label = stringResource(R.string.settings_sfx_enabled),
+                        checked = settings.sfxSettings.enabled,
+                        onCheckedChange = onSfxEnabledChange,
+                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    SettingsSliderRow(
+                        label = stringResource(R.string.settings_sfx_volume),
+                        value = settings.sfxSettings.volume,
+                        enabled = settings.sfxSettings.enabled,
+                        onValueChange = onSfxVolumeChange,
+                        onValueChangeFinished = onSfxVolumePreview,
+                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    SettingsButtonRow(
+                        label = stringResource(R.string.settings_sfx_preview),
+                        enabled = settings.sfxSettings.enabled,
+                        onClick = onSfxPreview,
                     )
                 }
             }
@@ -5305,6 +5445,80 @@ private fun SettingsSwitchRow(
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
+        )
+    }
+}
+
+@Composable
+private fun SettingsSliderRow(
+    label: String,
+    value: Float,
+    enabled: Boolean,
+    onValueChange: (Float) -> Unit,
+    onValueChangeFinished: (Float) -> Unit = {},
+) {
+    var sliderValue by remember(value) { mutableStateOf(value) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = LmcSpacing.MinTouchTarget),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = LmcSpacing.CardPadding, vertical = LmcSpacing.Space3),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space3),
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                text = stringResource(
+                    R.string.settings_sfx_volume_percent,
+                    (sliderValue * 100f).roundToInt(),
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Slider(
+            value = sliderValue,
+            onValueChange = { newValue ->
+                sliderValue = newValue
+                onValueChange(newValue)
+            },
+            onValueChangeFinished = { onValueChangeFinished(sliderValue) },
+            enabled = enabled,
+            valueRange = 0f..1f,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = LmcSpacing.CardPadding),
+        )
+    }
+}
+
+@Composable
+private fun SettingsButtonRow(
+    label: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    Button(
+        enabled = enabled,
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = LmcSpacing.Space3, vertical = LmcSpacing.Space2),
+        shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
         )
     }
 }

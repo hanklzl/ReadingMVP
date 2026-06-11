@@ -13,6 +13,7 @@
 		010000000000000000000004 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000104 /* Localizable.xcstrings */; };
 		010000000000000000000005 /* shared.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 010000000000000000000105 /* shared.xcframework */; };
 		010000000000000000000006 /* stories in Resources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000108 /* stories */; };
+		010000000000000000000110 /* sfx in Resources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000109 /* sfx */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -24,6 +25,7 @@
 		010000000000000000000106 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		010000000000000000000107 /* LittleMandarinClassics.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LittleMandarinClassics.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		010000000000000000000108 /* stories */ = {isa = PBXFileReference; lastKnownFileType = folder; name = stories; path = ../shared/src/commonMain/resources/stories; sourceTree = SOURCE_ROOT; };
+		010000000000000000000109 /* sfx */ = {isa = PBXFileReference; lastKnownFileType = folder; name = sfx; path = ../shared/src/commonMain/resources/sfx; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -56,6 +58,7 @@
 				010000000000000000000104 /* Localizable.xcstrings */,
 				010000000000000000000106 /* Info.plist */,
 				010000000000000000000108 /* stories */,
+				010000000000000000000109 /* sfx */,
 			);
 			path = LittleMandarinClassics;
 			sourceTree = "<group>";
@@ -139,6 +142,7 @@
 				010000000000000000000003 /* Assets.xcassets in Resources */,
 				010000000000000000000004 /* Localizable.xcstrings in Resources */,
 				010000000000000000000006 /* stories in Resources */,
+				010000000000000000000110 /* sfx in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

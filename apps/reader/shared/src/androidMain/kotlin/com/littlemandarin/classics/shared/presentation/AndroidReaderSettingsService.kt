@@ -68,6 +68,24 @@ private class AndroidReaderSettingsStore(
             .apply()
     }
 
+    override fun readSfxEnabled(defaultValue: Boolean): Boolean =
+        sharedPreferences.getBoolean(KeySfxEnabled, defaultValue)
+
+    override fun writeSfxEnabled(enabled: Boolean) {
+        sharedPreferences.edit()
+            .putBoolean(KeySfxEnabled, enabled)
+            .apply()
+    }
+
+    override fun readSfxVolume(defaultValue: Float): Float =
+        sharedPreferences.getFloat(KeySfxVolume, defaultValue)
+
+    override fun writeSfxVolume(volume: Float) {
+        sharedPreferences.edit()
+            .putFloat(KeySfxVolume, volume)
+            .apply()
+    }
+
     override fun readReadingParagraphIndex(storyId: String): Int =
         sharedPreferences.getInt(readingProgressKey(storyId), -1)
 
@@ -84,6 +102,8 @@ private class AndroidReaderSettingsStore(
         const val KeyShowPinyinDefault = "show_pinyin_default"
         const val KeyReadingTextSize = "reading_text_size"
         const val KeyAiBackendBaseUrl = "ai_backend_base_url"
+        const val KeySfxEnabled = "sfx_enabled"
+        const val KeySfxVolume = "sfx_volume"
         const val KeyReadingProgressPrefix = "reading_progress_"
     }
 }
