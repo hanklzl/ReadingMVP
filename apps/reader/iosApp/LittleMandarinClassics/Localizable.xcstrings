@@ -1,6 +1,96 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "retell_step_title": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Tell the story" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "复述故事" } }
+      }
+    },
+    "retell_step_optional": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Optional — give it a try, or skip and finish." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "可选——试试看，或者跳过直接完成。" } }
+      }
+    },
+    "retell_step_start": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Tell the story" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "复述故事" } }
+      }
+    },
+    "retell_start_recording": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Record retell" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "录制复述" } }
+      }
+    },
+    "retell_stop_recording": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Stop recording" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "停止录音" } }
+      }
+    },
+    "retell_recording_saved": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Retell saved on this device." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "复述已保存在本设备上。" } }
+      }
+    },
+    "retell_recording_failed": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Recording could not be saved. Please try again." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "录音保存失败，请再试一次。" } }
+      }
+    },
+    "retell_mic_denied": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Recording is unavailable because the microphone was not allowed." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "由于未允许麦克风，无法录音。" } }
+      }
+    },
+    "retell_privacy_note": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Saved only on this device. A parent can delete it anytime." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "只保存在本设备上，家长可以随时删除。" } }
+      }
+    },
+    "retell_self_check_title": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Did you mention…?" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "你说到了吗？" } }
+      }
+    },
+    "retell_encouragement_just_started": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Nice start! Every bit you remember counts." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "很好的开始！记住一点就很棒。" } }
+      }
+    },
+    "retell_encouragement_good_progress": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Great job — you remembered a lot of the story!" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "做得好——你记住了故事的很多内容！" } }
+      }
+    },
+    "retell_encouragement_great": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Wonderful retell! You covered almost everything." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "复述得真棒！几乎说到了全部内容。" } }
+      }
+    },
+    "retell_hint_show_format": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "What does %1$@ mean?" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "\"%1$@\" 是什么意思？" } }
+      }
+    },
+    "parent_recording_retell_row_format": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "%1$@ · retell · %2$@ · %3$@" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "%1$@ · 复述 · %2$@ · %3$@" } }
+      }
+    },
     "ability_dim_character_recognition": {
       "extractionState": "manual",
       "localizations": {

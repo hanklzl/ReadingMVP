@@ -224,6 +224,8 @@ import com.littlemandarin.classics.shared.presentation.AiInteractionOutcome
 import com.littlemandarin.classics.shared.presentation.AiInteractionRecord
 import com.littlemandarin.classics.shared.presentation.AiSafetyConsolePolicy
 import com.littlemandarin.classics.shared.presentation.AiSafetyConsoleUseCases
+import com.littlemandarin.classics.shared.presentation.RetellEncouragement
+import com.littlemandarin.classics.shared.presentation.RetellGuideUseCases
 import com.littlemandarin.classics.shared.presentation.createPlatformAiInteractionLogService
 import com.littlemandarin.classics.shared.presentation.createPlatformOnboardingService
 import com.littlemandarin.classics.shared.presentation.createPlatformReaderSettingsService
@@ -1079,6 +1081,7 @@ private fun ReaderAppContent(
                         streakUseCase = streakUseCase,
                         vocabReviewUseCase = vocabReviewUseCase,
                         reviewPackUseCase = reviewPackUseCase,
+                        voiceRecordingService = voiceRecordingService,
                         dueWords = wordBookSummary.items
                             .filter { it.due }
                             .map { it.word }
@@ -3689,6 +3692,7 @@ private fun QuizScreen(
     streakUseCase: StreakUseCase,
     vocabReviewUseCase: VocabReviewUseCase,
     reviewPackUseCase: ReviewPackUseCase,
+    voiceRecordingService: VoiceRecordingService,
     dueWords: Set<String>,
     onAnswerSubmitted: (Boolean) -> Unit,
     onCompletionSfx: (Int?) -> Unit,
@@ -3783,6 +3787,7 @@ private fun QuizScreen(
             streakSummary = completionStreakSummary,
             completionJustRecorded = completionJustRecorded,
             reviewPack = completionReviewPack,
+            voiceRecordingService = voiceRecordingService,
             onOpenReview = { completionReviewPack?.let(onReviewPack) },
             onReadAgain = onReadAgain,
             onDone = onDone,
@@ -4126,12 +4131,20 @@ private fun ParentVoiceRecordingRow(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                text = stringResource(
-                    R.string.voice_recording_parent_meta_format,
-                    recording.paragraphIndex + 1,
-                    voiceRecordingDurationText(recording.durationMs),
-                    relativeTimeText(recording.createdAtEpochMillis),
-                ),
+                text = if (recording.paragraphIndex < 0) {
+                    stringResource(
+                        R.string.voice_recording_parent_retell_meta_format,
+                        voiceRecordingDurationText(recording.durationMs),
+                        relativeTimeText(recording.createdAtEpochMillis),
+                    )
+                } else {
+                    stringResource(
+                        R.string.voice_recording_parent_meta_format,
+                        recording.paragraphIndex + 1,
+                        voiceRecordingDurationText(recording.durationMs),
+                        relativeTimeText(recording.createdAtEpochMillis),
+                    )
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -6639,6 +6652,7 @@ private fun QuizCompletionScreen(
     streakSummary: StreakSummary?,
     completionJustRecorded: Boolean,
     reviewPack: ReviewPack?,
+    voiceRecordingService: VoiceRecordingService,
     onOpenReview: () -> Unit,
     onReadAgain: () -> Unit,
     onDone: () -> Unit,
@@ -6706,28 +6720,10 @@ private fun QuizCompletionScreen(
                 if (streakSummary != null) {
                     CompletionMilestoneBanner(streakSummary = streakSummary)
                 }
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(LmcSpacing.RadiusLg),
-                    color = MaterialTheme.colorScheme.surface,
-                    shadowElevation = LmcSpacing.CardElevation,
-                ) {
-                    Column(
-                        modifier = Modifier.padding(LmcSpacing.CardPadding),
-                        verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.quiz_retell),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        Text(
-                            text = story.retellPrompt,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
+                RetellStepCard(
+                    story = story,
+                    voiceRecordingService = voiceRecordingService,
+                )
                 if (reviewPack != null) {
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
@@ -6821,6 +6817,342 @@ private fun QuizCompletionScreen(
                     shape = RoundedCornerShape(LmcSpacing.RadiusLg),
                 ) {
                     Text(text = stringResource(R.string.action_done))
+                }
+            }
+        }
+    }
+}
+
+/** Sentinel paragraph index that tags a recording as a story retell (not a paragraph read-aloud). */
+private const val RetellParagraphIndex: Int = -1
+
+/**
+ * Optional, skippable "Tell the story / 复述故事" step shown on the completion screen. It shows the
+ * story-grounded retell prompt, lets the child record a retell by REUSING the exact #4 voice-recording
+ * stack (same controller, same local-only [VoiceRecordingService] storage, same parent management — the
+ * retell is tagged via [RetellParagraphIndex] so the parent list labels it), and offers a low-pressure
+ * self-check (tappable chips, self-report, NO ASR) with always-positive encouragement.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun RetellStepCard(
+    story: Story,
+    voiceRecordingService: VoiceRecordingService,
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val guide = remember(story.id) { RetellGuideUseCases().buildGuide(story) }
+    val retellUseCases = remember { RetellGuideUseCases() }
+
+    var expanded by remember(story.id) { mutableStateOf(false) }
+    val controller = remember(context.applicationContext) { AndroidVoiceRecordingController(context) }
+    val stateMachine = remember { RecordingStateMachine() }
+    var recordingState by remember(story.id) { mutableStateOf<RecordingState>(RecordingState.Idle) }
+    var messageRes by remember(story.id) { mutableStateOf<Int?>(null) }
+    var showPermissionDialog by remember(story.id) { mutableStateOf(false) }
+    val checkedItems = remember(story.id) { mutableStateListOf<String>() }
+    val revealedHints = remember(story.id) { mutableStateListOf<String>() }
+
+    DisposableEffect(controller) {
+        onDispose { controller.release() }
+    }
+
+    val isRecording = recordingState is RecordingState.Recording
+    val isPlaying = recordingState is RecordingState.Playing
+
+    fun stopRecording() {
+        val active = recordingState as? RecordingState.Recording ?: return
+        val capture = controller.stopRecording()
+        if (capture == null) {
+            recordingState = stateMachine.reduce(recordingState, RecordingAction.Reset)
+            messageRes = R.string.voice_recording_failed
+            return
+        }
+        val recording = VoiceRecording(
+            id = capture.file.nameWithoutExtension,
+            storyId = active.storyId,
+            paragraphIndex = active.paragraphIndex,
+            filePath = capture.file.absolutePath,
+            durationMs = capture.durationMs,
+            createdAtEpochMillis = System.currentTimeMillis(),
+        )
+        recordingState = stateMachine.reduce(recordingState, RecordingAction.Stopped(recording.id))
+        messageRes = R.string.retell_recording_saved
+        scope.launch {
+            val result = voiceRecordingService.add(recording)
+            result.removed.forEach { removed -> runCatching { File(removed.filePath).delete() } }
+        }
+    }
+
+    fun beginRecording() {
+        controller.stopPlayback()
+        messageRes = null
+        recordingState = stateMachine.reduce(
+            recordingState,
+            RecordingAction.Request(story.id, RetellParagraphIndex),
+        )
+        try {
+            controller.startRecording(story.id, RetellParagraphIndex)
+            recordingState = stateMachine.reduce(recordingState, RecordingAction.PermissionGranted)
+        } catch (_: Throwable) {
+            recordingState = stateMachine.reduce(recordingState, RecordingAction.Reset)
+            messageRes = R.string.voice_recording_failed
+        }
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) {
+            beginRecording()
+        } else {
+            recordingState = stateMachine.reduce(recordingState, RecordingAction.PermissionDenied)
+            messageRes = R.string.voice_mic_denied
+        }
+    }
+
+    fun requestRecording() {
+        if (isRecording) {
+            stopRecording()
+            return
+        }
+        if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) ==
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            beginRecording()
+        } else {
+            recordingState = stateMachine.reduce(
+                recordingState,
+                RecordingAction.Request(story.id, RetellParagraphIndex),
+            )
+            showPermissionDialog = true
+        }
+    }
+
+    fun playLatest() {
+        val recordingId = recordingState.activeRecordingId ?: return
+        if (isRecording) stopRecording()
+        controller.stopPlayback()
+        messageRes = null
+        recordingState = stateMachine.reduce(
+            RecordingState.Stopped(story.id, RetellParagraphIndex, recordingId),
+            RecordingAction.Playing(recordingId),
+        )
+        // Resolve the file path from the stored service so playback works after process recreation.
+        scope.launch {
+            val recording = voiceRecordingService.getRecordings(story.id)
+                .firstOrNull { it.id == recordingId }
+            if (recording == null) {
+                recordingState = stateMachine.reduce(recordingState, RecordingAction.Reset)
+                messageRes = R.string.voice_recording_playback_failed
+                return@launch
+            }
+            controller.play(
+                filePath = recording.filePath,
+                onCompletion = {
+                    recordingState = stateMachine.reduce(recordingState, RecordingAction.Completed)
+                },
+                onError = {
+                    recordingState = stateMachine.reduce(recordingState, RecordingAction.Reset)
+                    messageRes = R.string.voice_recording_playback_failed
+                },
+            )
+        }
+    }
+
+    val hasRecording = recordingState.activeRecordingId != null
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = LmcSpacing.CardElevation,
+    ) {
+        Column(
+            modifier = Modifier.padding(LmcSpacing.CardPadding),
+            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space3),
+        ) {
+            Text(
+                text = stringResource(R.string.retell_step_title),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = guide.prompt,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (!expanded) {
+                Text(
+                    text = stringResource(R.string.retell_step_optional),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Button(
+                    onClick = { expanded = true },
+                    modifier = Modifier.heightIn(min = LmcSpacing.MinTouchTarget),
+                    shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+                ) {
+                    Text(text = stringResource(R.string.retell_step_start))
+                }
+            } else {
+                // Record / stop + play back — same local-only recording stack as #4.
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Button(
+                        onClick = { requestRecording() },
+                        modifier = Modifier.heightIn(min = LmcSpacing.MinTouchTarget),
+                        shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+                    ) {
+                        Text(
+                            text = stringResource(
+                                if (isRecording) R.string.retell_stop_recording
+                                else R.string.retell_start_recording,
+                            ),
+                        )
+                    }
+                    if (hasRecording && !isRecording) {
+                        OutlinedButton(
+                            onClick = { playLatest() },
+                            modifier = Modifier.heightIn(min = LmcSpacing.MinTouchTarget),
+                            shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+                        ) {
+                            Text(
+                                text = stringResource(
+                                    if (isPlaying) R.string.voice_recording_playing
+                                    else R.string.action_play_recording,
+                                ),
+                            )
+                        }
+                    }
+                }
+                Text(
+                    text = stringResource(R.string.voice_practice_privacy),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                messageRes?.let { res ->
+                    Text(
+                        text = stringResource(res),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+
+                if (guide.checkItems.isNotEmpty()) {
+                    HorizontalDivider()
+                    Text(
+                        text = stringResource(R.string.retell_self_check_title),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+                        verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+                    ) {
+                        guide.checkItems.forEach { item ->
+                            val selected = checkedItems.contains(item.text)
+                            FilterChip(
+                                selected = selected,
+                                onClick = {
+                                    if (selected) checkedItems.remove(item.text)
+                                    else checkedItems.add(item.text)
+                                },
+                                label = { Text(text = item.text) },
+                                modifier = Modifier.heightIn(min = LmcSpacing.MinTouchTarget),
+                            )
+                        }
+                    }
+                    val encouragementRes = when (
+                        retellUseCases.encouragementFor(checkedItems.size, guide.checkItems.size)
+                    ) {
+                        RetellEncouragement.JustStarted -> R.string.retell_encouragement_just_started
+                        RetellEncouragement.GoodProgress -> R.string.retell_encouragement_good_progress
+                        RetellEncouragement.GreatRetell -> R.string.retell_encouragement_great
+                    }
+                    Text(
+                        text = stringResource(encouragementRes),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    // Optional per-item hints (meaning), revealed on demand.
+                    val itemsWithMeaning = guide.checkItems.filter { !it.meaning.isNullOrBlank() }
+                    if (itemsWithMeaning.isNotEmpty()) {
+                        itemsWithMeaning.forEach { item ->
+                            val revealed = revealedHints.contains(item.text)
+                            TextButton(
+                                onClick = {
+                                    if (revealed) revealedHints.remove(item.text)
+                                    else revealedHints.add(item.text)
+                                },
+                                modifier = Modifier.heightIn(min = LmcSpacing.MinTouchTarget),
+                            ) {
+                                Text(
+                                    text = if (revealed) {
+                                        stringResource(
+                                            R.string.retell_hint_revealed_format,
+                                            item.text,
+                                            item.meaning.orEmpty(),
+                                        )
+                                    } else {
+                                        stringResource(R.string.retell_hint_show_format, item.text)
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
+
+                if (showPermissionDialog) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(LmcSpacing.RadiusSm),
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(LmcSpacing.Space3),
+                            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+                        ) {
+                            Text(
+                                text = stringResource(R.string.voice_mic_rationale_title),
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Text(
+                                text = stringResource(R.string.voice_mic_rationale_body),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+                            ) {
+                                OutlinedButton(
+                                    onClick = {
+                                        showPermissionDialog = false
+                                        permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                    },
+                                    modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
+                                    shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+                                ) {
+                                    Text(text = stringResource(R.string.voice_mic_allow))
+                                }
+                                TextButton(
+                                    onClick = {
+                                        showPermissionDialog = false
+                                        recordingState = stateMachine.reduce(
+                                            recordingState,
+                                            RecordingAction.Reset,
+                                        )
+                                    },
+                                    modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
+                                ) {
+                                    Text(text = stringResource(R.string.action_skip))
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

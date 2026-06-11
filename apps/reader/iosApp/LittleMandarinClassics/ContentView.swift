@@ -416,6 +416,11 @@ final class ReaderViewModel: ObservableObject {
     @Published private(set) var activeSentenceRecordingLocation: LMCSentenceLocation?
     private var sentenceRecorder: AVAudioRecorder?
     private var activeSentenceRecording: LMCActiveSentenceRecording?
+    // Optional retell recording reuses the same recorder + local-only service. Tagged with
+    // paragraphIndex = -1 so the parent list labels it as a retell.
+    @Published private(set) var activeRetellRecordingStoryId: String?
+    private var retellRecorder: AVAudioRecorder?
+    private var activeRetellRecording: LMCActiveRetellRecording?
     private var recordingPlaybackPlayer: AVAudioPlayer?
     private var recordingPlaybackDelegate: LMCGeneratedAudioDelegate?
     private var sfxPlayers: [String: AVAudioPlayer] = [:]
@@ -998,6 +1003,86 @@ final class ReaderViewModel: ObservableObject {
             }
         } catch {
             stopRecordingPlayback()
+        }
+    }
+
+    // MARK: - Optional retell recording (reuses the same local-only voice recording service)
+
+    func isRecordingRetell(storyId: String) -> Bool {
+        activeRetellRecordingStoryId == storyId
+    }
+
+    func latestRetellRecording(forStoryId storyId: String) -> VoiceRecording? {
+        recordings
+            .filter { $0.storyId == storyId && $0.paragraphIndex < 0 }
+            .sorted { $0.createdAtEpochMillis > $1.createdAtEpochMillis }
+            .first
+    }
+
+    func startRetellRecording(story: Story) async -> LMCRecordingStartResult {
+        let isPermissionGranted = await ensureMicrophonePermissionGranted()
+        guard isPermissionGranted else { return .permissionDenied }
+
+        guard let directory = recordingsDirectory else { return .failed }
+        let fileName = "\(story.id)_retell_\(UUID().uuidString).m4a"
+            .replacingOccurrences(of: "/", with: "_")
+        let fileURL = directory.appendingPathComponent(fileName)
+
+        stopRetellRecording()
+        stopSentenceRecording()
+        stopSentencePlayback()
+        stopRecordingPlayback()
+
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.record, mode: .default, options: [.defaultToSpeaker])
+            try session.setActive(true)
+
+            let recorder = try AVAudioRecorder(url: fileURL, settings: lmcAudioRecordingSettings)
+            recorder.prepareToRecord()
+            guard recorder.record() else { return .failed }
+
+            activeRetellRecording = LMCActiveRetellRecording(
+                storyId: story.id,
+                fileURL: fileURL,
+                startedAt: Date()
+            )
+            retellRecorder = recorder
+            activeRetellRecordingStoryId = story.id
+            return .started
+        } catch {
+            return .failed
+        }
+    }
+
+    func stopRetellRecording() {
+        guard let active = activeRetellRecording, let recorder = retellRecorder else { return }
+        defer {
+            retellRecorder = nil
+            activeRetellRecording = nil
+            activeRetellRecordingStoryId = nil
+        }
+
+        recorder.stop()
+
+        let durationMillis = Int64(max(0, Date().timeIntervalSince(active.startedAt)) * 1_000)
+        guard durationMillis > 250, FileManager.default.fileExists(atPath: active.fileURL.path) else {
+            try? FileManager.default.removeItem(at: active.fileURL)
+            return
+        }
+
+        let newRecording = VoiceRecording(
+            id: UUID().uuidString,
+            storyId: active.storyId,
+            paragraphIndex: -1,
+            filePath: active.fileURL.path,
+            durationMs: durationMillis,
+            createdAtEpochMillis: Int64(active.startedAt.timeIntervalSince1970 * 1_000)
+        )
+
+        Task {
+            _ = try? await self.voiceRecordingService.add(recording: newRecording)
+            await self.syncRecordingsFromService()
         }
     }
 
@@ -2135,6 +2220,12 @@ struct LMCSentenceLocation: Equatable {
 
 private struct LMCActiveSentenceRecording {
     let location: LMCSentenceLocation
+    let fileURL: URL
+    let startedAt: Date
+}
+
+private struct LMCActiveRetellRecording {
+    let storyId: String
     let fileURL: URL
     let startedAt: Date
 }
@@ -4338,6 +4429,16 @@ private struct QuizScreen: View {
     @State private var completionAnimationToken = 0
     @State private var completionJustRecorded = false
     @State private var showPlayMore = false
+    @State private var retellExpanded = false
+    @State private var retellCheckedItems: Set<String> = []
+    @State private var retellRevealedHints: Set<String> = []
+    @State private var retellMessageKey: String?
+
+    private static let retellUseCases = RetellGuideUseCases()
+
+    private var retellGuide: RetellGuide {
+        Self.retellUseCases.buildGuide(story: story, maxItems: 5)
+    }
 
     private var activeQuizState: QuizSessionState {
         quizState ?? viewModel.initialQuizState(story)
@@ -4471,6 +4572,128 @@ private struct QuizScreen: View {
         }
     }
 
+    private var retellEncouragementKey: String {
+        let guide = retellGuide
+        switch Self.retellUseCases.encouragementFor(
+            checkedCount: Int32(retellCheckedItems.count),
+            totalItems: Int32(guide.checkItems.count)
+        ) {
+        case .greatretell: return "retell_encouragement_great"
+        case .goodprogress: return "retell_encouragement_good_progress"
+        default: return "retell_encouragement_just_started"
+        }
+    }
+
+    @ViewBuilder
+    private var retellCard: some View {
+        let guide = retellGuide
+        let isRecording = viewModel.isRecordingRetell(storyId: story.id)
+        let latest = viewModel.latestRetellRecording(forStoryId: story.id)
+
+        VStack(alignment: .leading, spacing: LMCSpace.s3) {
+            SectionTitle("retell_step_title")
+            Text(guide.prompt)
+                .font(.system(size: 20, weight: .medium))
+                .foregroundStyle(LMCColor.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if !retellExpanded {
+                Text("retell_step_optional")
+                    .font(.system(size: 15))
+                    .foregroundStyle(LMCColor.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button("retell_step_start") { retellExpanded = true }
+                    .buttonStyle(LMCPrimaryButtonStyle())
+            } else {
+                HStack(spacing: LMCSpace.s2) {
+                    Button(isRecording ? "retell_stop_recording" : "retell_start_recording") {
+                        Task {
+                            if isRecording {
+                                viewModel.stopRetellRecording()
+                                retellMessageKey = "retell_recording_saved"
+                            } else {
+                                let result = await viewModel.startRetellRecording(story: story)
+                                if result == .permissionDenied {
+                                    retellMessageKey = "retell_mic_denied"
+                                } else if result == .failed {
+                                    retellMessageKey = "retell_recording_failed"
+                                } else {
+                                    retellMessageKey = nil
+                                }
+                            }
+                        }
+                    }
+                    .buttonStyle(LMCPrimaryButtonStyle())
+
+                    if let latest, !isRecording {
+                        Button("reading_recording_play") {
+                            Task { await viewModel.playRecording(latest) }
+                        }
+                        .buttonStyle(LMCSecondaryButtonStyle())
+                    }
+                }
+
+                Text("retell_privacy_note")
+                    .font(.system(size: 13))
+                    .foregroundStyle(LMCColor.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if let retellMessageKey {
+                    Text(LocalizedStringKey(retellMessageKey))
+                        .font(.system(size: 13))
+                        .foregroundStyle(LMCColor.primary)
+                }
+
+                if !guide.checkItems.isEmpty {
+                    Divider()
+                    SectionTitle("retell_self_check_title")
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: LMCSpace.s2) {
+                            ForEach(guide.checkItems, id: \.text) { item in
+                                FilterChip(
+                                    title: item.text,
+                                    isSelected: retellCheckedItems.contains(item.text)
+                                ) {
+                                    if retellCheckedItems.contains(item.text) {
+                                        retellCheckedItems.remove(item.text)
+                                    } else {
+                                        retellCheckedItems.insert(item.text)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Text(LocalizedStringKey(retellEncouragementKey))
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(LMCColor.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    ForEach(guide.checkItems.filter { !($0.meaning ?? "").isEmpty }, id: \.text) { item in
+                        let revealed = retellRevealedHints.contains(item.text)
+                        Button {
+                            if revealed {
+                                retellRevealedHints.remove(item.text)
+                            } else {
+                                retellRevealedHints.insert(item.text)
+                            }
+                        } label: {
+                            Text(revealed
+                                ? "\(item.text) — \(item.meaning ?? "")"
+                                : LMCStrings.format("retell_hint_show_format", item.text))
+                                .font(.system(size: 14))
+                                .foregroundStyle(LMCColor.textSecondary)
+                                .frame(minHeight: 44, alignment: .leading)
+                        }
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(LMCSpace.s4)
+        .background(LMCColor.tertiaryContainer)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
     private var completionView: some View {
         VStack(spacing: 0) {
             LMCFlowTopBar(titleKey: "quiz_complete_title", trailingText: nil, close: done)
@@ -4510,17 +4733,7 @@ private struct QuizScreen: View {
                             CompletionMilestoneBanner(summary: streak)
                         }
 
-                        VStack(alignment: .leading, spacing: LMCSpace.s3) {
-                            SectionTitle("quiz_retell")
-                            Text(story.retellPrompt)
-                                .font(.system(size: 20, weight: .medium))
-                                .foregroundStyle(LMCColor.textPrimary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(LMCSpace.s4)
-                        .background(LMCColor.tertiaryContainer)
-                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        retellCard
 
                         if let reviewPack = viewModel.lastCompletionReviewPack {
                             VStack(alignment: .leading, spacing: LMCSpace.s3) {
@@ -5235,8 +5448,17 @@ private struct ParentRecordingSection: View {
         recordings
             .sorted { $0.createdAtEpochMillis > $1.createdAtEpochMillis }
             .compactMap { recording in
-                guard let indexes = paragraphAndSentenceIndex(for: recording) else { return nil }
                 let title = lookupStoryTitle(recording.storyId)
+                if recording.paragraphIndex < 0 {
+                    let subtitle = LMCStrings.format(
+                        "parent_recording_retell_row_format",
+                        title,
+                        dateString(recording.createdAtEpochMillis),
+                        durationText(recording.durationMs)
+                    )
+                    return RecordingRow(recording: recording, title: title, subtitle: subtitle)
+                }
+                guard let indexes = paragraphAndSentenceIndex(for: recording) else { return nil }
                 let subtitle = LMCStrings.format(
                     "parent_recording_row_format",
                     title,

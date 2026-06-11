@@ -240,6 +240,21 @@
     <string name="voice_parent_empty">还没有朗读录音。</string>
     <string name="voice_parent_retention">录音只保存在本设备上，不会上传，也不会被分析。家长可以在这里播放或删除；应用只保留最近的录音。</string>
     <string name="voice_recording_parent_meta_format">第 %1$d 段 · %2$s · %3$s</string>
+    <string name="voice_recording_parent_retell_meta_format">复述 · %1$s · %2$s</string>
+
+    <!-- Optional retell step on the completion screen -->
+    <string name="retell_step_title">复述故事</string>
+    <string name="retell_step_optional">可选——试试看，或者跳过直接完成。</string>
+    <string name="retell_step_start">复述故事</string>
+    <string name="retell_start_recording">录制复述</string>
+    <string name="retell_stop_recording">停止录音</string>
+    <string name="retell_recording_saved">复述已保存在本设备上。</string>
+    <string name="retell_self_check_title">你说到了吗？</string>
+    <string name="retell_encouragement_just_started">很好的开始！记住一点就很棒。</string>
+    <string name="retell_encouragement_good_progress">做得好——你记住了故事的很多内容！</string>
+    <string name="retell_encouragement_great">复述得真棒！几乎说到了全部内容。</string>
+    <string name="retell_hint_show_format">"%1$s" 是什么意思？</string>
+    <string name="retell_hint_revealed_format">%1$s —— %2$s</string>
 
     <!-- Tap-word lookup -->
     <string name="word_lookup_title">词语</string>

@@ -242,6 +242,21 @@
     <string name="voice_parent_empty">No read-aloud recordings yet.</string>
     <string name="voice_parent_retention">Recordings stay on this device only. They are not uploaded or analyzed. Parents can play or delete them here; the app keeps only the most recent recordings.</string>
     <string name="voice_recording_parent_meta_format">Paragraph %1$d · %2$s · %3$s</string>
+    <string name="voice_recording_parent_retell_meta_format">Retell · %1$s · %2$s</string>
+
+    <!-- Optional retell step on the completion screen -->
+    <string name="retell_step_title">Tell the story</string>
+    <string name="retell_step_optional">Optional — give it a try, or skip and finish.</string>
+    <string name="retell_step_start">Tell the story</string>
+    <string name="retell_start_recording">Record retell</string>
+    <string name="retell_stop_recording">Stop recording</string>
+    <string name="retell_recording_saved">Retell saved on this device.</string>
+    <string name="retell_self_check_title">Did you mention…?</string>
+    <string name="retell_encouragement_just_started">Nice start! Every bit you remember counts.</string>
+    <string name="retell_encouragement_good_progress">Great job — you remembered a lot of the story!</string>
+    <string name="retell_encouragement_great">Wonderful retell! You covered almost everything.</string>
+    <string name="retell_hint_show_format">What does %1$s mean?</string>
+    <string name="retell_hint_revealed_format">%1$s — %2$s</string>
 
     <!-- Tap-word lookup -->
     <string name="word_lookup_title">Word</string>
