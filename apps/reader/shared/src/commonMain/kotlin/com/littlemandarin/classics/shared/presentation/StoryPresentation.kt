@@ -77,8 +77,17 @@ class StoryPresentationUseCases {
         stories: List<Story>,
         completedStoryIds: Set<String>,
         policy: TodayStorySelectionPolicy = TodayStorySelectionPolicy.FirstIncomplete,
+        recommendedStoryId: String? = null,
     ): TodayStories {
         if (stories.isEmpty()) return TodayStories(null, null)
+
+        // An adaptive recommendation (when it names an existing, incomplete story) wins
+        // over the catalog policy and is presented as the single focus for today.
+        recommendedStoryId?.let { id ->
+            stories.firstOrNull { it.id == id && it.id !in completedStoryIds }?.let { recommended ->
+                return TodayStories(todayStory = recommended, upNextStory = null)
+            }
+        }
 
         val today = when (policy) {
             TodayStorySelectionPolicy.CatalogFirst -> stories.first()

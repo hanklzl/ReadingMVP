@@ -35,9 +35,14 @@ data class OnboardingPreferences(
     val childAgeBand: ChildAgeBand? = null,
     val language: ReaderLanguage = ReaderLanguage.English,
     val dailyGoalStories: Int = 1,
+    // Reading-level preference from the optional placement check (1..3). NOT child PII.
+    // When present it takes precedence over the age-band default for recommendations.
+    val assessedReadingLevel: Int? = null,
 ) {
     val recommendedLevel: Int
-        get() = childAgeBand?.recommendedLevel ?: 1
+        get() = assessedReadingLevel?.takeIf { it in 1..3 }
+            ?: childAgeBand?.recommendedLevel
+            ?: 1
 }
 
 interface OnboardingService {
@@ -357,13 +362,18 @@ internal object StreakStateJsonCodec {
 
 private fun OnboardingPreferences.normalized(): OnboardingPreferences {
     val normalizedGoal = dailyGoalStories.coerceAtLeast(OnboardingDefaults.DailyGoalStories)
+    val normalizedLevel = assessedReadingLevel?.takeIf { it in 1..3 }
     return if (completed && skipped) {
         copy(
             childAgeBand = childAgeBand ?: OnboardingDefaults.DefaultChildAgeBand,
             dailyGoalStories = normalizedGoal,
+            assessedReadingLevel = normalizedLevel,
         )
     } else {
-        copy(dailyGoalStories = normalizedGoal)
+        copy(
+            dailyGoalStories = normalizedGoal,
+            assessedReadingLevel = normalizedLevel,
+        )
     }
 }
 
