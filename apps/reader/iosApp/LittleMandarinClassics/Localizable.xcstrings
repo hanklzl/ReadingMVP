@@ -2823,6 +2823,104 @@
         }
       }
     },
+    "play_more_check": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Check" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "看看对不对" } }
+      }
+    },
+    "play_more_cloze_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Fill in the blank" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "填一填空格" } }
+      }
+    },
+    "play_more_correct": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Nice work! 🎉" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "太棒了！🎉" } }
+      }
+    },
+    "play_more_done": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Done" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "完成" } }
+      }
+    },
+    "play_more_empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "No extra games for this story today." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "今天这篇故事还没有小游戏。" } }
+      }
+    },
+    "play_more_intro": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Try these little games. Take your time — you can always try again!" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "试试这些小游戏吧，慢慢来，随时可以再试一次！" } }
+      }
+    },
+    "play_more_matching_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Match the words" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "连一连词语" } }
+      }
+    },
+    "play_more_move_down": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Move down" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "下移" } }
+      }
+    },
+    "play_more_move_up": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Move up" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "上移" } }
+      }
+    },
+    "play_more_ordering_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Put the sentences in order" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "把句子排好顺序" } }
+      }
+    },
+    "play_more_start": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Play more" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "再玩一会儿" } }
+      }
+    },
+    "play_more_subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "A few fun games using today's story. No score — just play!" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "用今天的故事玩几个小游戏，没有分数，只为好玩！" } }
+      }
+    },
+    "play_more_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Play more" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "再玩一会儿" } }
+      }
+    },
+    "play_more_try_again": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Almost! Give it another try." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "就差一点！再试一次吧。" } }
+      }
+    },
     "privacy_ai_scope": {
       "extractionState": "manual",
       "localizations": {

@@ -3937,6 +3937,7 @@ private struct QuizScreen: View {
     @State private var didTrackQuizStart = false
     @State private var completionAnimationToken = 0
     @State private var completionJustRecorded = false
+    @State private var showPlayMore = false
 
     private var activeQuizState: QuizSessionState {
         quizState ?? viewModel.initialQuizState(story)
@@ -3950,6 +3951,16 @@ private struct QuizScreen: View {
         questionState.question ?? story.questions[max(0, min(Int(questionState.questionIndex), story.questions.count - 1))]
     }
 
+    private static let practiceUseCases = InteractivePracticeUseCases()
+
+    private var practiceItems: [any InteractivePracticeItem] {
+        Self.practiceUseCases.generate(story: story, seed: Int32(truncatingIfNeeded: story.id.hashValue), maxItems: 3)
+    }
+
+    private var hasInteractivePractice: Bool {
+        !practiceItems.isEmpty
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             if activeQuizState.isComplete {
@@ -3959,6 +3970,13 @@ private struct QuizScreen: View {
             }
         }
         .background(LMCColor.background.ignoresSafeArea())
+        .fullScreenCover(isPresented: $showPlayMore) {
+            PlayMorePracticeView(
+                items: practiceItems,
+                useCases: Self.practiceUseCases,
+                close: { showPlayMore = false }
+            )
+        }
         .onAppear {
             guard !didTrackQuizStart else { return }
             didTrackQuizStart = true
@@ -4119,6 +4137,22 @@ private struct QuizScreen: View {
                             .background(LMCColor.secondaryContainer)
                             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                         }
+
+                        if hasInteractivePractice {
+                            VStack(alignment: .leading, spacing: LMCSpace.s3) {
+                                SectionTitle("play_more_title")
+                                Text("play_more_subtitle")
+                                    .font(.system(size: 16))
+                                    .foregroundStyle(LMCColor.textSecondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                Button("play_more_start") { showPlayMore = true }
+                                    .buttonStyle(LMCPrimaryButtonStyle())
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(LMCSpace.s4)
+                            .background(LMCColor.tertiaryContainer)
+                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        }
                     }
                     .padding(LMCSpace.s4)
                     .frame(maxWidth: LMCSpace.readingMaxWidth)
@@ -4149,6 +4183,297 @@ private struct QuizScreen: View {
     private var scoreText: String {
         let score = completionScore ?? viewModel.quizScore(story, state: activeQuizState)
         return "\(score.correctCount) / \(score.totalQuestions)"
+    }
+}
+
+// MARK: - Optional "Play more" interactive practice round
+
+private enum PracticeFeedback {
+    case none, correct, tryAgain
+}
+
+private struct PlayMorePracticeView: View {
+    let items: [any InteractivePracticeItem]
+    let useCases: InteractivePracticeUseCases
+    let close: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            LMCFlowTopBar(titleKey: "play_more_title", trailingText: nil, close: close)
+            ScrollView {
+                VStack(alignment: .leading, spacing: LMCSpace.s5) {
+                    Text("play_more_intro")
+                        .font(.system(size: 18))
+                        .foregroundStyle(LMCColor.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    if items.isEmpty {
+                        Text("play_more_empty")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundStyle(LMCColor.textPrimary)
+                    }
+
+                    ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+                        if let ordering = item as? InteractivePracticeItemSentenceOrdering {
+                            PracticeOrderingCard(item: ordering, useCases: useCases)
+                        } else if let matching = item as? InteractivePracticeItemWordMatching {
+                            PracticeMatchingCard(item: matching, useCases: useCases)
+                        } else if let cloze = item as? InteractivePracticeItemCloze {
+                            PracticeClozeCard(item: cloze, useCases: useCases)
+                        }
+                    }
+                }
+                .padding(LMCSpace.s4)
+                .frame(maxWidth: LMCSpace.readingMaxWidth)
+                .frame(maxWidth: .infinity)
+            }
+            LMCBottomActionBar {
+                Spacer()
+                Button("play_more_done", action: close)
+                    .buttonStyle(LMCPrimaryButtonStyle())
+            }
+        }
+        .background(LMCColor.background.ignoresSafeArea())
+    }
+}
+
+private struct PracticeCardShell<Content: View>: View {
+    let titleKey: LocalizedStringKey
+    let feedback: PracticeFeedback
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: LMCSpace.s3) {
+            SectionTitle(titleKey)
+            content
+            PracticeFeedbackRow(feedback: feedback)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(LMCSpace.s4)
+        .background(LMCColor.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(LMCColor.outlineVariant, lineWidth: 1)
+        )
+    }
+}
+
+private struct PracticeFeedbackRow: View {
+    let feedback: PracticeFeedback
+
+    var body: some View {
+        switch feedback {
+        case .none:
+            EmptyView()
+        case .correct:
+            Text("play_more_correct")
+                .font(.system(size: 17, weight: .bold))
+                .foregroundStyle(LMCColor.primary)
+                .accessibilityAddTraits(.updatesFrequently)
+        case .tryAgain:
+            Text("play_more_try_again")
+                .font(.system(size: 17, weight: .bold))
+                .foregroundStyle(LMCColor.secondary)
+                .accessibilityAddTraits(.updatesFrequently)
+        }
+    }
+}
+
+private struct PracticeOrderingCard: View {
+    let item: InteractivePracticeItemSentenceOrdering
+    let useCases: InteractivePracticeUseCases
+
+    @State private var order: [String]
+    @State private var feedback: PracticeFeedback = .none
+
+    init(item: InteractivePracticeItemSentenceOrdering, useCases: InteractivePracticeUseCases) {
+        self.item = item
+        self.useCases = useCases
+        _order = State(initialValue: item.shuffled)
+    }
+
+    var body: some View {
+        PracticeCardShell(titleKey: "play_more_ordering_title", feedback: feedback) {
+            VStack(spacing: LMCSpace.s2) {
+                ForEach(Array(order.enumerated()), id: \.offset) { index, sentence in
+                    HStack(spacing: LMCSpace.s2) {
+                        Text(sentence)
+                            .font(.system(size: 18))
+                            .foregroundStyle(LMCColor.textPrimary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        Button {
+                            move(index, by: -1)
+                        } label: {
+                            Image(systemName: "chevron.up")
+                                .font(.system(size: 18, weight: .bold))
+                                .frame(width: LMCSpace.minTouch, height: LMCSpace.minTouch)
+                        }
+                        .disabled(index == 0)
+                        .accessibilityLabel(Text("play_more_move_up"))
+                        Button {
+                            move(index, by: 1)
+                        } label: {
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 18, weight: .bold))
+                                .frame(width: LMCSpace.minTouch, height: LMCSpace.minTouch)
+                        }
+                        .disabled(index == order.count - 1)
+                        .accessibilityLabel(Text("play_more_move_down"))
+                    }
+                }
+            }
+            Button("play_more_check") {
+                feedback = useCases.scoreOrdering(item: item, submitted: order) ? .correct : .tryAgain
+            }
+            .buttonStyle(LMCPrimaryButtonStyle())
+        }
+    }
+
+    private func move(_ index: Int, by offset: Int) {
+        let target = index + offset
+        guard target >= 0, target < order.count else { return }
+        order.swapAt(index, target)
+        feedback = .none
+    }
+}
+
+private struct PracticeMatchingCard: View {
+    let item: InteractivePracticeItemWordMatching
+    let useCases: InteractivePracticeUseCases
+
+    @State private var meanings: [String]
+    @State private var selectedWord: String?
+    @State private var matches: [String: String] = [:]
+    @State private var feedback: PracticeFeedback = .none
+
+    init(item: InteractivePracticeItemWordMatching, useCases: InteractivePracticeUseCases) {
+        self.item = item
+        self.useCases = useCases
+        _meanings = State(initialValue: item.pairs.map { $0.meaning }.shuffled())
+    }
+
+    var body: some View {
+        PracticeCardShell(titleKey: "play_more_matching_title", feedback: feedback) {
+            VStack(spacing: LMCSpace.s2) {
+                ForEach(item.pairs, id: \.word) { pair in
+                    Button {
+                        selectedWord = (selectedWord == pair.word) ? nil : pair.word
+                        feedback = .none
+                    } label: {
+                        Text(matches[pair.word].map { "\(pair.word) → \($0)" } ?? pair.word)
+                            .frame(maxWidth: .infinity, minHeight: LMCSpace.minTouch)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, LMCSpace.s3)
+                    .background(selectedWord == pair.word ? LMCColor.primaryContainer : LMCColor.surfaceVariant)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+            }
+            Rectangle().fill(LMCColor.outlineVariant).frame(height: 1)
+            FlowLayout(spacing: LMCSpace.s2) {
+                ForEach(meanings, id: \.self) { meaning in
+                    let used = matches.values.contains(meaning)
+                    Button(meaning) {
+                        guard let word = selectedWord else { return }
+                        for (key, value) in matches where value == meaning { matches[key] = nil }
+                        matches[word] = meaning
+                        selectedWord = nil
+                        feedback = .none
+                    }
+                    .buttonStyle(LMCSecondaryButtonStyle())
+                    .disabled(selectedWord == nil || used)
+                }
+            }
+            Button("play_more_check") {
+                feedback = useCases.scoreMatching(item: item, submitted: matches) ? .correct : .tryAgain
+            }
+            .buttonStyle(LMCPrimaryButtonStyle())
+        }
+    }
+}
+
+private struct PracticeClozeCard: View {
+    let item: InteractivePracticeItemCloze
+    let useCases: InteractivePracticeUseCases
+
+    @State private var selected: String?
+    @State private var feedback: PracticeFeedback = .none
+
+    var body: some View {
+        PracticeCardShell(titleKey: "play_more_cloze_title", feedback: feedback) {
+            Text(item.sentenceBefore + (selected ?? "＿＿＿") + item.sentenceAfter)
+                .font(.system(size: 18))
+                .foregroundStyle(LMCColor.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+            FlowLayout(spacing: LMCSpace.s2) {
+                ForEach(item.options, id: \.self) { option in
+                    Button(option) {
+                        selected = option
+                        feedback = useCases.scoreCloze(item: item, submitted: option) ? .correct : .tryAgain
+                    }
+                    .buttonStyle(selected == option ? AnyButtonStyle(LMCPrimaryButtonStyle()) : AnyButtonStyle(LMCSecondaryButtonStyle()))
+                }
+            }
+        }
+    }
+}
+
+/// Type-erased button style so we can pick between primary/secondary at runtime.
+private struct AnyButtonStyle: ButtonStyle {
+    private let makeBodyClosure: (Configuration) -> AnyView
+
+    init<S: ButtonStyle>(_ style: S) {
+        makeBodyClosure = { configuration in AnyView(style.makeBody(configuration: configuration)) }
+    }
+
+    func makeBody(configuration: Configuration) -> some View {
+        makeBodyClosure(configuration)
+    }
+}
+
+/// Minimal wrapping flow layout for option chips.
+private struct FlowLayout: Layout {
+    var spacing: CGFloat = 8
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout Void) -> CGSize {
+        let maxWidth = proposal.width ?? .infinity
+        var rowWidth: CGFloat = 0
+        var rowHeight: CGFloat = 0
+        var totalHeight: CGFloat = 0
+        var totalWidth: CGFloat = 0
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if rowWidth + size.width > maxWidth, rowWidth > 0 {
+                totalHeight += rowHeight + spacing
+                totalWidth = max(totalWidth, rowWidth - spacing)
+                rowWidth = 0
+                rowHeight = 0
+            }
+            rowWidth += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+        }
+        totalHeight += rowHeight
+        totalWidth = max(totalWidth, rowWidth - spacing)
+        return CGSize(width: min(totalWidth, maxWidth), height: totalHeight)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout Void) {
+        var x = bounds.minX
+        var y = bounds.minY
+        var rowHeight: CGFloat = 0
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if x + size.width > bounds.maxX, x > bounds.minX {
+                x = bounds.minX
+                y += rowHeight + spacing
+                rowHeight = 0
+            }
+            subview.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+        }
     }
 }
 

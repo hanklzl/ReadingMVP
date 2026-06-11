@@ -94,6 +94,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -157,6 +158,8 @@ import com.littlemandarin.classics.shared.presentation.AbilityMap
 import com.littlemandarin.classics.shared.presentation.AbilityMapUseCases
 import com.littlemandarin.classics.shared.presentation.AbilityProgress
 import com.littlemandarin.classics.shared.presentation.AnalyticsEventPayload
+import com.littlemandarin.classics.shared.presentation.InteractivePracticeItem
+import com.littlemandarin.classics.shared.presentation.InteractivePracticeUseCases
 import com.littlemandarin.classics.shared.presentation.AndroidEngagementServiceProvider
 import com.littlemandarin.classics.shared.presentation.AdaptiveReadingPathRecommender
 import com.littlemandarin.classics.shared.presentation.AndroidReaderSettingsServiceProvider
@@ -6082,6 +6085,15 @@ private fun QuizCompletionScreen(
     onReadAgain: () -> Unit,
     onDone: () -> Unit,
 ) {
+    var showPlayMore by remember(story.id) { mutableStateOf(false) }
+    if (showPlayMore) {
+        PlayMorePracticeScreen(
+            story = story,
+            onBack = { showPlayMore = false },
+            onDone = { showPlayMore = false },
+        )
+        return
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -6192,6 +6204,37 @@ private fun QuizCompletionScreen(
                         }
                     }
                 }
+                if (remember(story.id) { hasInteractivePractice(story) }) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+                        color = MaterialTheme.colorScheme.tertiaryContainer,
+                        shadowElevation = LmcSpacing.CardElevation,
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(LmcSpacing.CardPadding),
+                            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+                        ) {
+                            Text(
+                                text = stringResource(R.string.play_more_title),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                            )
+                            Text(
+                                text = stringResource(R.string.play_more_subtitle),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                            )
+                            Button(
+                                onClick = { showPlayMore = true },
+                                modifier = Modifier.heightIn(min = LmcSpacing.MinTouchTarget),
+                                shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+                            ) {
+                                Text(text = stringResource(R.string.play_more_start))
+                            }
+                        }
+                    }
+                }
             }
             Row(
                 modifier = Modifier
@@ -6220,6 +6263,347 @@ private fun QuizCompletionScreen(
                     shape = RoundedCornerShape(LmcSpacing.RadiusLg),
                 ) {
                     Text(text = stringResource(R.string.action_done))
+                }
+            }
+        }
+    }
+}
+
+private fun practiceSeed(story: Story): Int = story.id.hashCode()
+
+private fun hasInteractivePractice(story: Story): Boolean =
+    InteractivePracticeUseCases().generate(story, seed = practiceSeed(story)).isNotEmpty()
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun PlayMorePracticeScreen(
+    story: Story,
+    onBack: () -> Unit,
+    onDone: () -> Unit,
+) {
+    val useCases = remember { InteractivePracticeUseCases() }
+    val items = remember(story.id) {
+        useCases.generate(story, seed = practiceSeed(story))
+    }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+    ) {
+        FlowTopBar(
+            title = stringResource(R.string.play_more_title),
+            onBack = onBack,
+        )
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(LmcSpacing.ScreenPadding),
+            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space5),
+        ) {
+            Text(
+                text = stringResource(R.string.play_more_intro),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (items.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.play_more_empty),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+            items.forEach { item ->
+                when (item) {
+                    is InteractivePracticeItem.SentenceOrdering ->
+                        PracticeOrderingCard(item = item, useCases = useCases)
+                    is InteractivePracticeItem.WordMatching ->
+                        PracticeMatchingCard(item = item, useCases = useCases)
+                    is InteractivePracticeItem.Cloze ->
+                        PracticeClozeCard(item = item, useCases = useCases)
+                }
+            }
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(
+                    horizontal = LmcSpacing.ScreenPadding,
+                    vertical = LmcSpacing.Space3,
+                ),
+        ) {
+            Button(
+                onClick = onDone,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = LmcSpacing.ButtonPrimaryHeight),
+                shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+            ) {
+                Text(text = stringResource(R.string.play_more_done))
+            }
+        }
+    }
+}
+
+@Composable
+private fun PracticeCardShell(
+    title: String,
+    feedback: PracticeFeedback,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = LmcSpacing.CardElevation,
+    ) {
+        Column(
+            modifier = Modifier.padding(LmcSpacing.CardPadding),
+            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space3),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            content()
+            PracticeFeedbackRow(feedback = feedback)
+        }
+    }
+}
+
+private enum class PracticeFeedback { None, Correct, TryAgain }
+
+@Composable
+private fun PracticeFeedbackRow(feedback: PracticeFeedback) {
+    if (feedback == PracticeFeedback.None) return
+    val (textRes, color) = when (feedback) {
+        PracticeFeedback.Correct ->
+            R.string.play_more_correct to MaterialTheme.colorScheme.primary
+        PracticeFeedback.TryAgain ->
+            R.string.play_more_try_again to MaterialTheme.colorScheme.secondary
+        PracticeFeedback.None -> return
+    }
+    Text(
+        text = stringResource(textRes),
+        style = MaterialTheme.typography.titleSmall,
+        color = color,
+        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+    )
+}
+
+@Composable
+private fun PracticeOrderingCard(
+    item: InteractivePracticeItem.SentenceOrdering,
+    useCases: InteractivePracticeUseCases,
+) {
+    val order = remember(item.id) { mutableStateListOf<String>().apply { addAll(item.shuffled) } }
+    var feedback by remember(item.id) { mutableStateOf(PracticeFeedback.None) }
+    val moveUpLabel = stringResource(R.string.play_more_move_up)
+    val moveDownLabel = stringResource(R.string.play_more_move_down)
+    PracticeCardShell(
+        title = stringResource(R.string.play_more_ordering_title),
+        feedback = feedback,
+    ) {
+        order.forEachIndexed { index, sentence ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+            ) {
+                Text(
+                    text = sentence,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(
+                    onClick = {
+                        if (index > 0) {
+                            val tmp = order[index - 1]
+                            order[index - 1] = order[index]
+                            order[index] = tmp
+                            feedback = PracticeFeedback.None
+                        }
+                    },
+                    enabled = index > 0,
+                    modifier = Modifier
+                        .size(LmcSpacing.MinTouchTarget)
+                        .semantics {
+                            contentDescription = moveUpLabel
+                        },
+                ) {
+                    Text(
+                        text = "▲",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = if (index > 0) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.outlineVariant
+                        },
+                    )
+                }
+                IconButton(
+                    onClick = {
+                        if (index < order.lastIndex) {
+                            val tmp = order[index + 1]
+                            order[index + 1] = order[index]
+                            order[index] = tmp
+                            feedback = PracticeFeedback.None
+                        }
+                    },
+                    enabled = index < order.lastIndex,
+                    modifier = Modifier
+                        .size(LmcSpacing.MinTouchTarget)
+                        .semantics {
+                            contentDescription = moveDownLabel
+                        },
+                ) {
+                    Text(
+                        text = "▼",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = if (index < order.lastIndex) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.outlineVariant
+                        },
+                    )
+                }
+            }
+        }
+        Button(
+            onClick = {
+                feedback = if (useCases.scoreOrdering(item, order.toList())) {
+                    PracticeFeedback.Correct
+                } else {
+                    PracticeFeedback.TryAgain
+                }
+            },
+            modifier = Modifier.heightIn(min = LmcSpacing.MinTouchTarget),
+            shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+        ) {
+            Text(text = stringResource(R.string.play_more_check))
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun PracticeMatchingCard(
+    item: InteractivePracticeItem.WordMatching,
+    useCases: InteractivePracticeUseCases,
+) {
+    val meanings = remember(item.id) { item.pairs.map { it.meaning }.shuffled() }
+    var selectedWord by remember(item.id) { mutableStateOf<String?>(null) }
+    val matches = remember(item.id) { mutableStateMapOf<String, String>() }
+    var feedback by remember(item.id) { mutableStateOf(PracticeFeedback.None) }
+    PracticeCardShell(
+        title = stringResource(R.string.play_more_matching_title),
+        feedback = feedback,
+    ) {
+        item.pairs.forEach { pair ->
+            val isSelected = selectedWord == pair.word
+            val assigned = matches[pair.word]
+            OutlinedButton(
+                onClick = {
+                    selectedWord = if (isSelected) null else pair.word
+                    feedback = PracticeFeedback.None
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = LmcSpacing.MinTouchTarget),
+                colors = if (isSelected) {
+                    ButtonDefaults.outlinedButtonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    )
+                } else {
+                    ButtonDefaults.outlinedButtonColors()
+                },
+            ) {
+                Text(
+                    text = if (assigned != null) "${pair.word} → $assigned" else pair.word,
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+            }
+        }
+        HorizontalDivider()
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space2)) {
+            meanings.forEach { meaning ->
+                val used = matches.values.contains(meaning)
+                Button(
+                    onClick = {
+                        val word = selectedWord ?: return@Button
+                        matches.entries.filter { it.value == meaning }.forEach { matches.remove(it.key) }
+                        matches[word] = meaning
+                        selectedWord = null
+                        feedback = PracticeFeedback.None
+                    },
+                    enabled = selectedWord != null && !used,
+                    modifier = Modifier.heightIn(min = LmcSpacing.MinTouchTarget),
+                    shape = RoundedCornerShape(LmcSpacing.RadiusMd),
+                ) {
+                    Text(text = meaning, style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+        }
+        Button(
+            onClick = {
+                feedback = if (useCases.scoreMatching(item, matches.toMap())) {
+                    PracticeFeedback.Correct
+                } else {
+                    PracticeFeedback.TryAgain
+                }
+            },
+            modifier = Modifier.heightIn(min = LmcSpacing.MinTouchTarget),
+            shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+        ) {
+            Text(text = stringResource(R.string.play_more_check))
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun PracticeClozeCard(
+    item: InteractivePracticeItem.Cloze,
+    useCases: InteractivePracticeUseCases,
+) {
+    var selected by remember(item.id) { mutableStateOf<String?>(null) }
+    var feedback by remember(item.id) { mutableStateOf(PracticeFeedback.None) }
+    PracticeCardShell(
+        title = stringResource(R.string.play_more_cloze_title),
+        feedback = feedback,
+    ) {
+        Text(
+            text = item.sentenceBefore + (selected ?: "＿＿＿") + item.sentenceAfter,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space2)) {
+            item.options.forEach { option ->
+                val isSelected = selected == option
+                Button(
+                    onClick = {
+                        selected = option
+                        feedback = if (useCases.scoreCloze(item, option)) {
+                            PracticeFeedback.Correct
+                        } else {
+                            PracticeFeedback.TryAgain
+                        }
+                    },
+                    modifier = Modifier.heightIn(min = LmcSpacing.MinTouchTarget),
+                    shape = RoundedCornerShape(LmcSpacing.RadiusMd),
+                    colors = if (isSelected) {
+                        ButtonDefaults.buttonColors()
+                    } else {
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                    },
+                ) {
+                    Text(text = option, style = MaterialTheme.typography.bodyLarge)
                 }
             }
         }
