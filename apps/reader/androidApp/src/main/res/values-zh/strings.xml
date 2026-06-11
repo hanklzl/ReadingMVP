@@ -325,6 +325,28 @@
     <string name="parent_quiz_score_format">%1$d / %2$d</string>
     <string name="parent_quiz_correct_count">%1$d / %2$d</string>
 
+    <!-- Ability map (child-facing breadth-of-practice view) -->
+    <string name="ability_title">我的中文地图</string>
+    <string name="ability_subtitle">看看你正在长出多少本领！</string>
+    <string name="ability_today_card_title">我的中文地图</string>
+    <string name="ability_today_card_body">看看你正在长出的阅读本领。</string>
+    <string name="ability_today_card_action">打开</string>
+    <string name="ability_progress_fraction">%1$d / %2$d 篇</string>
+    <string name="ability_encourage">每读一篇故事，就长出一个新本领。继续加油！</string>
+    <string name="ability_dim_character_recognition">识字</string>
+    <string name="ability_dim_word_meaning">词义</string>
+    <string name="ability_dim_sentence_reading">句读</string>
+    <string name="ability_dim_listening">听读</string>
+    <string name="ability_dim_comprehension">理解</string>
+    <string name="ability_dim_retelling">复述</string>
+    <string name="ability_dim_culture">文化</string>
+
+    <!-- Parent: what was practised -->
+    <string name="parent_practised_title">今天练习了</string>
+    <string name="parent_practised_format">今天练习了：%1$s</string>
+    <string name="parent_practised_separator">、</string>
+    <string name="parent_comprehension_accuracy_format">理解正确率：%1$s</string>
+
     <plurals name="parent_stories_read_count">
         <item quantity="other">%1$d 篇</item>
     </plurals>

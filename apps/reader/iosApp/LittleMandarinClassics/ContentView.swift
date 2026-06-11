@@ -150,6 +150,7 @@ struct ContentView: View {
                     viewModel.openPendingReview()
                     flowRoute = .reviewPack
                 },
+                openAbilityMap: { flowRoute = .abilityMap },
                 openSettings: { flowRoute = .settings }
             )
         case .library:
@@ -257,6 +258,15 @@ struct ContentView: View {
                 },
                 close: { flowRoute = nil }
             )
+        case .abilityMap:
+            VStack(spacing: 0) {
+                LMCFlowTopBar(
+                    titleKey: "ability_title",
+                    trailingText: nil,
+                    close: { flowRoute = nil }
+                )
+                AbilityMapScreen(abilityMap: viewModel.abilityMap)
+            }
         case .settings:
             VStack(spacing: 0) {
                 LMCFlowTopBar(
@@ -372,6 +382,7 @@ final class ReaderViewModel: ObservableObject {
     private let readingLevelAssessmentUseCases = ReadingLevelAssessmentUseCases()
     private let readingPathRecommender = AdaptiveReadingPathRecommender()
     private let buildParentReportSummaryUseCase = BuildParentReportSummaryUseCase()
+    private let abilityMapUseCases = AbilityMapUseCases()
     private let readingSessionReducer = ReadingSessionReducer()
     private let karaokeReducer = ReadAlongKaraokeReducer()
     private let quizSessionReducer = QuizSessionReducer(scoreQuizUseCase: ScoreQuizUseCase())
@@ -458,6 +469,19 @@ final class ReaderViewModel: ObservableObject {
 
     private var completionRecords: [CompletionRecord] {
         parentReport?.recentCompletions ?? []
+    }
+
+    // Story-driven Chinese-ability map (pure shared logic). The most recently completed
+    // story drives the parent "today you practised …" line. No child PII (AGENTS.md §7).
+    var abilityMap: AbilityMap {
+        let recentSessionStoryId = completionRecords
+            .max(by: { $0.completedAtEpochMillis < $1.completedAtEpochMillis })?
+            .storyId
+        return abilityMapUseCases.buildAbilityMap(
+            stories: stories,
+            completionRecords: completionRecords,
+            recentSessionStoryId: recentSessionStoryId
+        )
     }
 
     private var readingPositionsForRecommender: [String: KotlinInt] {
@@ -1582,6 +1606,7 @@ enum LMCFlowRoute {
     case wordReview
     case settings
     case reviewPack
+    case abilityMap
 }
 
 enum LMCAppOpenType: String {
@@ -2238,6 +2263,7 @@ private struct TodayScreen: View {
     let openQuiz: (Story) -> Void
     let openParent: () -> Void
     let openReview: () -> Void
+    let openAbilityMap: () -> Void
     let openSettings: () -> Void
 
     var body: some View {
@@ -2304,6 +2330,11 @@ private struct TodayScreen: View {
                                 .background(LMCColor.tertiaryContainer)
                                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                         }
+
+                        AbilityMapTodayCard(
+                            abilityMap: viewModel.abilityMap,
+                            action: openAbilityMap
+                        )
 
                         if let upNext = viewModel.upNextStory {
                             VStack(alignment: .leading, spacing: LMCSpace.s3) {
@@ -4194,6 +4225,8 @@ private struct ParentReportScreen: View {
                 MetricTile(titleKey: "parent_quiz_correct", value: quizCorrectText)
                 MetricTile(titleKey: "parent_words_reviewed", value: "\(summary?.vocabLearnedThisWeek ?? 0)")
             }
+
+            ParentPractisedSection(abilityMap: viewModel.abilityMap)
 
             ParentAdviceCard(
                 summary: summary,
@@ -6698,6 +6731,164 @@ private struct LMCSecondaryButtonStyle: ButtonStyle {
             )
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .opacity(configuration.isPressed ? 0.78 : 1)
+    }
+}
+
+// MARK: - Story-driven Chinese-ability map (child + parent surfaces)
+
+extension AbilityDimension {
+    /// Localized display-name key. Mapping lives in the platform layer (no hardcoded UI text).
+    var labelKey: String {
+        switch self {
+        case .characterrecognition: return "ability_dim_character_recognition"
+        case .wordmeaning: return "ability_dim_word_meaning"
+        case .sentencereading: return "ability_dim_sentence_reading"
+        case .listening: return "ability_dim_listening"
+        case .comprehension: return "ability_dim_comprehension"
+        case .retelling: return "ability_dim_retelling"
+        case .culture: return "ability_dim_culture"
+        default: return "ability_dim_character_recognition"
+        }
+    }
+
+    var localizedLabel: String { LMCStrings.localized(labelKey) }
+}
+
+private struct AbilityMapTodayCard: View {
+    let abilityMap: AbilityMap
+    let action: () -> Void
+
+    private var practicedDimensions: Int {
+        abilityMap.dimensions.filter { $0.practicedStories > 0 }.count
+    }
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: LMCSpace.s3) {
+                Image(systemName: "map.fill")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(LMCColor.secondary)
+                VStack(alignment: .leading, spacing: LMCSpace.s1) {
+                    Text("ability_today_card_title")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(LMCColor.onSecondaryContainer)
+                    Text("ability_today_card_body")
+                        .font(.system(size: 15))
+                        .foregroundStyle(LMCColor.onSecondaryContainer)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text(LMCStrings.format("ability_progress_fraction", practicedDimensions, abilityMap.dimensions.count))
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(LMCColor.onSecondaryContainer)
+                }
+                Spacer()
+                Text("ability_today_card_action")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(LMCColor.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(LMCSpace.s4)
+            .background(LMCColor.secondaryContainer)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct AbilityMapScreen: View {
+    let abilityMap: AbilityMap
+
+    var body: some View {
+        LMCScreen(maxWidth: LMCSpace.readingMaxWidth) {
+            Text("ability_subtitle")
+                .font(.system(size: 18))
+                .foregroundStyle(LMCColor.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            ForEach(abilityMap.dimensions, id: \.dimension) { progress in
+                AbilityDimensionCard(
+                    progress: progress,
+                    practicedNow: abilityMap.recentlyPracticed.contains(progress.dimension)
+                )
+            }
+
+            Text("ability_encourage")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundStyle(LMCColor.tertiary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(LMCSpace.s4)
+                .background(LMCColor.tertiaryContainer)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+    }
+}
+
+private struct AbilityDimensionCard: View {
+    let progress: AbilityProgress
+    let practicedNow: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: LMCSpace.s2) {
+            HStack {
+                Text(progress.dimension.localizedLabel)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(LMCColor.textPrimary)
+                Spacer()
+                Text(LMCStrings.format("ability_progress_fraction", Int(progress.practicedStories), Int(progress.totalStories)))
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(LMCColor.textSecondary)
+            }
+            LMCProgressBar(value: progress.masteryFraction)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(LMCSpace.s4)
+        .background(practicedNow ? LMCColor.successContainer : LMCColor.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(LMCColor.outlineVariant, lineWidth: 1)
+        )
+    }
+}
+
+private struct ParentPractisedSection: View {
+    let abilityMap: AbilityMap
+
+    private var practisedLabels: [String] {
+        abilityMap.dimensions
+            .map { $0.dimension }
+            .filter { abilityMap.recentlyPracticed.contains($0) }
+            .map { $0.localizedLabel }
+    }
+
+    private var accuracyText: String? {
+        guard let accuracy = abilityMap.comprehensionAccuracy else { return nil }
+        return "\(Int((accuracy.doubleValue * 100).rounded()))%"
+    }
+
+    var body: some View {
+        if practisedLabels.isEmpty && accuracyText == nil {
+            EmptyView()
+        } else {
+            VStack(alignment: .leading, spacing: LMCSpace.s2) {
+                SectionTitle("parent_practised_title")
+                if !practisedLabels.isEmpty {
+                    let separator = LMCStrings.localized("parent_practised_separator")
+                    Text(LMCStrings.format("parent_practised_format", practisedLabels.joined(separator: separator)))
+                        .font(.system(size: 18))
+                        .foregroundStyle(LMCColor.onSecondaryContainer)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if let accuracyText {
+                    Text(LMCStrings.format("parent_comprehension_accuracy_format", accuracyText))
+                        .font(.system(size: 15))
+                        .foregroundStyle(LMCColor.onSecondaryContainer)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(LMCSpace.s4)
+            .background(LMCColor.secondaryContainer)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
     }
 }
 

@@ -1,6 +1,244 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "ability_dim_character_recognition": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Character recognition"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "识字"
+          }
+        }
+      }
+    },
+    "ability_dim_comprehension": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comprehension"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "理解"
+          }
+        }
+      }
+    },
+    "ability_dim_culture": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Culture"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文化"
+          }
+        }
+      }
+    },
+    "ability_dim_listening": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Listening"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "听读"
+          }
+        }
+      }
+    },
+    "ability_dim_retelling": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retelling"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "复述"
+          }
+        }
+      }
+    },
+    "ability_dim_sentence_reading": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sentence reading"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "句读"
+          }
+        }
+      }
+    },
+    "ability_dim_word_meaning": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Word meaning"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "词义"
+          }
+        }
+      }
+    },
+    "ability_encourage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every story grows another skill. Keep going!"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每读一篇故事，就长出一个新本领。继续加油！"
+          }
+        }
+      }
+    },
+    "ability_progress_fraction": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$d / %2$d stories"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$d / %2$d 篇"
+          }
+        }
+      }
+    },
+    "ability_subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Look how many skills you are growing!"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "看看你正在长出多少本领！"
+          }
+        }
+      }
+    },
+    "ability_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My Chinese map"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "我的中文地图"
+          }
+        }
+      }
+    },
+    "ability_today_card_action": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开"
+          }
+        }
+      }
+    },
+    "ability_today_card_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See all the reading skills you are growing."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "看看你正在长出的阅读本领。"
+          }
+        }
+      }
+    },
+    "ability_today_card_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My Chinese map"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "我的中文地图"
+          }
+        }
+      }
+    },
     "action_back": {
       "extractionState": "manual",
       "localizations": {
@@ -1837,6 +2075,23 @@
         }
       }
     },
+    "parent_comprehension_accuracy_format": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comprehension accuracy: %1$@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "理解正确率：%1$@"
+          }
+        }
+      }
+    },
     "parent_gate_answer_label": {
       "extractionState": "manual",
       "localizations": {
@@ -1935,6 +2190,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "家长验证"
+          }
+        }
+      }
+    },
+    "parent_practised_format": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today you practised: %1$@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今天练习了：%1$@"
+          }
+        }
+      }
+    },
+    "parent_practised_separator": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "、"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "、"
+          }
+        }
+      }
+    },
+    "parent_practised_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today you practised"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今天练习了"
           }
         }
       }
@@ -4798,64 +5104,154 @@
     "word_lookup_ai_badge": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "AI explanation" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "AI 解释" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI explanation"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI 解释"
+          }
+        }
       }
     },
     "word_lookup_ai_boundary": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Only explains words in the current story. No open chat." } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "只解释当前故事里的词，不是开放聊天。" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only explains words in the current story. No open chat."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "只解释当前故事里的词，不是开放聊天。"
+          }
+        }
       }
     },
     "word_lookup_ai_error": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Explanation is not available right now." } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "暂时无法解释这个词。" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Explanation is not available right now."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂时无法解释这个词。"
+          }
+        }
       }
     },
     "word_lookup_ai_loading": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Explaining..." } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "正在解释..." } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Explaining..."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在解释..."
+          }
+        }
       }
     },
     "word_lookup_close": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Close" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "关闭" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭"
+          }
+        }
       }
     },
     "word_lookup_curated_source": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "From this story" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "本故事词汇" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "From this story"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本故事词汇"
+          }
+        }
       }
     },
     "word_lookup_example_label": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Example" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "例句" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Example"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "例句"
+          }
+        }
       }
     },
     "word_lookup_explain_button": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Explain with AI" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "用 AI 解释" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Explain with AI"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用 AI 解释"
+          }
+        }
       }
     },
     "word_lookup_no_entry": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "No saved entry for this word yet." } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "这个词还没有收录的解释。" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No saved entry for this word yet."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这个词还没有收录的解释。"
+          }
+        }
       }
     },
     "word_review_complete_body": {

@@ -327,6 +327,28 @@
     <string name="parent_quiz_score_format">%1$d / %2$d</string>
     <string name="parent_quiz_correct_count">%1$d / %2$d</string>
 
+    <!-- Ability map (child-facing breadth-of-practice view) -->
+    <string name="ability_title">My Chinese map</string>
+    <string name="ability_subtitle">Look how many skills you are growing!</string>
+    <string name="ability_today_card_title">My Chinese map</string>
+    <string name="ability_today_card_body">See all the reading skills you are growing.</string>
+    <string name="ability_today_card_action">Open</string>
+    <string name="ability_progress_fraction">%1$d / %2$d stories</string>
+    <string name="ability_encourage">Every story grows another skill. Keep going!</string>
+    <string name="ability_dim_character_recognition">Character recognition</string>
+    <string name="ability_dim_word_meaning">Word meaning</string>
+    <string name="ability_dim_sentence_reading">Sentence reading</string>
+    <string name="ability_dim_listening">Listening</string>
+    <string name="ability_dim_comprehension">Comprehension</string>
+    <string name="ability_dim_retelling">Retelling</string>
+    <string name="ability_dim_culture">Culture</string>
+
+    <!-- Parent: what was practised -->
+    <string name="parent_practised_title">Today you practised</string>
+    <string name="parent_practised_format">Today you practised: %1$s</string>
+    <string name="parent_practised_separator">、</string>
+    <string name="parent_comprehension_accuracy_format">Comprehension accuracy: %1$s</string>
+
     <plurals name="parent_stories_read_count">
         <item quantity="one">%1$d story</item>
         <item quantity="other">%1$d stories</item>

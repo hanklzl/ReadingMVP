@@ -150,6 +150,10 @@ import com.littlemandarin.classics.shared.feedback.FeedbackIssueType as SharedFe
 import com.littlemandarin.classics.shared.feedback.FeedbackService
 import com.littlemandarin.classics.shared.feedback.FeedbackSatisfaction as SharedFeedbackSatisfaction
 import com.littlemandarin.classics.shared.feedback.createPlatformFeedbackService
+import com.littlemandarin.classics.shared.presentation.AbilityDimension
+import com.littlemandarin.classics.shared.presentation.AbilityMap
+import com.littlemandarin.classics.shared.presentation.AbilityMapUseCases
+import com.littlemandarin.classics.shared.presentation.AbilityProgress
 import com.littlemandarin.classics.shared.presentation.AnalyticsEventPayload
 import com.littlemandarin.classics.shared.presentation.AndroidEngagementServiceProvider
 import com.littlemandarin.classics.shared.presentation.AdaptiveReadingPathRecommender
@@ -290,6 +294,7 @@ private object ReaderRoutes {
     const val Settings = "settings"
     const val Privacy = "privacy"
     const val PlacementCheck = "placement_check"
+    const val Ability = "ability"
 
     const val Reading = "story/{storyId}/read"
     const val Vocabulary = "story/{storyId}/vocabulary?source={source}"
@@ -312,6 +317,7 @@ private object ReaderRoutes {
             route == PlacementCheck ||
             route == WordReview ||
             route == ReviewPack ||
+            route == Ability ||
             route?.startsWith("story/") == true
 }
 
@@ -661,6 +667,19 @@ private fun ReaderAppContent(
         )
     }
 
+    val abilityMapUseCases = remember { AbilityMapUseCases() }
+    val abilityMap = remember(storiesState, progressRecords) {
+        val stories = (storiesState as? StoriesState.Ready)?.stories.orEmpty()
+        val recentSessionStoryId = progressRecords
+            .maxByOrNull { it.completedAtEpochMillis }
+            ?.storyId
+        abilityMapUseCases.buildAbilityMap(
+            stories = stories,
+            completionRecords = progressRecords,
+            recentSessionStoryId = recentSessionStoryId,
+        )
+    }
+
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
     val showBottomBar = !ReaderRoutes.isFocusedFlow(currentRoute)
@@ -790,6 +809,7 @@ private fun ReaderAppContent(
                         recommendedStoryId = readingPathRecommendation.nextStory?.id,
                         reviewWordCount = readingPathRecommendation.reviewWordCount,
                         pendingReview = pendingReview,
+                        abilityMap = abilityMap,
                         storyPresentationUseCases = storyPresentationUseCases,
                         snackbarHostState = snackbarHostState,
                         onRead = { storyId ->
@@ -808,9 +828,16 @@ private fun ReaderAppContent(
                             analytics.track(ReaderAnalyticsEvents.parentReportOpen("today_header"))
                             navController.navigateTopLevel(ReaderRoutes.Parent)
                         },
+                        onAbilityMap = { navController.navigate(ReaderRoutes.Ability) },
                         onSettings = { navController.navigateTopLevel(ReaderRoutes.Settings) },
                     )
                 }
+            }
+            composable(ReaderRoutes.Ability) {
+                AbilityMapScreen(
+                    abilityMap = abilityMap,
+                    onBack = { navController.popBackStack() },
+                )
             }
             composable(ReaderRoutes.Library) {
                 LibraryStateContent(
@@ -859,6 +886,7 @@ private fun ReaderAppContent(
                         progressStats = progressStats,
                         parentReport = parentReport,
                         parentReportSummary = parentReportSummary,
+                        abilityMap = abilityMap,
                         progressRecords = progressRecords,
                         readingPositions = readingPositions,
                         storyPresentationUseCases = storyPresentationUseCases,
@@ -1553,6 +1581,7 @@ private fun TodayScreen(
     recommendedStoryId: String?,
     reviewWordCount: Int,
     pendingReview: PendingReview?,
+    abilityMap: AbilityMap,
     storyPresentationUseCases: StoryPresentationUseCases,
     snackbarHostState: SnackbarHostState,
     onRead: (String) -> Unit,
@@ -1560,6 +1589,7 @@ private fun TodayScreen(
     onQuiz: (String) -> Unit,
     onReview: () -> Unit,
     onParent: () -> Unit,
+    onAbilityMap: () -> Unit,
     onSettings: () -> Unit,
 ) {
     val completedStoryIds = remember(progressRecords) {
@@ -1673,6 +1703,12 @@ private fun TodayScreen(
                     text = stringResource(R.string.today_review_words, reviewWordCount),
                 )
             }
+        }
+        item {
+            AbilityMapTodayCard(
+                abilityMap = abilityMap,
+                onClick = onAbilityMap,
+            )
         }
         if (upNextStory != null) {
             item {
@@ -3354,6 +3390,7 @@ private fun ParentReportScreen(
     progressStats: ProgressStats,
     parentReport: ParentProgressReport,
     parentReportSummary: ParentReportSummary,
+    abilityMap: AbilityMap,
     progressRecords: List<CompletionRecord>,
     readingPositions: Map<String, Int>,
     storyPresentationUseCases: StoryPresentationUseCases,
@@ -3426,6 +3463,9 @@ private fun ParentReportScreen(
                         ),
                     ),
                 )
+            }
+            item {
+                ParentPractisedSection(abilityMap = abilityMap)
             }
             item {
                 ParentAdviceCard(
@@ -4610,6 +4650,199 @@ private fun ProgressSummaryBanner(text: String) {
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onTertiaryContainer,
             )
+        }
+    }
+}
+
+@Composable
+private fun AbilityDimension.labelRes(): Int = when (this) {
+    AbilityDimension.CharacterRecognition -> R.string.ability_dim_character_recognition
+    AbilityDimension.WordMeaning -> R.string.ability_dim_word_meaning
+    AbilityDimension.SentenceReading -> R.string.ability_dim_sentence_reading
+    AbilityDimension.Listening -> R.string.ability_dim_listening
+    AbilityDimension.Comprehension -> R.string.ability_dim_comprehension
+    AbilityDimension.Retelling -> R.string.ability_dim_retelling
+    AbilityDimension.Culture -> R.string.ability_dim_culture
+}
+
+@Composable
+private fun AbilityMapTodayCard(
+    abilityMap: AbilityMap,
+    onClick: () -> Unit,
+) {
+    val practicedDimensions = abilityMap.dimensions.count { it.practicedStories > 0 }
+    val totalDimensions = abilityMap.dimensions.size
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+    ) {
+        Row(
+            modifier = Modifier.padding(LmcSpacing.CardPadding),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(LmcSpacing.Space3),
+        ) {
+            LmcCanvasIcon(
+                icon = LmcIcon.Book,
+                color = MaterialTheme.colorScheme.secondary,
+            )
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space1),
+            ) {
+                Text(
+                    text = stringResource(R.string.ability_today_card_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+                Text(
+                    text = stringResource(R.string.ability_today_card_body),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+                Text(
+                    text = stringResource(
+                        R.string.ability_progress_fraction,
+                        practicedDimensions,
+                        totalDimensions,
+                    ),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+            }
+            Text(
+                text = stringResource(R.string.ability_today_card_action),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.secondary,
+            )
+        }
+    }
+}
+
+@Composable
+private fun AbilityMapScreen(
+    abilityMap: AbilityMap,
+    onBack: () -> Unit,
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(
+            horizontal = LmcSpacing.ScreenPadding,
+            vertical = LmcSpacing.Space4,
+        ),
+        verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space4),
+    ) {
+        item {
+            FlowTopBar(
+                title = stringResource(R.string.ability_title),
+                onBack = onBack,
+            )
+        }
+        item {
+            Text(
+                text = stringResource(R.string.ability_subtitle),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        items(abilityMap.dimensions, key = { it.dimension.name }) { progress ->
+            AbilityDimensionCard(
+                progress = progress,
+                practicedNow = progress.dimension in abilityMap.recentlyPracticed,
+            )
+        }
+        item {
+            ProgressSummaryBanner(text = stringResource(R.string.ability_encourage))
+        }
+    }
+}
+
+@Composable
+private fun AbilityDimensionCard(
+    progress: AbilityProgress,
+    practicedNow: Boolean,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(LmcSpacing.CardRadius),
+        color = if (practicedNow) LmcColors.SuccessContainer else MaterialTheme.colorScheme.surface,
+        shadowElevation = LmcSpacing.CardElevation,
+    ) {
+        Column(
+            modifier = Modifier.padding(LmcSpacing.CardPadding),
+            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(progress.dimension.labelRes()),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = stringResource(
+                        R.string.ability_progress_fraction,
+                        progress.practicedStories,
+                        progress.totalStories,
+                    ),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            LmcProgressBar(progress = progress.masteryFraction.toFloat())
+        }
+    }
+}
+
+@Composable
+private fun ParentPractisedSection(
+    abilityMap: AbilityMap,
+) {
+    val separator = stringResource(R.string.parent_practised_separator)
+    val practisedLabels = AbilityDimension.entries
+        .filter { it in abilityMap.recentlyPracticed }
+        .map { stringResource(it.labelRes()) }
+    val accuracyText = abilityMap.comprehensionAccuracy?.let { formatPercent(it.toFloat()) }
+    if (practisedLabels.isEmpty() && accuracyText == null) return
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(LmcSpacing.RadiusLg),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+    ) {
+        Column(
+            modifier = Modifier.padding(LmcSpacing.CardPadding),
+            verticalArrangement = Arrangement.spacedBy(LmcSpacing.Space2),
+        ) {
+            Text(
+                text = stringResource(R.string.parent_practised_title),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+            if (practisedLabels.isNotEmpty()) {
+                Text(
+                    text = stringResource(
+                        R.string.parent_practised_format,
+                        practisedLabels.joinToString(separator),
+                    ),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+            }
+            if (accuracyText != null) {
+                Text(
+                    text = stringResource(
+                        R.string.parent_comprehension_accuracy_format,
+                        accuracyText,
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+            }
         }
     }
 }
