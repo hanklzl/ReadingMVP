@@ -95,7 +95,9 @@ def lint_polyphone_readings(para_index: int, cells: list[Any]) -> list[str]:
         prev_is_hanzi = is_hanzi_char(prev_char)
         next_is_hanzi = is_hanzi_char(next_char)
 
-        if char == "的" and text[i : i + 2] == "的卢" and reading == "dì":
+        # 的卢 is the proper-noun horse name, read dí lú (per MOE dict); exempt from the
+        # neutral-tone 的=de rule.
+        if char == "的" and text[i : i + 2] == "的卢" and reading == "dí":
             continue
 
         if char == "的" and reading != "de":

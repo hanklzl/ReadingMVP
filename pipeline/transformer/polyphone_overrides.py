@@ -32,7 +32,7 @@ PROPER_NAME_READINGS: PhraseReadings = {
     "荆州": ("jīng", "zhōu"),
     "襄阳": ("xiāng", "yáng"),
     "檀溪": ("tán", "xī"),
-    "的卢": ("dì", "lú"),
+    "的卢": ("dí", "lú"),
     "陆口": ("lù", "kǒu"),
     "刘禅": ("liú", "shàn"),
     "成都": ("chéng", "dū"),

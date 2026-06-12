@@ -196,7 +196,7 @@ class ValidatorTest(unittest.TestCase):
             {"c": "备", "p": "bèi"},
             {"c": "骑", "p": "qí"},
             {"c": "上", "p": "shàng"},
-            {"c": "的", "p": "dì"},
+            {"c": "的", "p": "dí"},
             {"c": "卢", "p": "lú"},
             {"c": "。", "p": ""},
         ]

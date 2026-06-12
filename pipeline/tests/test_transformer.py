@@ -81,7 +81,7 @@ class TransformerTest(unittest.TestCase):
         start = len("刘备骑上")
         self.assertEqual(
             [
-                {"c": "的", "p": "dì"},
+                {"c": "的", "p": "dí"},
                 {"c": "卢", "p": "lú"},
             ],
             cells[start : start + 2],

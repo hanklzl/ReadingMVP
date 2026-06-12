@@ -5,104 +5,1852 @@
       "sentIndex": 0,
       "text": "街亭是一处重要路口，诸葛亮派马谡去守，又请王平一起帮忙。",
       "audioPath": "audio/p1_s1.wav",
-      "durationMs": 0,
-      "unavailable": true
+      "durationMs": 5760,
+      "chars": [
+        {
+          "c": "街",
+          "startMs": 80,
+          "endMs": 240
+        },
+        {
+          "c": "亭",
+          "startMs": 240,
+          "endMs": 560
+        },
+        {
+          "c": "是",
+          "startMs": 560,
+          "endMs": 640
+        },
+        {
+          "c": "一",
+          "startMs": 640,
+          "endMs": 720
+        },
+        {
+          "c": "处",
+          "startMs": 720,
+          "endMs": 880
+        },
+        {
+          "c": "重",
+          "startMs": 880,
+          "endMs": 1120
+        },
+        {
+          "c": "要",
+          "startMs": 1120,
+          "endMs": 1200
+        },
+        {
+          "c": "路",
+          "startMs": 1200,
+          "endMs": 1360
+        },
+        {
+          "c": "口",
+          "startMs": 1360,
+          "endMs": 1760
+        },
+        {
+          "c": "，",
+          "startMs": 1760,
+          "endMs": 2400
+        },
+        {
+          "c": "诸",
+          "startMs": 2400,
+          "endMs": 2480
+        },
+        {
+          "c": "葛",
+          "startMs": 2480,
+          "endMs": 2640
+        },
+        {
+          "c": "亮",
+          "startMs": 2640,
+          "endMs": 2880
+        },
+        {
+          "c": "派",
+          "startMs": 2880,
+          "endMs": 3040
+        },
+        {
+          "c": "马",
+          "startMs": 3040,
+          "endMs": 3200
+        },
+        {
+          "c": "谡",
+          "startMs": 3200,
+          "endMs": 3440
+        },
+        {
+          "c": "去",
+          "startMs": 3440,
+          "endMs": 3600
+        },
+        {
+          "c": "守",
+          "startMs": 3600,
+          "endMs": 4000
+        },
+        {
+          "c": "，",
+          "startMs": 4000,
+          "endMs": 4320
+        },
+        {
+          "c": "又",
+          "startMs": 4320,
+          "endMs": 4400
+        },
+        {
+          "c": "请",
+          "startMs": 4400,
+          "endMs": 4560
+        },
+        {
+          "c": "王",
+          "startMs": 4560,
+          "endMs": 4800
+        },
+        {
+          "c": "平",
+          "startMs": 4800,
+          "endMs": 4960
+        },
+        {
+          "c": "一",
+          "startMs": 5040,
+          "endMs": 5120
+        },
+        {
+          "c": "起",
+          "startMs": 5120,
+          "endMs": 5280
+        },
+        {
+          "c": "帮",
+          "startMs": 5280,
+          "endMs": 5440
+        },
+        {
+          "c": "忙",
+          "startMs": 5440,
+          "endMs": 5760
+        },
+        {
+          "c": "。",
+          "startMs": 5760,
+          "endMs": 5760
+        }
+      ]
     },
     {
       "paraIndex": 0,
       "sentIndex": 1,
       "text": "临行前，诸葛亮反复提醒，地方虽小，关系很大，做安排时一定要稳。",
       "audioPath": "audio/p1_s2.wav",
-      "durationMs": 0,
-      "unavailable": true
+      "durationMs": 6400,
+      "chars": [
+        {
+          "c": "临",
+          "startMs": 80,
+          "endMs": 160
+        },
+        {
+          "c": "行",
+          "startMs": 160,
+          "endMs": 400
+        },
+        {
+          "c": "前",
+          "startMs": 400,
+          "endMs": 800
+        },
+        {
+          "c": "，",
+          "startMs": 800,
+          "endMs": 1040
+        },
+        {
+          "c": "诸",
+          "startMs": 1040,
+          "endMs": 1120
+        },
+        {
+          "c": "葛",
+          "startMs": 1120,
+          "endMs": 1280
+        },
+        {
+          "c": "亮",
+          "startMs": 1280,
+          "endMs": 1440
+        },
+        {
+          "c": "反",
+          "startMs": 1440,
+          "endMs": 1680
+        },
+        {
+          "c": "复",
+          "startMs": 1680,
+          "endMs": 1760
+        },
+        {
+          "c": "提",
+          "startMs": 1760,
+          "endMs": 2000
+        },
+        {
+          "c": "醒",
+          "startMs": 2000,
+          "endMs": 2240
+        },
+        {
+          "c": "，",
+          "startMs": 2240,
+          "endMs": 2880
+        },
+        {
+          "c": "地",
+          "startMs": 2880,
+          "endMs": 3040
+        },
+        {
+          "c": "方",
+          "startMs": 3040,
+          "endMs": 3200
+        },
+        {
+          "c": "虽",
+          "startMs": 3200,
+          "endMs": 3360
+        },
+        {
+          "c": "小",
+          "startMs": 3360,
+          "endMs": 3760
+        },
+        {
+          "c": "，",
+          "startMs": 3760,
+          "endMs": 3840
+        },
+        {
+          "c": "关",
+          "startMs": 3840,
+          "endMs": 3920
+        },
+        {
+          "c": "系",
+          "startMs": 3920,
+          "endMs": 4080
+        },
+        {
+          "c": "很",
+          "startMs": 4080,
+          "endMs": 4320
+        },
+        {
+          "c": "大",
+          "startMs": 4320,
+          "endMs": 4640
+        },
+        {
+          "c": "，",
+          "startMs": 4640,
+          "endMs": 5120
+        },
+        {
+          "c": "做",
+          "startMs": 5120,
+          "endMs": 5200
+        },
+        {
+          "c": "安",
+          "startMs": 5200,
+          "endMs": 5360
+        },
+        {
+          "c": "排",
+          "startMs": 5360,
+          "endMs": 5520
+        },
+        {
+          "c": "时",
+          "startMs": 5520,
+          "endMs": 5680
+        },
+        {
+          "c": "一",
+          "startMs": 5680,
+          "endMs": 5840
+        },
+        {
+          "c": "定",
+          "startMs": 5840,
+          "endMs": 6000
+        },
+        {
+          "c": "要",
+          "startMs": 6000,
+          "endMs": 6160
+        },
+        {
+          "c": "稳",
+          "startMs": 6160,
+          "endMs": 6320
+        },
+        {
+          "c": "。",
+          "startMs": 6320,
+          "endMs": 6400
+        }
+      ]
     },
     {
       "paraIndex": 1,
       "sentIndex": 0,
       "text": "到了街亭，马谡觉得自己读过许多兵书，便想把队伍扎营在高处。",
       "audioPath": "audio/p2_s1.wav",
-      "durationMs": 0,
-      "unavailable": true
+      "durationMs": 5760,
+      "chars": [
+        {
+          "c": "到",
+          "startMs": 80,
+          "endMs": 160
+        },
+        {
+          "c": "了",
+          "startMs": 160,
+          "endMs": 320
+        },
+        {
+          "c": "街",
+          "startMs": 320,
+          "endMs": 480
+        },
+        {
+          "c": "亭",
+          "startMs": 480,
+          "endMs": 880
+        },
+        {
+          "c": "，",
+          "startMs": 880,
+          "endMs": 1120
+        },
+        {
+          "c": "马",
+          "startMs": 1120,
+          "endMs": 1360
+        },
+        {
+          "c": "谡",
+          "startMs": 1360,
+          "endMs": 1600
+        },
+        {
+          "c": "觉",
+          "startMs": 1600,
+          "endMs": 1760
+        },
+        {
+          "c": "得",
+          "startMs": 1760,
+          "endMs": 1840
+        },
+        {
+          "c": "自",
+          "startMs": 1840,
+          "endMs": 2000
+        },
+        {
+          "c": "己",
+          "startMs": 2000,
+          "endMs": 2160
+        },
+        {
+          "c": "读",
+          "startMs": 2160,
+          "endMs": 2320
+        },
+        {
+          "c": "过",
+          "startMs": 2320,
+          "endMs": 2480
+        },
+        {
+          "c": "许",
+          "startMs": 2480,
+          "endMs": 2720
+        },
+        {
+          "c": "多",
+          "startMs": 2720,
+          "endMs": 2880
+        },
+        {
+          "c": "兵",
+          "startMs": 2880,
+          "endMs": 3120
+        },
+        {
+          "c": "书",
+          "startMs": 3120,
+          "endMs": 3440
+        },
+        {
+          "c": "，",
+          "startMs": 3440,
+          "endMs": 3760
+        },
+        {
+          "c": "便",
+          "startMs": 3760,
+          "endMs": 3920
+        },
+        {
+          "c": "想",
+          "startMs": 3920,
+          "endMs": 4080
+        },
+        {
+          "c": "把",
+          "startMs": 4080,
+          "endMs": 4240
+        },
+        {
+          "c": "队",
+          "startMs": 4240,
+          "endMs": 4400
+        },
+        {
+          "c": "伍",
+          "startMs": 4400,
+          "endMs": 4560
+        },
+        {
+          "c": "扎",
+          "startMs": 4560,
+          "endMs": 4800
+        },
+        {
+          "c": "营",
+          "startMs": 4800,
+          "endMs": 5040
+        },
+        {
+          "c": "在",
+          "startMs": 5040,
+          "endMs": 5200
+        },
+        {
+          "c": "高",
+          "startMs": 5200,
+          "endMs": 5440
+        },
+        {
+          "c": "处",
+          "startMs": 5440,
+          "endMs": 5680
+        },
+        {
+          "c": "。",
+          "startMs": 5680,
+          "endMs": 5760
+        }
+      ]
     },
     {
       "paraIndex": 1,
       "sentIndex": 1,
       "text": "他还觉得高处看得远，心里更放心，可是实际路况还要再看一看。",
       "audioPath": "audio/p2_s2.wav",
-      "durationMs": 0,
-      "unavailable": true
+      "durationMs": 5840,
+      "chars": [
+        {
+          "c": "他",
+          "startMs": 80,
+          "endMs": 240
+        },
+        {
+          "c": "还",
+          "startMs": 240,
+          "endMs": 320
+        },
+        {
+          "c": "觉",
+          "startMs": 320,
+          "endMs": 560
+        },
+        {
+          "c": "得",
+          "startMs": 560,
+          "endMs": 640
+        },
+        {
+          "c": "高",
+          "startMs": 640,
+          "endMs": 800
+        },
+        {
+          "c": "处",
+          "startMs": 800,
+          "endMs": 960
+        },
+        {
+          "c": "看",
+          "startMs": 960,
+          "endMs": 1200
+        },
+        {
+          "c": "得",
+          "startMs": 1200,
+          "endMs": 1280
+        },
+        {
+          "c": "远",
+          "startMs": 1280,
+          "endMs": 1600
+        },
+        {
+          "c": "，",
+          "startMs": 1600,
+          "endMs": 1600
+        },
+        {
+          "c": "心",
+          "startMs": 1600,
+          "endMs": 1760
+        },
+        {
+          "c": "里",
+          "startMs": 1760,
+          "endMs": 1840
+        },
+        {
+          "c": "更",
+          "startMs": 1840,
+          "endMs": 2000
+        },
+        {
+          "c": "放",
+          "startMs": 2000,
+          "endMs": 2240
+        },
+        {
+          "c": "心",
+          "startMs": 2240,
+          "endMs": 2640
+        },
+        {
+          "c": "，",
+          "startMs": 2640,
+          "endMs": 3040
+        },
+        {
+          "c": "可",
+          "startMs": 3040,
+          "endMs": 3200
+        },
+        {
+          "c": "是",
+          "startMs": 3200,
+          "endMs": 3680
+        },
+        {
+          "c": "实",
+          "startMs": 3920,
+          "endMs": 4160
+        },
+        {
+          "c": "际",
+          "startMs": 4160,
+          "endMs": 4320
+        },
+        {
+          "c": "路",
+          "startMs": 4320,
+          "endMs": 4480
+        },
+        {
+          "c": "况",
+          "startMs": 4480,
+          "endMs": 4720
+        },
+        {
+          "c": "还",
+          "startMs": 4720,
+          "endMs": 4880
+        },
+        {
+          "c": "要",
+          "startMs": 4880,
+          "endMs": 4960
+        },
+        {
+          "c": "再",
+          "startMs": 4960,
+          "endMs": 5120
+        },
+        {
+          "c": "看",
+          "startMs": 5120,
+          "endMs": 5360
+        },
+        {
+          "c": "一",
+          "startMs": 5360,
+          "endMs": 5440
+        },
+        {
+          "c": "看",
+          "startMs": 5440,
+          "endMs": 5840
+        },
+        {
+          "c": "。",
+          "startMs": 5840,
+          "endMs": 5840
+        }
+      ]
     },
     {
       "paraIndex": 1,
       "sentIndex": 2,
       "text": "王平看了地形，轻声提醒，高处离水远，路也不方便，不如守在路口，互相照应。",
       "audioPath": "audio/p2_s3.wav",
-      "durationMs": 0,
-      "unavailable": true
+      "durationMs": 7760,
+      "chars": [
+        {
+          "c": "王",
+          "startMs": 80,
+          "endMs": 240
+        },
+        {
+          "c": "平",
+          "startMs": 240,
+          "endMs": 480
+        },
+        {
+          "c": "看",
+          "startMs": 480,
+          "endMs": 640
+        },
+        {
+          "c": "了",
+          "startMs": 640,
+          "endMs": 720
+        },
+        {
+          "c": "地",
+          "startMs": 720,
+          "endMs": 880
+        },
+        {
+          "c": "形",
+          "startMs": 880,
+          "endMs": 1280
+        },
+        {
+          "c": "，",
+          "startMs": 1280,
+          "endMs": 1360
+        },
+        {
+          "c": "轻",
+          "startMs": 1360,
+          "endMs": 1600
+        },
+        {
+          "c": "声",
+          "startMs": 1600,
+          "endMs": 1760
+        },
+        {
+          "c": "提",
+          "startMs": 1760,
+          "endMs": 1920
+        },
+        {
+          "c": "醒",
+          "startMs": 1920,
+          "endMs": 2240
+        },
+        {
+          "c": "，",
+          "startMs": 2240,
+          "endMs": 2880
+        },
+        {
+          "c": "高",
+          "startMs": 2880,
+          "endMs": 3040
+        },
+        {
+          "c": "处",
+          "startMs": 3040,
+          "endMs": 3200
+        },
+        {
+          "c": "离",
+          "startMs": 3200,
+          "endMs": 3360
+        },
+        {
+          "c": "水",
+          "startMs": 3360,
+          "endMs": 3600
+        },
+        {
+          "c": "远",
+          "startMs": 3600,
+          "endMs": 3920
+        },
+        {
+          "c": "，",
+          "startMs": 3920,
+          "endMs": 4160
+        },
+        {
+          "c": "路",
+          "startMs": 4160,
+          "endMs": 4320
+        },
+        {
+          "c": "也",
+          "startMs": 4320,
+          "endMs": 4400
+        },
+        {
+          "c": "不",
+          "startMs": 4400,
+          "endMs": 4560
+        },
+        {
+          "c": "方",
+          "startMs": 4560,
+          "endMs": 4800
+        },
+        {
+          "c": "便",
+          "startMs": 4800,
+          "endMs": 5040
+        },
+        {
+          "c": "，",
+          "startMs": 5040,
+          "endMs": 5600
+        },
+        {
+          "c": "不",
+          "startMs": 5600,
+          "endMs": 5760
+        },
+        {
+          "c": "如",
+          "startMs": 5760,
+          "endMs": 5920
+        },
+        {
+          "c": "守",
+          "startMs": 5920,
+          "endMs": 6080
+        },
+        {
+          "c": "在",
+          "startMs": 6080,
+          "endMs": 6240
+        },
+        {
+          "c": "路",
+          "startMs": 6240,
+          "endMs": 6400
+        },
+        {
+          "c": "口",
+          "startMs": 6400,
+          "endMs": 6720
+        },
+        {
+          "c": "，",
+          "startMs": 6720,
+          "endMs": 6960
+        },
+        {
+          "c": "互",
+          "startMs": 6960,
+          "endMs": 7120
+        },
+        {
+          "c": "相",
+          "startMs": 7120,
+          "endMs": 7360
+        },
+        {
+          "c": "照",
+          "startMs": 7360,
+          "endMs": 7600
+        },
+        {
+          "c": "应",
+          "startMs": 7600,
+          "endMs": 7680
+        },
+        {
+          "c": "。",
+          "startMs": 7680,
+          "endMs": 7760
+        }
+      ]
     },
     {
       "paraIndex": 2,
       "sentIndex": 0,
       "text": "马谡没有认真听完建议，只说自己已有办法。",
       "audioPath": "audio/p3_s1.wav",
-      "durationMs": 0,
-      "unavailable": true
+      "durationMs": 3680,
+      "chars": [
+        {
+          "c": "马",
+          "startMs": 80,
+          "endMs": 240
+        },
+        {
+          "c": "谡",
+          "startMs": 240,
+          "endMs": 400
+        },
+        {
+          "c": "没",
+          "startMs": 400,
+          "endMs": 560
+        },
+        {
+          "c": "有",
+          "startMs": 560,
+          "endMs": 640
+        },
+        {
+          "c": "认",
+          "startMs": 640,
+          "endMs": 800
+        },
+        {
+          "c": "真",
+          "startMs": 800,
+          "endMs": 960
+        },
+        {
+          "c": "听",
+          "startMs": 960,
+          "endMs": 1120
+        },
+        {
+          "c": "完",
+          "startMs": 1120,
+          "endMs": 1280
+        },
+        {
+          "c": "建",
+          "startMs": 1280,
+          "endMs": 1600
+        },
+        {
+          "c": "议",
+          "startMs": 1600,
+          "endMs": 1760
+        },
+        {
+          "c": "，",
+          "startMs": 1760,
+          "endMs": 2160
+        },
+        {
+          "c": "只",
+          "startMs": 2160,
+          "endMs": 2320
+        },
+        {
+          "c": "说",
+          "startMs": 2320,
+          "endMs": 2480
+        },
+        {
+          "c": "自",
+          "startMs": 2480,
+          "endMs": 2640
+        },
+        {
+          "c": "己",
+          "startMs": 2640,
+          "endMs": 2880
+        },
+        {
+          "c": "已",
+          "startMs": 2880,
+          "endMs": 2960
+        },
+        {
+          "c": "有",
+          "startMs": 2960,
+          "endMs": 3120
+        },
+        {
+          "c": "办",
+          "startMs": 3120,
+          "endMs": 3280
+        },
+        {
+          "c": "法",
+          "startMs": 3280,
+          "endMs": 3600
+        },
+        {
+          "c": "。",
+          "startMs": 3600,
+          "endMs": 3680
+        }
+      ]
     },
     {
       "paraIndex": 2,
       "sentIndex": 1,
       "text": "王平见他不改，便把自己的小队安排在较稳的地方，还画下地图，记录哪里有水，哪里可以传话。",
       "audioPath": "audio/p3_s2.wav",
-      "durationMs": 0,
-      "unavailable": true
+      "durationMs": 7600,
+      "chars": [
+        {
+          "c": "王",
+          "startMs": 80,
+          "endMs": 240
+        },
+        {
+          "c": "平",
+          "startMs": 240,
+          "endMs": 480
+        },
+        {
+          "c": "见",
+          "startMs": 480,
+          "endMs": 640
+        },
+        {
+          "c": "他",
+          "startMs": 640,
+          "endMs": 720
+        },
+        {
+          "c": "不",
+          "startMs": 720,
+          "endMs": 800
+        },
+        {
+          "c": "改",
+          "startMs": 800,
+          "endMs": 1120
+        },
+        {
+          "c": "，",
+          "startMs": 1120,
+          "endMs": 1440
+        },
+        {
+          "c": "便",
+          "startMs": 1440,
+          "endMs": 1520
+        },
+        {
+          "c": "把",
+          "startMs": 1520,
+          "endMs": 1680
+        },
+        {
+          "c": "自",
+          "startMs": 1680,
+          "endMs": 1920
+        },
+        {
+          "c": "己",
+          "startMs": 1920,
+          "endMs": 2000
+        },
+        {
+          "c": "的",
+          "startMs": 2000,
+          "endMs": 2080
+        },
+        {
+          "c": "小",
+          "startMs": 2080,
+          "endMs": 2320
+        },
+        {
+          "c": "队",
+          "startMs": 2320,
+          "endMs": 2400
+        },
+        {
+          "c": "安",
+          "startMs": 2400,
+          "endMs": 2560
+        },
+        {
+          "c": "排",
+          "startMs": 2560,
+          "endMs": 2800
+        },
+        {
+          "c": "在",
+          "startMs": 2800,
+          "endMs": 2880
+        },
+        {
+          "c": "较",
+          "startMs": 2880,
+          "endMs": 3120
+        },
+        {
+          "c": "稳",
+          "startMs": 3120,
+          "endMs": 3280
+        },
+        {
+          "c": "的",
+          "startMs": 3280,
+          "endMs": 3360
+        },
+        {
+          "c": "地",
+          "startMs": 3360,
+          "endMs": 3520
+        },
+        {
+          "c": "方",
+          "startMs": 3520,
+          "endMs": 3840
+        },
+        {
+          "c": "，",
+          "startMs": 3840,
+          "endMs": 4160
+        },
+        {
+          "c": "还",
+          "startMs": 4160,
+          "endMs": 4320
+        },
+        {
+          "c": "画",
+          "startMs": 4320,
+          "endMs": 4480
+        },
+        {
+          "c": "下",
+          "startMs": 4480,
+          "endMs": 4640
+        },
+        {
+          "c": "地",
+          "startMs": 4640,
+          "endMs": 4800
+        },
+        {
+          "c": "图",
+          "startMs": 4800,
+          "endMs": 5200
+        },
+        {
+          "c": "，",
+          "startMs": 5200,
+          "endMs": 5360
+        },
+        {
+          "c": "记",
+          "startMs": 5360,
+          "endMs": 5600
+        },
+        {
+          "c": "录",
+          "startMs": 5600,
+          "endMs": 5760
+        },
+        {
+          "c": "哪",
+          "startMs": 5760,
+          "endMs": 5920
+        },
+        {
+          "c": "里",
+          "startMs": 5920,
+          "endMs": 5920
+        },
+        {
+          "c": "有",
+          "startMs": 5920,
+          "endMs": 6080
+        },
+        {
+          "c": "水",
+          "startMs": 6080,
+          "endMs": 6480
+        },
+        {
+          "c": "，",
+          "startMs": 6480,
+          "endMs": 6560
+        },
+        {
+          "c": "哪",
+          "startMs": 6560,
+          "endMs": 6720
+        },
+        {
+          "c": "里",
+          "startMs": 6720,
+          "endMs": 6880
+        },
+        {
+          "c": "可",
+          "startMs": 6880,
+          "endMs": 7040
+        },
+        {
+          "c": "以",
+          "startMs": 7040,
+          "endMs": 7040
+        },
+        {
+          "c": "传",
+          "startMs": 7040,
+          "endMs": 7360
+        },
+        {
+          "c": "话",
+          "startMs": 7360,
+          "endMs": 7600
+        },
+        {
+          "c": "。",
+          "startMs": 7600,
+          "endMs": 7600
+        }
+      ]
     },
     {
       "paraIndex": 3,
       "sentIndex": 0,
       "text": "后来，街亭的安排果然不够稳，队伍只好退回。",
       "audioPath": "audio/p4_s1.wav",
-      "durationMs": 0,
-      "unavailable": true
+      "durationMs": 5200,
+      "chars": [
+        {
+          "c": "后",
+          "startMs": 80,
+          "endMs": 320
+        },
+        {
+          "c": "来",
+          "startMs": 320,
+          "endMs": 960
+        },
+        {
+          "c": "，",
+          "startMs": 960,
+          "endMs": 1200
+        },
+        {
+          "c": "街",
+          "startMs": 1200,
+          "endMs": 1440
+        },
+        {
+          "c": "亭",
+          "startMs": 1440,
+          "endMs": 1680
+        },
+        {
+          "c": "的",
+          "startMs": 1680,
+          "endMs": 1760
+        },
+        {
+          "c": "安",
+          "startMs": 1760,
+          "endMs": 1920
+        },
+        {
+          "c": "排",
+          "startMs": 1920,
+          "endMs": 2160
+        },
+        {
+          "c": "果",
+          "startMs": 2160,
+          "endMs": 2400
+        },
+        {
+          "c": "然",
+          "startMs": 2400,
+          "endMs": 2560
+        },
+        {
+          "c": "不",
+          "startMs": 2560,
+          "endMs": 2720
+        },
+        {
+          "c": "够",
+          "startMs": 2720,
+          "endMs": 2960
+        },
+        {
+          "c": "稳",
+          "startMs": 2960,
+          "endMs": 3360
+        },
+        {
+          "c": "，",
+          "startMs": 3360,
+          "endMs": 3840
+        },
+        {
+          "c": "队",
+          "startMs": 3840,
+          "endMs": 4000
+        },
+        {
+          "c": "伍",
+          "startMs": 4000,
+          "endMs": 4160
+        },
+        {
+          "c": "只",
+          "startMs": 4160,
+          "endMs": 4320
+        },
+        {
+          "c": "好",
+          "startMs": 4320,
+          "endMs": 4480
+        },
+        {
+          "c": "退",
+          "startMs": 4480,
+          "endMs": 4720
+        },
+        {
+          "c": "回",
+          "startMs": 4720,
+          "endMs": 5200
+        },
+        {
+          "c": "。",
+          "startMs": 5200,
+          "endMs": 5200
+        }
+      ]
     },
     {
       "paraIndex": 3,
       "sentIndex": 1,
       "text": "马谡这才明白，书本知识很重要，身边人的提醒也很重要。",
       "audioPath": "audio/p4_s2.wav",
-      "durationMs": 0,
-      "unavailable": true
+      "durationMs": 5600,
+      "chars": [
+        {
+          "c": "马",
+          "startMs": 80,
+          "endMs": 320
+        },
+        {
+          "c": "谡",
+          "startMs": 320,
+          "endMs": 480
+        },
+        {
+          "c": "这",
+          "startMs": 480,
+          "endMs": 640
+        },
+        {
+          "c": "才",
+          "startMs": 640,
+          "endMs": 880
+        },
+        {
+          "c": "明",
+          "startMs": 880,
+          "endMs": 1120
+        },
+        {
+          "c": "白",
+          "startMs": 1120,
+          "endMs": 1440
+        },
+        {
+          "c": "，",
+          "startMs": 1440,
+          "endMs": 1680
+        },
+        {
+          "c": "书",
+          "startMs": 1680,
+          "endMs": 1920
+        },
+        {
+          "c": "本",
+          "startMs": 1920,
+          "endMs": 2080
+        },
+        {
+          "c": "知",
+          "startMs": 2080,
+          "endMs": 2240
+        },
+        {
+          "c": "识",
+          "startMs": 2240,
+          "endMs": 2320
+        },
+        {
+          "c": "很",
+          "startMs": 2320,
+          "endMs": 2640
+        },
+        {
+          "c": "重",
+          "startMs": 2640,
+          "endMs": 2880
+        },
+        {
+          "c": "要",
+          "startMs": 2880,
+          "endMs": 3120
+        },
+        {
+          "c": "，",
+          "startMs": 3120,
+          "endMs": 3440
+        },
+        {
+          "c": "身",
+          "startMs": 3440,
+          "endMs": 3760
+        },
+        {
+          "c": "边",
+          "startMs": 3760,
+          "endMs": 3920
+        },
+        {
+          "c": "人",
+          "startMs": 3920,
+          "endMs": 4080
+        },
+        {
+          "c": "的",
+          "startMs": 4080,
+          "endMs": 4160
+        },
+        {
+          "c": "提",
+          "startMs": 4160,
+          "endMs": 4400
+        },
+        {
+          "c": "醒",
+          "startMs": 4400,
+          "endMs": 4640
+        },
+        {
+          "c": "也",
+          "startMs": 4640,
+          "endMs": 4880
+        },
+        {
+          "c": "很",
+          "startMs": 4880,
+          "endMs": 5120
+        },
+        {
+          "c": "重",
+          "startMs": 5120,
+          "endMs": 5280
+        },
+        {
+          "c": "要",
+          "startMs": 5280,
+          "endMs": 5520
+        },
+        {
+          "c": "。",
+          "startMs": 5520,
+          "endMs": 5600
+        }
+      ]
     },
     {
       "paraIndex": 3,
       "sentIndex": 2,
       "text": "诸葛亮没有先责怪别人，而是带大家复盘原因。",
       "audioPath": "audio/p4_s3.wav",
-      "durationMs": 0,
-      "unavailable": true
+      "durationMs": 3280,
+      "chars": [
+        {
+          "c": "诸",
+          "startMs": 80,
+          "endMs": 240
+        },
+        {
+          "c": "葛",
+          "startMs": 240,
+          "endMs": 320
+        },
+        {
+          "c": "亮",
+          "startMs": 320,
+          "endMs": 480
+        },
+        {
+          "c": "没",
+          "startMs": 480,
+          "endMs": 640
+        },
+        {
+          "c": "有",
+          "startMs": 640,
+          "endMs": 800
+        },
+        {
+          "c": "先",
+          "startMs": 800,
+          "endMs": 960
+        },
+        {
+          "c": "责",
+          "startMs": 960,
+          "endMs": 1040
+        },
+        {
+          "c": "怪",
+          "startMs": 1040,
+          "endMs": 1200
+        },
+        {
+          "c": "别",
+          "startMs": 1200,
+          "endMs": 1440
+        },
+        {
+          "c": "人",
+          "startMs": 1440,
+          "endMs": 1680
+        },
+        {
+          "c": "，",
+          "startMs": 1680,
+          "endMs": 1840
+        },
+        {
+          "c": "而",
+          "startMs": 1840,
+          "endMs": 1920
+        },
+        {
+          "c": "是",
+          "startMs": 1920,
+          "endMs": 2080
+        },
+        {
+          "c": "带",
+          "startMs": 2080,
+          "endMs": 2240
+        },
+        {
+          "c": "大",
+          "startMs": 2240,
+          "endMs": 2320
+        },
+        {
+          "c": "家",
+          "startMs": 2320,
+          "endMs": 2560
+        },
+        {
+          "c": "复",
+          "startMs": 2560,
+          "endMs": 2640
+        },
+        {
+          "c": "盘",
+          "startMs": 2640,
+          "endMs": 2880
+        },
+        {
+          "c": "原",
+          "startMs": 2880,
+          "endMs": 3040
+        },
+        {
+          "c": "因",
+          "startMs": 3040,
+          "endMs": 3200
+        },
+        {
+          "c": "。",
+          "startMs": 3200,
+          "endMs": 3280
+        }
+      ]
     },
     {
       "paraIndex": 4,
       "sentIndex": 0,
       "text": "街亭听劝课告诉我们，自信要和倾听放在一起。",
       "audioPath": "audio/p5_s1.wav",
-      "durationMs": 0,
-      "unavailable": true
+      "durationMs": 4320,
+      "chars": [
+        {
+          "c": "街",
+          "startMs": 80,
+          "endMs": 320
+        },
+        {
+          "c": "亭",
+          "startMs": 320,
+          "endMs": 560
+        },
+        {
+          "c": "听",
+          "startMs": 560,
+          "endMs": 800
+        },
+        {
+          "c": "劝",
+          "startMs": 800,
+          "endMs": 1040
+        },
+        {
+          "c": "课",
+          "startMs": 1040,
+          "endMs": 1200
+        },
+        {
+          "c": "告",
+          "startMs": 1200,
+          "endMs": 1440
+        },
+        {
+          "c": "诉",
+          "startMs": 1440,
+          "endMs": 1760
+        },
+        {
+          "c": "我",
+          "startMs": 1760,
+          "endMs": 1760
+        },
+        {
+          "c": "们",
+          "startMs": 1760,
+          "endMs": 2080
+        },
+        {
+          "c": "，",
+          "startMs": 2080,
+          "endMs": 2320
+        },
+        {
+          "c": "自",
+          "startMs": 2320,
+          "endMs": 2560
+        },
+        {
+          "c": "信",
+          "startMs": 2560,
+          "endMs": 2720
+        },
+        {
+          "c": "要",
+          "startMs": 2720,
+          "endMs": 2800
+        },
+        {
+          "c": "和",
+          "startMs": 2800,
+          "endMs": 2960
+        },
+        {
+          "c": "倾",
+          "startMs": 2960,
+          "endMs": 3200
+        },
+        {
+          "c": "听",
+          "startMs": 3200,
+          "endMs": 3440
+        },
+        {
+          "c": "放",
+          "startMs": 3440,
+          "endMs": 3600
+        },
+        {
+          "c": "在",
+          "startMs": 3600,
+          "endMs": 3760
+        },
+        {
+          "c": "一",
+          "startMs": 3760,
+          "endMs": 3840
+        },
+        {
+          "c": "起",
+          "startMs": 3840,
+          "endMs": 4240
+        },
+        {
+          "c": "。",
+          "startMs": 4240,
+          "endMs": 4320
+        }
+      ]
     },
     {
       "paraIndex": 4,
       "sentIndex": 1,
       "text": "一个人再会读书，也需要看看实际情况，听听同伴的建议。",
       "audioPath": "audio/p5_s2.wav",
-      "durationMs": 0,
-      "unavailable": true
+      "durationMs": 5280,
+      "chars": [
+        {
+          "c": "一",
+          "startMs": 80,
+          "endMs": 160
+        },
+        {
+          "c": "个",
+          "startMs": 160,
+          "endMs": 240
+        },
+        {
+          "c": "人",
+          "startMs": 240,
+          "endMs": 480
+        },
+        {
+          "c": "再",
+          "startMs": 480,
+          "endMs": 640
+        },
+        {
+          "c": "会",
+          "startMs": 640,
+          "endMs": 880
+        },
+        {
+          "c": "读",
+          "startMs": 880,
+          "endMs": 1040
+        },
+        {
+          "c": "书",
+          "startMs": 1040,
+          "endMs": 1520
+        },
+        {
+          "c": "，",
+          "startMs": 1520,
+          "endMs": 1600
+        },
+        {
+          "c": "也",
+          "startMs": 1600,
+          "endMs": 1840
+        },
+        {
+          "c": "需",
+          "startMs": 1840,
+          "endMs": 2000
+        },
+        {
+          "c": "要",
+          "startMs": 2000,
+          "endMs": 2080
+        },
+        {
+          "c": "看",
+          "startMs": 2080,
+          "endMs": 2320
+        },
+        {
+          "c": "看",
+          "startMs": 2320,
+          "endMs": 2480
+        },
+        {
+          "c": "实",
+          "startMs": 2480,
+          "endMs": 2640
+        },
+        {
+          "c": "际",
+          "startMs": 2640,
+          "endMs": 2800
+        },
+        {
+          "c": "情",
+          "startMs": 2800,
+          "endMs": 3040
+        },
+        {
+          "c": "况",
+          "startMs": 3040,
+          "endMs": 3360
+        },
+        {
+          "c": "，",
+          "startMs": 3360,
+          "endMs": 3840
+        },
+        {
+          "c": "听",
+          "startMs": 3840,
+          "endMs": 4000
+        },
+        {
+          "c": "听",
+          "startMs": 4000,
+          "endMs": 4160
+        },
+        {
+          "c": "同",
+          "startMs": 4160,
+          "endMs": 4480
+        },
+        {
+          "c": "伴",
+          "startMs": 4480,
+          "endMs": 4640
+        },
+        {
+          "c": "的",
+          "startMs": 4640,
+          "endMs": 4720
+        },
+        {
+          "c": "建",
+          "startMs": 4720,
+          "endMs": 5040
+        },
+        {
+          "c": "议",
+          "startMs": 5040,
+          "endMs": 5200
+        },
+        {
+          "c": "。",
+          "startMs": 5200,
+          "endMs": 5280
+        }
+      ]
     },
     {
       "paraIndex": 4,
       "sentIndex": 2,
       "text": "愿意改正，才能把下一步做得更稳。",
       "audioPath": "audio/p5_s3.wav",
-      "durationMs": 0,
-      "unavailable": true
+      "durationMs": 2800,
+      "chars": [
+        {
+          "c": "愿",
+          "startMs": 80,
+          "endMs": 240
+        },
+        {
+          "c": "意",
+          "startMs": 240,
+          "endMs": 320
+        },
+        {
+          "c": "改",
+          "startMs": 320,
+          "endMs": 480
+        },
+        {
+          "c": "正",
+          "startMs": 480,
+          "endMs": 800
+        },
+        {
+          "c": "，",
+          "startMs": 800,
+          "endMs": 1120
+        },
+        {
+          "c": "才",
+          "startMs": 1120,
+          "endMs": 1280
+        },
+        {
+          "c": "能",
+          "startMs": 1280,
+          "endMs": 1360
+        },
+        {
+          "c": "把",
+          "startMs": 1360,
+          "endMs": 1520
+        },
+        {
+          "c": "下",
+          "startMs": 1520,
+          "endMs": 1760
+        },
+        {
+          "c": "一",
+          "startMs": 1760,
+          "endMs": 1840
+        },
+        {
+          "c": "步",
+          "startMs": 1840,
+          "endMs": 2080
+        },
+        {
+          "c": "做",
+          "startMs": 2080,
+          "endMs": 2240
+        },
+        {
+          "c": "得",
+          "startMs": 2240,
+          "endMs": 2240
+        },
+        {
+          "c": "更",
+          "startMs": 2240,
+          "endMs": 2480
+        },
+        {
+          "c": "稳",
+          "startMs": 2480,
+          "endMs": 2720
+        },
+        {
+          "c": "。",
+          "startMs": 2720,
+          "endMs": 2800
+        }
+      ]
     }
   ]
 }
