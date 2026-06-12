@@ -1,0 +1,140 @@
+{
+  "sentences": [
+    {
+      "paraIndex": 0,
+      "sentIndex": 0,
+      "text": "刘禅听说四面八方都有消息传来，心里很担心。",
+      "audioPath": "audio/p1_s1.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 0,
+      "sentIndex": 1,
+      "text": "他来到相府，想请诸葛亮快快想办法。",
+      "audioPath": "audio/p1_s2.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 0,
+      "sentIndex": 2,
+      "text": "门口的人说，诸葛亮正在小池边看鱼，好像一点也不着急。",
+      "audioPath": "audio/p1_s3.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 0,
+      "text": "刘禅走近一看，诸葛亮并不是在偷闲。",
+      "audioPath": "audio/p2_s1.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 1,
+      "text": "他把五路消息写成小条，放在石桌上，一条一条想清楚。",
+      "audioPath": "audio/p2_s2.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 2,
+      "text": "诸葛亮笑着说，事情看起来很多，分开来看，就能找到办法。",
+      "audioPath": "audio/p2_s3.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 0,
+      "text": "第一路需要安抚，便派人送去友好的书信；",
+      "audioPath": "audio/p3_s1.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 1,
+      "text": "第二路需要解释，便请使者把误会说清；",
+      "audioPath": "audio/p3_s2.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 2,
+      "text": "第三路可以先守好道路；",
+      "audioPath": "audio/p3_s3.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 3,
+      "text": "第四路要请熟悉当地的人去沟通；",
+      "audioPath": "audio/p3_s4.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 4,
+      "text": "最后一路则要耐心等待回信。",
+      "audioPath": "audio/p3_s5.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 0,
+      "text": "刘禅听着听着，紧张的心慢慢放下。",
+      "audioPath": "audio/p4_s1.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 1,
+      "text": "诸葛亮又提醒大家，传话要温和，安排要清楚，不要因为消息多就乱了脚步。",
+      "audioPath": "audio/p4_s2.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 2,
+      "text": "相府里的人各自记下任务，按顺序去做。",
+      "audioPath": "audio/p4_s3.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 0,
+      "text": "后来，五路难题一件件安静下来。",
+      "audioPath": "audio/p5_s1.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 1,
+      "text": "安居平五路的故事告诉我们，遇到复杂的事，不必先害怕。",
+      "audioPath": "audio/p5_s2.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 2,
+      "text": "把问题分清楚，用书信、使者和合作去沟通，常常比着急更有力量。",
+      "audioPath": "audio/p5_s3.wav",
+      "durationMs": 0,
+      "unavailable": true
+    }
+  ]
+}

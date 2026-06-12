@@ -28,6 +28,10 @@ object StoryResourceCatalog {
             path = "stories/thousand-mile-loyalty/story.json",
         ),
         StoryResourceEntry(
+            id = "the-leap-of-faith",
+            path = "stories/the-leap-of-faith/story.json",
+        ),
+        StoryResourceEntry(
             id = "three-visits-cottage",
             path = "stories/three-visits-cottage/story.json",
         ),
@@ -56,8 +60,24 @@ object StoryResourceCatalog {
             path = "stories/huarong-path/story.json",
         ),
         StoryResourceEntry(
+            id = "single-blade-meeting",
+            path = "stories/single-blade-meeting/story.json",
+        ),
+        StoryResourceEntry(
+            id = "calming-five-routes",
+            path = "stories/calming-five-routes/story.json",
+        ),
+        StoryResourceEntry(
             id = "seven-captures",
             path = "stories/seven-captures/story.json",
+        ),
+        StoryResourceEntry(
+            id = "careful-letter-chushi",
+            path = "stories/careful-letter-chushi/story.json",
+        ),
+        StoryResourceEntry(
+            id = "street-pavilion-lesson",
+            path = "stories/street-pavilion-lesson/story.json",
         ),
         StoryResourceEntry(
             id = "empty-fort",

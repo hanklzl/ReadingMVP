@@ -189,6 +189,20 @@ class ValidatorTest(unittest.TestCase):
         self.assertIn("paragraph 1 cell 1 hanzi '桃' must have non-empty pinyin", result.errors)
         self.assertIn("paragraph 1 cell 3 non-hanzi '，' must have empty pinyin", result.errors)
 
+    def test_polyphone_lint_allows_dilu_proper_name(self):
+        text = "刘备骑上的卢。"
+        cells = [
+            {"c": "刘", "p": "liú"},
+            {"c": "备", "p": "bèi"},
+            {"c": "骑", "p": "qí"},
+            {"c": "上", "p": "shàng"},
+            {"c": "的", "p": "dì"},
+            {"c": "卢", "p": "lú"},
+            {"c": "。", "p": ""},
+        ]
+
+        self.assertEqual([], lint_polyphone_readings(1, cells))
+
     def test_audio_manifest_fails_when_entry_text_is_incorrect(self):
         story = build_story()
         story_path = self.write_story(story)

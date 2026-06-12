@@ -17,8 +17,8 @@ from transformer.story_data import STORY_DRAFTS
 
 
 class TransformerTest(unittest.TestCase):
-    def test_has_fifteen_mvp_stories(self):
-        self.assertEqual(15, len(STORY_DRAFTS))
+    def test_has_twenty_mvp_stories(self):
+        self.assertEqual(20, len(STORY_DRAFTS))
 
     def test_pinyin_uses_context_for_changban(self):
         self.assertIn("cháng bǎn pō", pinyin_for_text("长坂坡上，大家保持安静。"))
@@ -74,6 +74,18 @@ class TransformerTest(unittest.TestCase):
         self.assertIn(("地", "de"), by_char)
         self.assertIn(("的", "de"), by_char)
         self.assertEqual("cháng", cells[text.index("长")]["p"])
+
+    def test_proper_name_override_wins_for_dilu_horse(self):
+        cells = generate.pinyin_cells_for_text("刘备骑上的卢。")
+
+        start = len("刘备骑上")
+        self.assertEqual(
+            [
+                {"c": "的", "p": "dì"},
+                {"c": "卢", "p": "lú"},
+            ],
+            cells[start : start + 2],
+        )
 
     def test_pinyin_overrides_handle_de_di_de_particles(self):
         examples = [

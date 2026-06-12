@@ -29,6 +29,16 @@ PROPER_NAME_READINGS: PhraseReadings = {
     "虎牢关": ("hǔ", "láo", "guān"),
     "隆中": ("lóng", "zhōng"),
     "赤壁": ("chì", "bì"),
+    "荆州": ("jīng", "zhōu"),
+    "襄阳": ("xiāng", "yáng"),
+    "檀溪": ("tán", "xī"),
+    "的卢": ("dì", "lú"),
+    "陆口": ("lù", "kǒu"),
+    "刘禅": ("liú", "shàn"),
+    "成都": ("chéng", "dū"),
+    "马谡": ("mǎ", "sù"),
+    "王平": ("wáng", "píng"),
+    "街亭": ("jiē", "tíng"),
 }
 
 
@@ -112,6 +122,29 @@ CORPUS_PHRASE_READINGS: PhraseReadings = {
     "木牛流马": ("mù", "niú", "liú", "mǎ"),
     "省力": ("shěng", "lì"),
     "兄长": ("xiōng", "zhǎng"),
+    "出师表": ("chū", "shī", "biǎo"),
+    "表章": ("biǎo", "zhāng"),
+    "赴会": ("fù", "huì"),
+    "单刀赴会": ("dān", "dāo", "fù", "huì"),
+    "长刀": ("cháng", "dāo"),
+    "会面": ("huì", "miàn"),
+    "好好说话": ("hǎo", "hǎo", "shuō", "huà"),
+    "只带": ("zhǐ", "dài"),
+    "只顾": ("zhǐ", "gù"),
+    "听取": ("tīng", "qǔ"),
+    "扎营": ("zhā", "yíng"),
+    "扎在": ("zhā", "zài"),
+    "过了": ("guò", "le"),
+    "乱了": ("luàn", "le"),
+    "写成": ("xiě", "chéng"),
+    "读着": ("dú", "zhe"),
+    "听着": ("tīng", "zhe"),
+    "想着": ("xiǎng", "zhe"),
+    "沿着": ("yán", "zhe"),
+    "指着": ("zhǐ", "zhe"),
+    "佩着": ("pèi", "zhe"),
+    "摸着": ("mō", "zhe"),
+    "做得": ("zuò", "de"),
 }
 
 
@@ -241,6 +274,18 @@ POLYPHONE_GUARDRAIL_PHRASES: PhraseReadings = {
         "转向",
         "冒着",
         "笑着",
+        "檀溪",
+        "的卢",
+        "陆口",
+        "刘禅",
+        "出师表",
+        "马谡",
+        "王平",
+        "街亭",
+        "赴会",
+        "单刀赴会",
+        "长刀",
+        "扎营",
     )
 }
 
@@ -292,11 +337,11 @@ def apply_contextual_readings(
         next_is_hanzi = is_hanzi_char(next_char)
         word_prev, word_next = _context_words(text, index)
 
-        if char == "的":
-            tokens[index] = "de"
+        if locked[index]:
             continue
 
-        if locked[index]:
+        if char == "的":
+            tokens[index] = "de"
             continue
 
         if char == "得":

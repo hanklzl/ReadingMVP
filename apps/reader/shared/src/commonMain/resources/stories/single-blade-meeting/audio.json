@@ -1,0 +1,116 @@
+{
+  "sentences": [
+    {
+      "paraIndex": 0,
+      "sentIndex": 0,
+      "text": "江边的陆口要开一次重要会面。",
+      "audioPath": "audio/p1_s1.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 0,
+      "sentIndex": 1,
+      "text": "鲁肃请关羽前来商议荆州的事情，身边的人担心会面不容易。",
+      "audioPath": "audio/p1_s2.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 0,
+      "sentIndex": 2,
+      "text": "关羽想了想说，既然答应赴会，就要守信，也要把话说清楚。",
+      "audioPath": "audio/p1_s3.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 0,
+      "text": "第二天，关羽只带少数随从，坐小船来到江边。",
+      "audioPath": "audio/p2_s1.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 1,
+      "text": "他佩着随身长刀，却没有用它吓人，只把它当成外出时的礼仪。",
+      "audioPath": "audio/p2_s2.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 2,
+      "text": "上岸后，他先向鲁肃行礼，表示愿意好好说话。",
+      "audioPath": "audio/p2_s3.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 0,
+      "text": "席间，鲁肃提出自己的难处，关羽也说明刘备一方的想法。",
+      "audioPath": "audio/p3_s1.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 1,
+      "text": "两个人都没有急着发火，而是把地图摊开，指着江水、城池和百姓的住处，一点一点商议。",
+      "audioPath": "audio/p3_s2.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 0,
+      "text": "有人说话越来越急，关羽便放慢声音，请大家先听完对方。",
+      "audioPath": "audio/p4_s1.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 1,
+      "text": "他说，守信不是只顾自己，也要记得朋友之间的托付。",
+      "audioPath": "audio/p4_s2.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 2,
+      "text": "鲁肃听了，也让身边的人安静下来。",
+      "audioPath": "audio/p4_s3.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 0,
+      "text": "会面结束时，双方没有发生冲突。",
+      "audioPath": "audio/p5_s1.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 1,
+      "text": "关羽按礼告别，坐船回去。",
+      "audioPath": "audio/p5_s2.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 2,
+      "text": "单刀赴会的故事告诉我们，勇敢不只是敢去难地方，更是在紧张的时候保持分寸，用冷静和礼貌守住约定。",
+      "audioPath": "audio/p5_s3.wav",
+      "durationMs": 0,
+      "unavailable": true
+    }
+  ]
+}

@@ -1,0 +1,132 @@
+{
+  "sentences": [
+    {
+      "paraIndex": 0,
+      "sentIndex": 0,
+      "text": "刘备住在荆州时，常常提醒自己要谦和待人。",
+      "audioPath": "audio/p1_s1.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 0,
+      "sentIndex": 1,
+      "text": "一天，他到襄阳赴会，席间听见风声不对，觉得此地不宜久留。",
+      "audioPath": "audio/p1_s2.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 0,
+      "sentIndex": 2,
+      "text": "他没有慌张，也没有大声争辩，只向主人告别，骑上名马的卢往城外走。",
+      "audioPath": "audio/p1_s3.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 0,
+      "text": "小路越来越窄，前面忽然出现一条檀溪。",
+      "audioPath": "audio/p2_s1.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 1,
+      "text": "溪水宽宽的，岸边草叶被风吹得弯下腰。",
+      "audioPath": "audio/p2_s2.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 2,
+      "text": "刘备回头看看，知道自己要快一点离开。",
+      "audioPath": "audio/p2_s3.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 3,
+      "text": "他轻轻摸着马鬃，对的卢说，请你帮我过溪吧。",
+      "audioPath": "audio/p2_s4.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 0,
+      "text": "的卢像听懂了主人的话，先稳稳站住，再向前几步。",
+      "audioPath": "audio/p3_s1.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 1,
+      "text": "刘备看准溪边较窄的地方，握好缰绳，心里告诉自己要冷静。",
+      "audioPath": "audio/p3_s2.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 2,
+      "text": "只听马蹄一响，的卢用力一跃，带着刘备越过溪水。",
+      "audioPath": "audio/p3_s3.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 0,
+      "text": "落到对岸后，刘备先安抚的卢，又看了看来路。",
+      "audioPath": "audio/p4_s1.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 1,
+      "text": "他没有得意，只感谢这匹好马，也感谢自己在紧急时没有乱了方向。",
+      "audioPath": "audio/p4_s2.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 2,
+      "text": "过了檀溪，他沿着小路继续前行，终于平安离开。",
+      "audioPath": "audio/p4_s3.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 0,
+      "text": "檀溪一跃的故事像一次小小冒险。",
+      "audioPath": "audio/p5_s1.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 1,
+      "text": "它告诉我们，遇到突然的难题时，先稳住心，再看清方向。",
+      "audioPath": "audio/p5_s2.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 2,
+      "text": "勇敢不是横冲直撞，而是在需要选择时，相信伙伴，也相信冷静的判断。",
+      "audioPath": "audio/p5_s3.wav",
+      "durationMs": 0,
+      "unavailable": true
+    }
+  ]
+}

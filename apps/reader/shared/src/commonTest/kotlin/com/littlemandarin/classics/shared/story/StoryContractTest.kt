@@ -34,12 +34,12 @@ class StoryContractTest {
     }
 
     @Test
-    fun repositoryListsAllTenStoriesAndFindsPeachGardenOath() = runTest {
+    fun repositoryListsAllStoriesAndFindsPeachGardenOath() = runTest {
         val repository = DefaultStoryRepository()
 
         val stories = repository.listStories()
 
-        assertEquals(15, stories.size)
+        assertEquals(20, stories.size)
         assertEquals(expectedStoryIds, stories.map { it.id })
         stories.forEach(::assertCompleteStoryModel)
 
@@ -55,7 +55,7 @@ class StoryContractTest {
 
         val stories = repository.listStories()
 
-        assertEquals(15, stories.size)
+        assertEquals(20, stories.size)
         stories.forEach { story ->
             story.paragraphs.forEachIndexed { index, paragraph ->
                 assertPinyinCellsMatchParagraphText(
@@ -142,6 +142,7 @@ private val expectedStoryIds = listOf(
     "quench-thirst-plums",
     "green-plum-heroes",
     "thousand-mile-loyalty",
+    "the-leap-of-faith",
     "three-visits-cottage",
     "zhaoyun-changban",
     "debate-scholars",
@@ -149,7 +150,11 @@ private val expectedStoryIds = listOf(
     "borrow-east-wind",
     "red-cliffs",
     "huarong-path",
+    "single-blade-meeting",
+    "calming-five-routes",
     "seven-captures",
+    "careful-letter-chushi",
+    "street-pavilion-lesson",
     "empty-fort",
     "wooden-ox-flowing-horse",
 )

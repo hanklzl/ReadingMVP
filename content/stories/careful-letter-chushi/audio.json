@@ -1,0 +1,108 @@
+{
+  "sentences": [
+    {
+      "paraIndex": 0,
+      "sentIndex": 0,
+      "text": "南方渐渐安定后，诸葛亮回到成都，准备带队远行。",
+      "audioPath": "audio/p1_s1.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 0,
+      "sentIndex": 1,
+      "text": "临行前，他想到刘禅年纪还轻，许多事情需要慢慢学习，便把心里最重要的话写成一篇出师表。",
+      "audioPath": "audio/p1_s2.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 0,
+      "text": "清晨，诸葛亮把表章呈上。",
+      "audioPath": "audio/p2_s1.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 1,
+      "text": "信里没有吓人的话，也不是责备，而是一句句叮嘱：要亲近正直的人，愿意听取不同建议，办事要公平，不要因为喜欢或不喜欢就改变规则。",
+      "audioPath": "audio/p2_s2.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 0,
+      "text": "他还提醒刘禅，遇到难题时，可以请可靠的帮手一起商量。",
+      "audioPath": "audio/p3_s1.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 1,
+      "text": "听见好听的话不要马上得意，听见不同的意见也不要马上生气。",
+      "audioPath": "audio/p3_s2.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 2,
+      "text": "把事情问清楚，再作决定，才不容易出错。",
+      "audioPath": "audio/p3_s3.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 0,
+      "text": "刘禅读着这封信，心里慢慢安静下来。",
+      "audioPath": "audio/p4_s1.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 1,
+      "text": "他明白，诸葛亮不是只在安排远行，也是在教他怎样照看百姓、尊重伙伴、承担责任。",
+      "audioPath": "audio/p4_s2.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 2,
+      "text": "旁边的大臣也把这些话记在心里。",
+      "audioPath": "audio/p4_s3.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 0,
+      "text": "出师表里的叮嘱流传很久。",
+      "audioPath": "audio/p5_s1.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 1,
+      "text": "它告诉我们，真正的关心，不只是替别人做事，也会把方法讲清楚。",
+      "audioPath": "audio/p5_s2.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 2,
+      "text": "学会听建议、守公平、负责任，长大后才能把重要的事做好。",
+      "audioPath": "audio/p5_s3.wav",
+      "durationMs": 0,
+      "unavailable": true
+    }
+  ]
+}

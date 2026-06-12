@@ -1,0 +1,108 @@
+{
+  "sentences": [
+    {
+      "paraIndex": 0,
+      "sentIndex": 0,
+      "text": "街亭是一处重要路口，诸葛亮派马谡去守，又请王平一起帮忙。",
+      "audioPath": "audio/p1_s1.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 0,
+      "sentIndex": 1,
+      "text": "临行前，诸葛亮反复提醒，地方虽小，关系很大，做安排时一定要稳。",
+      "audioPath": "audio/p1_s2.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 0,
+      "text": "到了街亭，马谡觉得自己读过许多兵书，便想把队伍扎营在高处。",
+      "audioPath": "audio/p2_s1.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 1,
+      "text": "他还觉得高处看得远，心里更放心，可是实际路况还要再看一看。",
+      "audioPath": "audio/p2_s2.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 1,
+      "sentIndex": 2,
+      "text": "王平看了地形，轻声提醒，高处离水远，路也不方便，不如守在路口，互相照应。",
+      "audioPath": "audio/p2_s3.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 0,
+      "text": "马谡没有认真听完建议，只说自己已有办法。",
+      "audioPath": "audio/p3_s1.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 2,
+      "sentIndex": 1,
+      "text": "王平见他不改，便把自己的小队安排在较稳的地方，还画下地图，记录哪里有水，哪里可以传话。",
+      "audioPath": "audio/p3_s2.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 0,
+      "text": "后来，街亭的安排果然不够稳，队伍只好退回。",
+      "audioPath": "audio/p4_s1.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 1,
+      "text": "马谡这才明白，书本知识很重要，身边人的提醒也很重要。",
+      "audioPath": "audio/p4_s2.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 3,
+      "sentIndex": 2,
+      "text": "诸葛亮没有先责怪别人，而是带大家复盘原因。",
+      "audioPath": "audio/p4_s3.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 0,
+      "text": "街亭听劝课告诉我们，自信要和倾听放在一起。",
+      "audioPath": "audio/p5_s1.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 1,
+      "text": "一个人再会读书，也需要看看实际情况，听听同伴的建议。",
+      "audioPath": "audio/p5_s2.wav",
+      "durationMs": 0,
+      "unavailable": true
+    },
+    {
+      "paraIndex": 4,
+      "sentIndex": 2,
+      "text": "愿意改正，才能把下一步做得更稳。",
+      "audioPath": "audio/p5_s3.wav",
+      "durationMs": 0,
+      "unavailable": true
+    }
+  ]
+}

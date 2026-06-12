@@ -95,6 +95,9 @@ def lint_polyphone_readings(para_index: int, cells: list[Any]) -> list[str]:
         prev_is_hanzi = is_hanzi_char(prev_char)
         next_is_hanzi = is_hanzi_char(next_char)
 
+        if char == "的" and text[i : i + 2] == "的卢" and reading == "dì":
+            continue
+
         if char == "的" and reading != "de":
             errors.append(
                 f"paragraph {para_index} cell {i + 1} 的 should read neutral-tone 'de', got '{reading}'"
