@@ -1,12 +1,25 @@
 package com.littlemandarin.classics.shared.presentation
 
+import platform.Foundation.NSLocale
 import platform.Foundation.NSUserDefaults
+import platform.Foundation.preferredLanguages
 
 actual fun createPlatformReaderSettingsService(): ReaderSettingsService =
     StoredReaderSettingsService(
         store = IosReaderSettingsStore(),
         defaultAiBackendBaseUrl = iosDefaultAiBackendBaseUrl(),
+        defaultLanguage = iosSystemDefaultLanguage(),
     )
+
+// Follow the device language by default when the user has not chosen one yet.
+private fun iosSystemDefaultLanguage(): ReaderLanguage {
+    val preferred = (NSLocale.preferredLanguages.firstOrNull() as? String).orEmpty().lowercase()
+    return if (preferred.startsWith("zh")) {
+        ReaderLanguage.ChineseSimplified
+    } else {
+        ReaderLanguage.English
+    }
+}
 
 private class IosReaderSettingsStore(
     private val userDefaults: NSUserDefaults = NSUserDefaults.standardUserDefaults,

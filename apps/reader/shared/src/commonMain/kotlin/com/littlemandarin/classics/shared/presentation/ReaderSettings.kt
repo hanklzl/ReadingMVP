@@ -187,6 +187,10 @@ internal interface ReaderSettingsStore {
 internal class StoredReaderSettingsService(
     private val store: ReaderSettingsStore,
     private val defaultAiBackendBaseUrl: String,
+    // Language to use when the user has NOT explicitly chosen one yet (no stored tag).
+    // Platforms pass the current system locale so the app follows the device language
+    // by default; an explicit choice (onboarding / Settings) persists and wins.
+    private val defaultLanguage: ReaderLanguage = ReaderLanguage.English,
 ) : ReaderSettingsService {
     private val state = MutableStateFlow(readFromStore())
 
@@ -240,7 +244,7 @@ internal class StoredReaderSettingsService(
     }
 
     private fun readFromStore(): ReaderSettings = ReaderSettings(
-        language = ReaderLanguage.fromTag(store.readLanguageTag()),
+        language = store.readLanguageTag()?.let { ReaderLanguage.fromTag(it) } ?: defaultLanguage,
         showPinyinByDefault = store.readShowPinyinByDefault(DefaultShowPinyinByDefault),
         readingTextSize = ReadingTextSize.fromPrefValue(store.readReadingTextSizeValue()),
         aiBackendBaseUrl = normalizeAiBackendBaseUrl(

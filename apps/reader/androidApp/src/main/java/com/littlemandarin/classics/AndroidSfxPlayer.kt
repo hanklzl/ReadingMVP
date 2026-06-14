@@ -40,19 +40,23 @@ class AndroidSfxPlayer(
     init {
         cacheRoot.mkdirs()
         soundPool.setOnLoadCompleteListener { _, sampleId, status ->
-            val semanticKey = pendingLoadBySoundId.remove(sampleId)
-            if (semanticKey == null) {
+            // Take the same lock the loader uses so this callback can never run before the
+            // loader has registered pendingLoadBySoundId[sampleId] (otherwise the deferred
+            // would hang forever).
+            val semanticKey: String?
+            val deferred: CompletableDeferred<Int>?
+            synchronized(lock) {
+                semanticKey = pendingLoadBySoundId.remove(sampleId)
+                deferred = semanticKey?.let { loadingBySemanticKey.remove(it) }
+                if (semanticKey != null && deferred != null && status == 0) {
+                    loadedSoundIds[semanticKey] = sampleId
+                }
+            }
+            if (semanticKey == null || deferred == null) {
                 soundPool.unload(sampleId)
                 return@setOnLoadCompleteListener
             }
-            val deferred = loadingBySemanticKey.remove(semanticKey)
-            if (deferred == null) {
-                soundPool.unload(sampleId)
-                return@setOnLoadCompleteListener
-            }
-
             if (status == 0) {
-                loadedSoundIds[semanticKey] = sampleId
                 deferred.complete(sampleId)
             } else {
                 soundPool.unload(sampleId)
@@ -130,17 +134,24 @@ class AndroidSfxPlayer(
         scope.launch {
             try {
                 val cachedFile = resolveCachedSfx(semanticKey)
-                val sampleId = soundPool.load(cachedFile.absolutePath, 1)
-                if (sampleId == 0) {
-                    synchronized(lock) {
+                // Register the sampleId→key mapping under the same lock as load() so the
+                // load-complete callback (which also locks) can't run before it's set.
+                val invalidSampleId = synchronized(lock) {
+                    val sampleId = soundPool.load(cachedFile.absolutePath, 1)
+                    if (sampleId == 0) {
                         loadingBySemanticKey.remove(semanticKey)
+                        true
+                    } else {
+                        pendingLoadBySoundId[sampleId] = semanticKey
+                        false
                     }
+                }
+                if (invalidSampleId) {
                     deferred.completeExceptionally(
                         IOException("SoundPool load returned invalid sampleId for '$semanticKey'"),
                     )
                     return@launch
                 }
-                pendingLoadBySoundId[sampleId] = semanticKey
             } catch (error: Throwable) {
                 synchronized(lock) {
                     loadingBySemanticKey.remove(semanticKey)

@@ -27,7 +27,22 @@ actual fun createPlatformReaderSettingsService(): ReaderSettingsService =
     StoredReaderSettingsService(
         store = AndroidReaderSettingsStore(AndroidReaderSettingsServiceProvider.sharedPreferences()),
         defaultAiBackendBaseUrl = androidDefaultAiBackendBaseUrl(),
+        defaultLanguage = androidSystemDefaultLanguage(),
     )
+
+// Follow the device language by default when the user has not chosen one yet.
+// Read the true SYSTEM locale (immune to the app's own Locale.setDefault() when it
+// forces a UI locale), so re-reads stay correct.
+private fun androidSystemDefaultLanguage(): ReaderLanguage {
+    val systemLanguage = android.content.res.Resources.getSystem()
+        .configuration.locales[0]?.language
+        ?: java.util.Locale.getDefault().language
+    return if (systemLanguage.equals("zh", ignoreCase = true)) {
+        ReaderLanguage.ChineseSimplified
+    } else {
+        ReaderLanguage.English
+    }
+}
 
 private class AndroidReaderSettingsStore(
     private val sharedPreferences: SharedPreferences,
