@@ -6982,6 +6982,7 @@ private fun RetellStepCard(
     var recordingState by remember(story.id) { mutableStateOf<RecordingState>(RecordingState.Idle) }
     var messageRes by remember(story.id) { mutableStateOf<Int?>(null) }
     var showPermissionDialog by remember(story.id) { mutableStateOf(false) }
+    var showPermissionSettingsAction by remember(story.id) { mutableStateOf(false) }
     val checkedItems = remember(story.id) { mutableStateListOf<String>() }
     val revealedHints = remember(story.id) { mutableStateListOf<String>() }
 
@@ -7036,9 +7037,22 @@ private fun RetellStepCard(
         ActivityResultContracts.RequestPermission(),
     ) { granted ->
         if (granted) {
+            showPermissionDialog = false
+            showPermissionSettingsAction = false
             beginRecording()
         } else {
             recordingState = stateMachine.reduce(recordingState, RecordingAction.PermissionDenied)
+            val activity = context as? Activity
+            val shouldShowRationale = activity?.let {
+                ActivityCompat.shouldShowRequestPermissionRationale(
+                    it,
+                    Manifest.permission.RECORD_AUDIO,
+                )
+            } ?: false
+            // Permanently denied (no system dialog will appear) → offer an app-settings path
+            // so the user isn't stuck, matching the reader's read-aloud handler.
+            showPermissionSettingsAction = !shouldShowRationale
+            showPermissionDialog = true
             messageRes = R.string.voice_mic_denied
         }
     }
@@ -7253,7 +7267,13 @@ private fun RetellStepCard(
                                 color = MaterialTheme.colorScheme.onSurface,
                             )
                             Text(
-                                text = stringResource(R.string.voice_mic_rationale_body),
+                                text = stringResource(
+                                    if (showPermissionSettingsAction) {
+                                        R.string.voice_mic_settings_body
+                                    } else {
+                                        R.string.voice_mic_rationale_body
+                                    },
+                                ),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -7263,12 +7283,31 @@ private fun RetellStepCard(
                                 OutlinedButton(
                                     onClick = {
                                         showPermissionDialog = false
-                                        permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                        if (showPermissionSettingsAction) {
+                                            (context as? Activity)?.let { activity ->
+                                                activity.startActivity(
+                                                    Intent(
+                                                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                                        Uri.fromParts("package", activity.packageName, null),
+                                                    ),
+                                                )
+                                            }
+                                        } else {
+                                            permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                        }
                                     },
                                     modifier = Modifier.heightIn(min = LmcSpacing.ButtonSecondaryHeight),
                                     shape = RoundedCornerShape(LmcSpacing.RadiusLg),
                                 ) {
-                                    Text(text = stringResource(R.string.voice_mic_allow))
+                                    Text(
+                                        text = stringResource(
+                                            if (showPermissionSettingsAction) {
+                                                R.string.action_open_settings
+                                            } else {
+                                                R.string.voice_mic_allow
+                                            },
+                                        ),
+                                    )
                                 }
                                 TextButton(
                                     onClick = {

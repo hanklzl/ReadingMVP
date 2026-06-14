@@ -71,14 +71,17 @@ internal class AndroidVoiceRecordingController(
         }
         runCatching { mediaRecorder.release() }
 
-        if (!file.exists() || file.length() <= 0L) {
+        val durationMs = (System.currentTimeMillis() - startMillis).coerceAtLeast(0L)
+        // Discard accidental sub-threshold taps; matches the iOS minimum so both
+        // platforms behave the same for a very short press.
+        if (!file.exists() || file.length() <= 0L || durationMs < MinRecordingMs) {
             file.delete()
             return null
         }
 
         return CaptureResult(
             file = file,
-            durationMs = (System.currentTimeMillis() - startMillis).coerceAtLeast(0L),
+            durationMs = durationMs,
         )
     }
 
@@ -159,5 +162,6 @@ internal class AndroidVoiceRecordingController(
 
     private companion object {
         const val RecordingDirectory: String = "voice_recordings"
+        const val MinRecordingMs: Long = 250L
     }
 }
