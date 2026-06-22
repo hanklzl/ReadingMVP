@@ -7,7 +7,7 @@ Status: Play internal-testing rollout draft only. Do not mark validation complet
 - [ ] Confirm app id is `com.littlemandarin.classics`.
 - [ ] Set `versionName` for the MVP release, starting at `0.1.0` unless a later milestone changes it.
 - [ ] Increment `versionCode` for every AAB uploaded to Google Play.
-- [ ] Reconcile checked-in Gradle version fields before upload. Current Android config must be reviewed because `apps/reader/androidApp/build.gradle.kts` currently uses `versionName = "1.0"` and `versionCode = 1`, while this draft release plan recommends seed MVP tracking from `0.1.0`.
+- [ ] Confirm `apps/reader/version.properties` matches the release tag, e.g. `v0.1.0` -> `versionName=0.1.0`, `versionCode=100`.
 - [ ] Confirm Android is the validation baseline for the MVP.
 - [ ] Confirm UI languages include English and Simplified Chinese resources, with no hardcoded user-facing UI copy.
 - [ ] Confirm this checklist contains no keystore values, passwords, upload keys, API keys, provisioning details, or publish credentials.
@@ -60,10 +60,12 @@ Status: Play internal-testing rollout draft only. Do not mark validation complet
 
 - [ ] Follow `release/signing/README.md`; do not modify it from this release-manager checklist.
 - [ ] Android keystore/upload key is generated or available outside the repository.
+- [ ] ReadingMVP uses the same signing identity as MusicFreeAndroid through the shared `ANDROID_RELEASE_*` variable names.
 - [ ] Play App Signing decision is recorded.
 - [ ] Signing passwords and key files are stored only in local files or CI secrets.
 - [ ] Verify no `*.keystore`, `*.jks`, `*.p12`, `*.mobileprovision`, passwords, or signing secrets are tracked.
 - [ ] Release signing configuration reads secrets from environment or local-only files.
+- [ ] GitHub Environment `release` contains `ANDROID_RELEASE_KEYSTORE_BASE64`, `ANDROID_RELEASE_STORE_PASSWORD`, `ANDROID_RELEASE_KEY_ALIAS`, and `ANDROID_RELEASE_KEY_PASSWORD`.
 
 ## Build Validation
 
@@ -77,14 +79,24 @@ Run from `apps/reader`:
 After signing is configured:
 
 ```bash
-./gradlew :androidApp:bundleRelease
+./gradlew :androidApp:bundleRelease :androidApp:assembleRelease
+```
+
+Full local preflight from the repository root:
+
+```bash
+source /Users/zili/code/android/MusicFreeAndroid/.env.release.local
+bash scripts/release/preflight.sh v0.1.0
 ```
 
 - [ ] `:shared:allTests` passes.
 - [ ] `:androidApp:assembleDebug` passes.
 - [ ] `:androidApp:bundleRelease` passes with release signing.
+- [ ] `:androidApp:assembleRelease` passes with release signing.
+- [ ] `bash scripts/release/preflight.sh vX.Y.Z` passes with the MusicFreeAndroid signing environment sourced.
 - [ ] Debug APK is available for smoke testing.
 - [ ] Release AAB is available for Google Play Internal Testing.
+- [ ] Release APK, mapping zip, and `release/version.json` are available from the tag release workflow.
 - [ ] Record `versionName`, `versionCode`, AAB path, build timestamp, git revision, signing source name, and tester release-note draft in local release notes without recording any secret values.
 - [ ] Do a physical-device smoke pass before Play upload; emulator-only evidence is not enough for microphone, audio, storage, or share-card claims.
 

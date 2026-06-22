@@ -1,6 +1,6 @@
 # Little Mandarin Classics MVP Release Plan
 
-Status: planning document only. This file does not claim that any build, test, archive, or store review step currently passes.
+Status: Android release automation is wired for local preflight and GitHub tag releases. This file does not claim that any build, test, archive, or store review step currently passes unless the commands below have actually been run for the target tag.
 
 ## Release Scope
 
@@ -17,8 +17,9 @@ MVP scope:
 
 - App package / bundle id: `com.littlemandarin.classics`.
 - Seed/internal MVP version: start at `0.1.0`.
-- Before any upload, reconcile checked-in platform version fields with the seed-version convention. Current Android and iOS project files use `1.0` / build `1`, so the release owner must either align them to `0.1.0` or intentionally record a different seed version.
-- Android: keep `versionName` aligned to product version, and increment `versionCode` monotonically for every uploaded AAB.
+- Android version values live in `apps/reader/version.properties`; Gradle reads this file for `versionName` and `versionCode`.
+- Android `versionCode` follows the MusicFreeAndroid formula: `MAJOR * 10000 + MINOR * 100 + PATCH`, so `v0.1.0` is `100`.
+- Android: keep `versionName` aligned to the tag without the leading `v`, and increment `versionCode` monotonically for every uploaded AAB.
 - iOS: keep `CFBundleShortVersionString` aligned to product version, and increment `CFBundleVersion` monotonically for every TestFlight upload.
 - Release candidates: use `0.1.0-rc.N` in release notes and internal tracking. Store-visible versions should stay numeric where required by platform tooling.
 - Tags/commits are handled only at milestone time by the orchestrating agent; this documentation batch must not stage or commit files.
@@ -32,22 +33,47 @@ Run from `apps/reader` with the Gradle wrapper that lives at `apps/reader/gradle
 ./gradlew :androidApp:assembleDebug
 ```
 
-After Android signing is configured, produce the release bundle with:
+Signed release artifacts use the same `ANDROID_RELEASE_*` signing environment as MusicFreeAndroid. For a local full preflight from the repository root:
 
 ```bash
-./gradlew :androidApp:bundleRelease
+source /Users/zili/code/android/MusicFreeAndroid/.env.release.local
+bash scripts/release/preflight.sh v0.1.0
+```
+
+Or produce signed release artifacts directly from `apps/reader`:
+
+```bash
+./gradlew :androidApp:bundleRelease :androidApp:assembleRelease
 ```
 
 iOS archive and TestFlight validation are 待完整 Xcode / pending full Xcode.
 
-Do not publish, upload, or mark a store build ready from this planning document alone. Uploads require the platform checklist evidence in `release/checklist-android.md` or `release/checklist-ios.md`.
+Do not publish, upload, or mark a store build ready from this document alone. Uploads require the platform checklist evidence in `release/checklist-android.md` or `release/checklist-ios.md`.
+
+## GitHub Tag Release
+
+The executable Android release chain is `.github/workflows/android-release.yml`.
+
+1. Update `apps/reader/version.properties`.
+2. Run `source /Users/zili/code/android/MusicFreeAndroid/.env.release.local && bash scripts/release/preflight.sh vX.Y.Z`.
+3. Commit the version/docs/app changes.
+4. Tag and push:
+   ```bash
+   git tag vX.Y.Z
+   git push origin main
+   git push origin vX.Y.Z
+   ```
+5. CI validates the tag/version match, runs `:shared:allTests` and `:androidApp:assembleDebug`, builds signed AAB/APK artifacts, packages R8 mapping, creates or updates the GitHub Release, prepends `CHANGELOG.md`, and publishes `gh-pages/release/version.json`.
 
 ## Release Artifacts
 
 Expected Android artifacts after successful validation:
 
 - Debug APK for smoke testing: `apps/reader/androidApp/build/outputs/apk/debug/androidApp-debug.apk`
-- Release AAB for Google Play: `apps/reader/androidApp/build/outputs/bundle/release/androidApp-release.aab`
+- Release AAB for Google Play: `apps/reader/androidApp/build/outputs/bundle/release/*-release.aab`
+- Release APK for direct smoke/install and GitHub Release: `apps/reader/androidApp/build/outputs/apk/release/*-release.apk`
+- R8 mapping zip on GitHub Release: `mapping-vX.Y.Z.zip`
+- Published manifest: `gh-pages/release/version.json`
 - Local build record: `versionName`, `versionCode`, AAB path, build timestamp, git revision, signing source name, and release-note draft, without any secret values.
 
 Expected iOS artifacts after full Xcode is ready:
@@ -109,7 +135,7 @@ Release notes and review notes must preserve these facts:
 
 Go only if all gates are satisfied:
 
-- Android validation baseline passes: `:shared:allTests`, `:androidApp:assembleDebug`, and signed `:androidApp:bundleRelease`.
+- Android validation baseline passes: `:shared:allTests`, `:androidApp:assembleDebug`, signed `:androidApp:bundleRelease`, signed `:androidApp:assembleRelease`, and `bash scripts/release/preflight.sh vX.Y.Z`.
 - Content passes `content-safety-reviewer` and `story-qa-validator` gates.
 - P0 workflows are complete end to end; P1 release commitments are either complete or explicitly removed from store claims.
 - Privacy/compliance artifacts are complete and match actual app behavior.

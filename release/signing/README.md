@@ -1,182 +1,69 @@
 # Signing Setup
 
-This file is the signing handoff for Little Mandarin Classics. It is documentation only: do not generate real keys, paste real secrets, or edit Gradle/Xcode settings from this file without a release-manager task.
+Status: Android release signing is wired into `apps/reader/androidApp/build.gradle.kts` and `.github/workflows/android-release.yml`.
 
-Repo-specific build root:
+The Android release path intentionally uses the same signing variable names as MusicFreeAndroid, so the same keystore and passwords can be injected without a second Gradle signing scheme. Do not commit the keystore, decoded key files, passwords, or local env files.
 
-```sh
-cd /Users/zili/code/android/ReadingMVP/apps/reader
-```
+## Local Signing
 
-Android app module:
+From this repository root:
 
 ```sh
-./gradlew :androidApp:assembleDebug
-./gradlew :androidApp:bundleRelease
+source /Users/zili/code/android/MusicFreeAndroid/.env.release.local
+bash scripts/release/preflight.sh v0.1.0
 ```
 
-`bundleRelease` requires a release signing configuration to be added later.
-
-## Android Upload Keystore
-
-Generate one Android upload keystore outside the repo. Recommended local-only path:
+The sourced file must export:
 
 ```sh
-mkdir -p "$HOME/.littlemandarin/signing/android"
-chmod 700 "$HOME/.littlemandarin" "$HOME/.littlemandarin/signing" "$HOME/.littlemandarin/signing/android"
-
-keytool -genkeypair \
-  -v \
-  -storetype JKS \
-  -keystore "$HOME/.littlemandarin/signing/android/littlemandarin-upload.jks" \
-  -alias littlemandarin_upload \
-  -keyalg RSA \
-  -keysize 4096 \
-  -validity 10000 \
-  -dname "CN=Little Mandarin Classics, OU=Release, O=<LEGAL_ENTITY>, L=<CITY>, ST=<STATE>, C=<COUNTRY_CODE>"
-
-chmod 600 "$HOME/.littlemandarin/signing/android/littlemandarin-upload.jks"
+ANDROID_RELEASE_KEYSTORE_PATH=/absolute/path/to/release.jks
+ANDROID_RELEASE_STORE_PASSWORD=...
+ANDROID_RELEASE_KEY_ALIAS=...
+ANDROID_RELEASE_KEY_PASSWORD=...
 ```
 
-Policy:
+The release Gradle tasks fail fast if any value is missing:
 
-- Generate the key once, by the release owner, on a trusted machine.
-- Keep the keystore outside `/Users/zili/code/android/ReadingMVP`.
-- Store the keystore backup in an encrypted password manager or secret vault with restricted access.
-- Store passwords separately from the keystore when possible.
-- Do not send the keystore or passwords through chat, email, issue trackers, or docs.
-- CI should receive the keystore only as an encrypted secret, commonly base64-encoded and decoded into a temporary file at build time.
+```sh
+cd apps/reader
+./gradlew :androidApp:bundleRelease :androidApp:assembleRelease --no-daemon
+```
+
+Expected Android outputs:
+
+- `apps/reader/androidApp/build/outputs/bundle/release/*-release.aab`
+- `apps/reader/androidApp/build/outputs/apk/release/*-release.apk`
+- `apps/reader/androidApp/build/outputs/mapping/release/mapping.txt`
+
+## CI Secrets
+
+Configure these in the GitHub Environment named `release`. To use the same signing identity as MusicFreeAndroid, copy the same secret values into this repository's `release` environment:
+
+| Secret | Purpose |
+|---|---|
+| `ANDROID_RELEASE_KEYSTORE_BASE64` | Base64-encoded release keystore bytes |
+| `ANDROID_RELEASE_STORE_PASSWORD` | Keystore password |
+| `ANDROID_RELEASE_KEY_ALIAS` | Key alias |
+| `ANDROID_RELEASE_KEY_PASSWORD` | Key password |
+| `ANTHROPIC_API_KEY` | Optional release-note summary; failures do not block release |
+
+CI decodes `ANDROID_RELEASE_KEYSTORE_BASE64` into `$RUNNER_TEMP/release.jks`, sets `ANDROID_RELEASE_KEYSTORE_PATH` to that temporary file, and runs the signed release build. No decoded keystore is committed or uploaded except through the signed build artifacts.
 
 ## Play App Signing
 
-Recommended MVP flow for Google Play:
+For Google Play Internal Testing, upload the signed AAB produced by the release workflow. If this keystore is used as the Play upload key, enroll in Play App Signing and let Google hold the app signing key. Record the Play app signing and upload-key SHA-1/SHA-256 fingerprints in the Android release checklist before external testing.
 
-1. Generate a local upload key as above.
-2. Add a Gradle release signing config that signs `:androidApp` release bundles with the upload key.
-3. Build the Android App Bundle from `apps/reader`:
+## iOS Signing
 
-   ```sh
-   ./gradlew :androidApp:bundleRelease
-   ```
+Status: pending full Xcode. The iOS app remains a skeleton per `AGENTS.md`, so no iOS archive/signing automation is active yet.
 
-4. Upload `androidApp-release.aab` to Play Console.
-5. Enroll in Play App Signing and let Google Play generate and protect the app signing key.
-6. Keep the local key as the upload key only. Google Play uses the app signing key to sign APKs delivered to users.
-7. Record Play Console SHA-1/SHA-256 fingerprints in release-manager checklists. If API providers are added later, register the Google-held app signing key fingerprint, not only the local upload key fingerprint.
-
-Use a separate upload key and app signing key. If the upload key is lost, Play can reset upload-key access; if an app signing key is self-managed and lost, app updates can be permanently blocked. For this repo's first Play-only MVP, prefer Google-generated Play App Signing unless release-manager identifies a multi-store requirement before first release.
-
-## Gradle Signing Template
-
-Do not paste this blindly. This is the intended Kotlin DSL shape for a future edit to `apps/reader/androidApp/build.gradle.kts`.
-
-It reads signing values from environment variables first, then from a local-only properties file. A practical local file name is `apps/reader/local-signing.properties`; it must never be committed.
-
-Sample `apps/reader/local-signing.properties`:
-
-```properties
-ANDROID_UPLOAD_STORE_FILE=/Users/zili/.littlemandarin/signing/android/littlemandarin-upload.jks
-ANDROID_UPLOAD_STORE_PASSWORD=<store-password>
-ANDROID_UPLOAD_KEY_ALIAS=littlemandarin_upload
-ANDROID_UPLOAD_KEY_PASSWORD=<key-password>
-```
-
-Sample Kotlin DSL documentation snippet:
-
-```kotlin
-import java.util.Properties
-
-val localSigningProperties = rootProject.file("local-signing.properties")
-val signingProperties = Properties().apply {
-    if (localSigningProperties.isFile) {
-        localSigningProperties.inputStream().use(::load)
-    }
-}
-
-fun signingValue(name: String): String? =
-    providers.environmentVariable(name).orNull
-        ?: signingProperties.getProperty(name)
-
-val androidUploadStoreFile = signingValue("ANDROID_UPLOAD_STORE_FILE")
-val androidUploadStorePassword = signingValue("ANDROID_UPLOAD_STORE_PASSWORD")
-val androidUploadKeyAlias = signingValue("ANDROID_UPLOAD_KEY_ALIAS")
-val androidUploadKeyPassword = signingValue("ANDROID_UPLOAD_KEY_PASSWORD")
-val hasReleaseSigning = listOf(
-    androidUploadStoreFile,
-    androidUploadStorePassword,
-    androidUploadKeyAlias,
-    androidUploadKeyPassword,
-).all { !it.isNullOrBlank() }
-
-android {
-    val releaseSigningConfig = if (hasReleaseSigning) {
-        signingConfigs.create("release") {
-            storeFile = file(androidUploadStoreFile!!)
-            storePassword = androidUploadStorePassword
-            keyAlias = androidUploadKeyAlias
-            keyPassword = androidUploadKeyPassword
-        }
-    } else {
-        null
-    }
-
-    buildTypes {
-        release {
-            releaseSigningConfig?.let {
-                signingConfig = it
-            }
-        }
-    }
-}
-```
-
-CI should avoid writing `local-signing.properties`. It should provide environment variables and write the decoded keystore to a temporary path referenced by `ANDROID_UPLOAD_STORE_FILE`.
-
-## CI Secret Names
-
-Proposed Android CI secrets:
-
-- `ANDROID_UPLOAD_KEYSTORE_BASE64`
-- `ANDROID_UPLOAD_STORE_PASSWORD`
-- `ANDROID_UPLOAD_KEY_ALIAS`
-- `ANDROID_UPLOAD_KEY_PASSWORD`
-- `PLAY_SERVICE_ACCOUNT_JSON`
-
-`PLAY_SERVICE_ACCOUNT_JSON` is only needed when release-manager adds automated Play upload. It should use the minimum Play Console permissions required for internal testing upload.
-
-Proposed iOS CI secrets, pending full Xcode:
-
-- `IOS_DISTRIBUTION_CERTIFICATE_P12_BASE64`
-- `IOS_DISTRIBUTION_CERTIFICATE_PASSWORD`
-- `IOS_APP_STORE_PROVISION_PROFILE_BASE64`
-- `APPSTORE_CONNECT_API_KEY_ID`
-- `APPSTORE_CONNECT_API_ISSUER_ID`
-- `APPSTORE_CONNECT_API_KEY_P8_BASE64`
-
-## iOS Signing and TestFlight
-
-Status: pending full Xcode. The iOS app currently remains a skeleton per `AGENTS.md` and the platform design spec, so this is the target flow, not a completed setup.
-
-Bundle ID:
+Target bundle ID:
 
 ```text
 com.littlemandarin.classics
 ```
 
-Manual signing flow:
-
-1. Enroll or confirm Apple Developer Program access.
-2. In Certificates, Identifiers & Profiles, create or confirm the explicit App ID for `com.littlemandarin.classics`.
-3. On a trusted Mac, create a Certificate Signing Request with Keychain Access.
-4. Create an Apple Distribution certificate from that CSR.
-5. Export the certificate/private key as a `.p12` only for secure backup or CI import.
-6. Create an App Store provisioning profile for `com.littlemandarin.classics` and the distribution certificate.
-7. In Xcode, configure the iOS target signing with the Apple Team, bundle ID, distribution certificate, and App Store provisioning profile.
-8. Build the KMP shared framework/XCFramework as required by the iOS project.
-9. Archive the iOS app in Xcode and upload to App Store Connect.
-10. In App Store Connect, add TestFlight beta details, upload the build, invite internal testers, then request beta review before external testing.
-
-Automatic signing can be used locally once full Xcode is available, but release-manager should still record the Apple Team ID, bundle ID, certificate type, provisioning profile name, and TestFlight group plan.
+Future iOS release work must use App Store distribution certificates, provisioning profiles, and App Store Connect API credentials through local keychain/CI secrets only. Do not commit `.p12`, `.mobileprovision`, App Store Connect private keys, or derived archive credentials.
 
 ## Never Commit
 
@@ -186,28 +73,11 @@ Never commit any of the following:
 - `*.jks`
 - `*.p12`
 - `*.mobileprovision`
-- password files
+- `.env.release.local`
+- `.env.*.local`
 - `local-signing.properties`
-- any other local signing properties file
 - decoded CI secret files
 - App Store Connect API private keys
 - Play service account JSON
 
-The repo `.gitignore` already blocks the main key/certificate patterns, but do not rely on `.gitignore` as the only safeguard. Run `git status --short` before handoff.
-
-## Release-Manager Handoff
-
-When release-manager prepares release artifacts, it should add checklist items for:
-
-- `release/RELEASE.md`: versionCode/versionName, Android AAB command, iOS build number policy, and artifact paths.
-- `release/checklist-android.md`: Play App Signing enrollment status, upload key certificate fingerprint, Play app signing fingerprint, CI secret presence, and Google Play Internal Testing upload.
-- `release/checklist-ios.md`: full Xcode readiness, Apple Team ID, bundle ID, distribution certificate, App Store provisioning profile, archive/export steps, App Store Connect API access, and TestFlight internal/external group setup.
-- `privacy-compliance`: child privacy, Data Safety, and App Store privacy labels must be complete before any public or external-test release.
-
-Official references:
-
-- Android app signing: https://developer.android.com/studio/publish/app-signing
-- Play App Signing: https://support.google.com/googleplay/android-developer/answer/9842756
-- Apple TestFlight: https://developer.apple.com/testflight/
-- Apple certificate CSR: https://developer.apple.com/help/account/certificates/create-a-certificate-signing-request
-- Apple App Store provisioning profile: https://developer.apple.com/help/account/provisioning-profiles/create-an-app-store-provisioning-profile
+Run `git status --short` before handoff and confirm only source, docs, scripts, and workflow files are staged or changed.

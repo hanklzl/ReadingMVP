@@ -26,6 +26,7 @@ __pycache__/
 .venv*/
 venv/
 .env
+.env.*.local
 *.egg-info/
 .pytest_cache/
 .ruff_cache/
@@ -38,9 +39,11 @@ node_modules/
 *.jks
 *.p12
 *.mobileprovision
+*.aab
 google-services.json
 GoogleService-Info.plist
 secrets.*
+local-signing.properties
 
 # local QA scratch (screenshots, agent reports)
 docs/qa/

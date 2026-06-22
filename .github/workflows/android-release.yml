@@ -1,0 +1,355 @@
+name: Android Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: readingmvp-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-release:
+    name: Build Signed Android Release
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: read
+    outputs:
+      aab-name: ${{ steps.name-artifacts.outputs.aab_name }}
+      aab-sha256: ${{ steps.artifact-meta.outputs.aab_sha256 }}
+      aab-size: ${{ steps.artifact-meta.outputs.aab_size }}
+      apk-name: ${{ steps.name-artifacts.outputs.apk_name }}
+      apk-sha256: ${{ steps.artifact-meta.outputs.apk_sha256 }}
+      apk-size: ${{ steps.artifact-meta.outputs.apk_size }}
+      mapping-name: ${{ steps.pack-mapping.outputs.mapping_name }}
+      mapping-sha256: ${{ steps.pack-mapping.outputs.mapping_sha256 }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Validate version consistency
+        if: github.ref_type == 'tag'
+        run: |
+          expected="${GITHUB_REF_NAME#v}"
+          actual=$(awk -F= '/^versionName/{print $2}' apps/reader/version.properties | tr -d '[:space:]')
+          [ "$expected" = "$actual" ] || {
+            echo "::error::tag $GITHUB_REF_NAME vs versionName $actual mismatch"
+            exit 1
+          }
+          echo "OK: $GITHUB_REF_NAME <-> versionName=$actual"
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v5
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4.0.1
+
+      - name: Validate release secrets
+        env:
+          ANDROID_RELEASE_KEYSTORE_BASE64: ${{ secrets.ANDROID_RELEASE_KEYSTORE_BASE64 }}
+          ANDROID_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_STORE_PASSWORD }}
+          ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
+          ANDROID_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }}
+        run: |
+          missing=0
+          for name in \
+            ANDROID_RELEASE_KEYSTORE_BASE64 \
+            ANDROID_RELEASE_STORE_PASSWORD \
+            ANDROID_RELEASE_KEY_ALIAS \
+            ANDROID_RELEASE_KEY_PASSWORD
+          do
+            if [ -z "${!name}" ]; then
+              echo "::error::$name is not configured in the GitHub release Environment"
+              missing=1
+            fi
+          done
+          exit "$missing"
+
+      - name: Decode release keystore
+        env:
+          ANDROID_RELEASE_KEYSTORE_BASE64: ${{ secrets.ANDROID_RELEASE_KEYSTORE_BASE64 }}
+        run: |
+          printf '%s' "$ANDROID_RELEASE_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          chmod 600 "$RUNNER_TEMP/release.jks"
+
+      - name: Run Android baseline
+        working-directory: apps/reader
+        run: ./gradlew :shared:allTests :androidApp:assembleDebug --no-daemon
+
+      - name: Build signed Release AAB/APK
+        working-directory: apps/reader
+        env:
+          ANDROID_RELEASE_KEYSTORE_PATH: ${{ runner.temp }}/release.jks
+          ANDROID_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_STORE_PASSWORD }}
+          ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
+          ANDROID_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }}
+        run: ./gradlew :androidApp:bundleRelease :androidApp:assembleRelease --no-daemon
+
+      - name: Name artifacts
+        id: name-artifacts
+        run: |
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            tag_or_label="$GITHUB_REF_NAME"
+          else
+            tag_or_label="manual-${GITHUB_RUN_NUMBER}"
+          fi
+          aab_src=$(find apps/reader/androidApp/build/outputs/bundle/release -type f -name '*-release.aab' | head -n 1)
+          apk_src=$(find apps/reader/androidApp/build/outputs/apk/release -type f -name '*-release.apk' | head -n 1)
+          if [ ! -f "$aab_src" ] || [ ! -f "$apk_src" ]; then
+            echo "::error::expected Release AAB/APK not produced; saw:"
+            find apps/reader/androidApp/build/outputs -maxdepth 4 -type f | sort
+            exit 1
+          fi
+          aab_name="LittleMandarinClassics-${tag_or_label}.aab"
+          apk_name="LittleMandarinClassics-${tag_or_label}.apk"
+          cp "$aab_src" "$RUNNER_TEMP/$aab_name"
+          cp "$apk_src" "$RUNNER_TEMP/$apk_name"
+          {
+            echo "aab_name=$aab_name"
+            echo "apk_name=$apk_name"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Compute artifact sha256 + size
+        id: artifact-meta
+        run: |
+          aab="$RUNNER_TEMP/${{ steps.name-artifacts.outputs.aab_name }}"
+          apk="$RUNNER_TEMP/${{ steps.name-artifacts.outputs.apk_name }}"
+          {
+            echo "aab_sha256=$(sha256sum "$aab" | awk '{print $1}')"
+            echo "aab_size=$(wc -c < "$aab")"
+            echo "apk_sha256=$(sha256sum "$apk" | awk '{print $1}')"
+            echo "apk_size=$(wc -c < "$apk")"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Pack mapping
+        id: pack-mapping
+        if: github.ref_type == 'tag'
+        run: |
+          mapping_src="apps/reader/androidApp/build/outputs/mapping/release/mapping.txt"
+          if [ ! -f "$mapping_src" ]; then
+            echo "::error::expected mapping.txt not produced at $mapping_src"
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/mapping"
+          cp "$mapping_src" "$RUNNER_TEMP/mapping/"
+          mapping_name="mapping-${GITHUB_REF_NAME}.zip"
+          (cd "$RUNNER_TEMP" && zip -9q "$mapping_name" mapping/mapping.txt)
+          sha=$(sha256sum "$RUNNER_TEMP/$mapping_name" | awk '{print $1}')
+          {
+            echo "mapping_name=$mapping_name"
+            echo "mapping_sha256=$sha"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Upload release AAB artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: LittleMandarinClassics-release-aab
+          path: ${{ runner.temp }}/${{ steps.name-artifacts.outputs.aab_name }}
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload release APK artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: LittleMandarinClassics-release-apk
+          path: ${{ runner.temp }}/${{ steps.name-artifacts.outputs.apk_name }}
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload mapping artifact
+        if: github.ref_type == 'tag'
+        uses: actions/upload-artifact@v7
+        with:
+          name: LittleMandarinClassics-release-mapping
+          path: ${{ runner.temp }}/${{ steps.pack-mapping.outputs.mapping_name }}
+          if-no-files-found: error
+          retention-days: 90
+
+  publish-github-release:
+    name: Publish GitHub Release
+    needs: build-release
+    if: github.event_name == 'push' && github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download release AAB artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: LittleMandarinClassics-release-aab
+          path: release-aab
+
+      - name: Download release APK artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: LittleMandarinClassics-release-apk
+          path: release-apk
+
+      - name: Download mapping artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: LittleMandarinClassics-release-mapping
+          path: release-mapping
+
+      - name: Generate release notes
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          prev=$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null \
+                 || git rev-list --max-parents=0 HEAD | tail -1)
+          bash scripts/release/generate-notes.sh "$prev" "$GITHUB_REF_NAME" > release_notes.md
+          aab="${{ needs.build-release.outputs.aab-name }}"
+          apk="${{ needs.build-release.outputs.apk-name }}"
+          map_zip="${{ needs.build-release.outputs.mapping-name }}"
+          aab_size_human=$(numfmt --to=iec --suffix=B "${{ needs.build-release.outputs.aab-size }}")
+          apk_size_human=$(numfmt --to=iec --suffix=B "${{ needs.build-release.outputs.apk-size }}")
+          aab_sha_short=$(echo "${{ needs.build-release.outputs.aab-sha256 }}" | cut -c1-12)
+          apk_sha_short=$(echo "${{ needs.build-release.outputs.apk-sha256 }}" | cut -c1-12)
+          map_sha_short=$(echo "${{ needs.build-release.outputs.mapping-sha256 }}" | cut -c1-12)
+          {
+            echo ""
+            echo "### 构建产物"
+            echo ""
+            echo "- Android AAB: \`${aab}\` · ${aab_size_human} · sha256 \`${aab_sha_short}\`"
+            echo "- Android APK: \`${apk}\` · ${apk_size_human} · sha256 \`${apk_sha_short}\`"
+            echo "- mapping: \`${map_zip}\` · sha256 \`${map_sha_short}\` (R8 反混淆用)"
+          } >> release_notes.md
+          head -60 release_notes.md
+
+      - name: Upload release notes artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-notes
+          path: release_notes.md
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Prepend CHANGELOG.md and push main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git checkout -B main origin/main
+          bash scripts/release/prepend-changelog.sh release_notes.md "$GITHUB_REF_NAME"
+          git add CHANGELOG.md
+          if git diff --cached --quiet; then
+            echo "::notice::CHANGELOG.md already up to date"
+          else
+            git commit -m "docs(changelog): release $GITHUB_REF_NAME [skip ci]"
+            if ! git push origin main; then
+              git pull --rebase origin main
+              git push origin main || echo "::warning::CHANGELOG push failed, manual sync required"
+            fi
+          fi
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          aab_path="release-aab/${{ needs.build-release.outputs.aab-name }}"
+          apk_path="release-apk/${{ needs.build-release.outputs.apk-name }}"
+          map_path="release-mapping/${{ needs.build-release.outputs.mapping-name }}"
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "$aab_path" "$apk_path" "$map_path" --clobber
+            gh release edit "$GITHUB_REF_NAME" --notes-file release_notes.md
+          else
+            gh release create "$GITHUB_REF_NAME" "$aab_path" "$apk_path" "$map_path" \
+              --title "$GITHUB_REF_NAME" \
+              --notes-file release_notes.md
+          fi
+
+  publish-version-manifest:
+    name: Publish version manifest
+    needs: [build-release, publish-github-release]
+    if: github.event_name == 'push' && github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout source at tag
+        uses: actions/checkout@v6
+        with:
+          path: source
+          ref: ${{ github.ref }}
+
+      - name: Checkout gh-pages if exists
+        uses: actions/checkout@v6
+        continue-on-error: true
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Init gh-pages if missing
+        run: |
+          if [ ! -d gh-pages/.git ]; then
+            rm -rf gh-pages
+            git clone --branch main "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" gh-pages
+            cd gh-pages
+            git checkout --orphan gh-pages
+            git rm -rf . 2>/dev/null || true
+            echo "Release manifest branch" > README.md
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add README.md
+            git commit -m "chore: init gh-pages"
+          fi
+
+      - name: Download release notes artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: release-notes
+          path: source
+
+      - name: Build version.json
+        run: |
+          mkdir -p gh-pages/release
+          vcode=$(awk -F= '/^versionCode/{print $2}' source/apps/reader/version.properties | tr -d '[:space:]')
+          bash source/scripts/release/build-version-json.sh \
+              --version "${GITHUB_REF_NAME#v}" \
+              --version-code "$vcode" \
+              --tag "$GITHUB_REF_NAME" \
+              --artifact "android-aab=${{ needs.build-release.outputs.aab-name }},${{ needs.build-release.outputs.aab-sha256 }},${{ needs.build-release.outputs.aab-size }}" \
+              --artifact "android-apk=${{ needs.build-release.outputs.apk-name }},${{ needs.build-release.outputs.apk-sha256 }},${{ needs.build-release.outputs.apk-size }}" \
+              --mapping-name "${{ needs.build-release.outputs.mapping-name }}" \
+              --mapping-sha256 "${{ needs.build-release.outputs.mapping-sha256 }}" \
+              --notes source/release_notes.md \
+              > gh-pages/release/version.json
+          jq . gh-pages/release/version.json
+
+      - name: Commit and push gh-pages
+        run: |
+          cd gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add release/version.json
+          if git diff --cached --quiet; then
+            echo "::notice::release/version.json already up to date"
+          else
+            git commit -m "chore(release): publish ${GITHUB_REF_NAME}"
+            git push origin gh-pages
+          fi
