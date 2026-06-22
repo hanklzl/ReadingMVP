@@ -36,6 +36,9 @@ actual=$(awk -F= '/^versionName/{print $2}' "$version_file" | tr -d '[:space:]')
 }
 echo "  OK: $tag <-> versionName=$actual"
 
+echo "[dry] Validate source media assets"
+python3 scripts/release/validate-media-assets.py --source-root "$reader/shared/src/commonMain/resources"
+
 echo "[dry] Run Android baseline"
 (cd "$reader" && ./gradlew :shared:allTests :androidApp:assembleDebug --no-daemon)
 
@@ -59,6 +62,11 @@ if [ "$release_built" -eq 1 ]; then
     [ -f "$aab_src" ] || { echo "::error::Release AAB not found" >&2; exit 1; }
     [ -f "$apk_src" ] || { echo "::error::Release APK not found" >&2; exit 1; }
     [ -f "$mapping_src" ] || { echo "::error::R8 mapping.txt not found" >&2; exit 1; }
+
+    echo "[dry] Validate packaged media assets"
+    python3 scripts/release/validate-media-assets.py \
+        --zip "$aab_src" \
+        --zip "$apk_src"
 fi
 
 echo "[dry] Compute artifact sha256 + size"

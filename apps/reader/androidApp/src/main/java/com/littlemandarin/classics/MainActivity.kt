@@ -12,9 +12,12 @@ import android.os.LocaleList
 import android.provider.Settings
 import android.text.format.DateUtils
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
+import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.ActivityResultRegistryOwner
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import androidx.compose.animation.core.Animatable
@@ -320,7 +323,10 @@ class MainActivity : ComponentActivity() {
         AndroidRecordingStoreProvider.initialize(applicationContext)
 
         setContent {
-            ReaderApp()
+            ReaderApp(
+                activity = this@MainActivity,
+                activityResultRegistryOwner = this@MainActivity,
+            )
         }
     }
 }
@@ -389,7 +395,10 @@ private val TopLevelDestinations = listOf(
 )
 
 @Composable
-private fun ReaderApp() {
+private fun ReaderApp(
+    activity: Activity,
+    activityResultRegistryOwner: ActivityResultRegistryOwner,
+) {
     val baseContext = LocalContext.current
     val settingsService = remember(baseContext.applicationContext) { createPlatformReaderSettingsService() }
     val onboardingService = remember(baseContext.applicationContext) { createPlatformOnboardingService() }
@@ -425,6 +434,8 @@ private fun ReaderApp() {
     }
 
     CompositionLocalProvider(
+        LocalActivity provides activity,
+        LocalActivityResultRegistryOwner provides activityResultRegistryOwner,
         LocalContext provides localizedEnvironment.context,
         LocalConfiguration provides localizedEnvironment.configuration,
     ) {
@@ -2276,6 +2287,7 @@ private fun ReadingScreen(
     val isListDragged by listState.interactionSource.collectIsDraggedAsState()
     var autoFollowEnabled by remember(story.id) { mutableStateOf(true) }
     val context = LocalContext.current
+    val activity = LocalActivity.current
     val readingPrefs = remember(context) {
         context.getSharedPreferences(ReadingPrefsName, Context.MODE_PRIVATE)
     }
@@ -2481,12 +2493,12 @@ private fun ReadingScreen(
     }
 
     fun openRecordingSettings() {
-        val activity = context as? Activity ?: return
+        val currentActivity = activity ?: return
         val intent = Intent(
             Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-            Uri.fromParts("package", activity.packageName, null),
+            Uri.fromParts("package", currentActivity.packageName, null),
         )
-        activity.startActivity(intent)
+        currentActivity.startActivity(intent)
     }
 
     fun beginVoiceRecording(targetParagraphIndex: Int) {
@@ -2530,7 +2542,6 @@ private fun ReadingScreen(
                 voiceRecordingState,
                 RecordingAction.PermissionDenied,
             )
-            val activity = context as? Activity
             val shouldShowRationale = activity?.let {
                 ActivityCompat.shouldShowRequestPermissionRationale(
                     it,
@@ -6972,6 +6983,7 @@ private fun RetellStepCard(
     voiceRecordingService: VoiceRecordingService,
 ) {
     val context = LocalContext.current
+    val activity = LocalActivity.current
     val scope = rememberCoroutineScope()
     val guide = remember(story.id) { RetellGuideUseCases().buildGuide(story) }
     val retellUseCases = remember { RetellGuideUseCases() }
@@ -7042,7 +7054,6 @@ private fun RetellStepCard(
             beginRecording()
         } else {
             recordingState = stateMachine.reduce(recordingState, RecordingAction.PermissionDenied)
-            val activity = context as? Activity
             val shouldShowRationale = activity?.let {
                 ActivityCompat.shouldShowRequestPermissionRationale(
                     it,
@@ -7284,11 +7295,11 @@ private fun RetellStepCard(
                                     onClick = {
                                         showPermissionDialog = false
                                         if (showPermissionSettingsAction) {
-                                            (context as? Activity)?.let { activity ->
-                                                activity.startActivity(
+                                            activity?.let { currentActivity ->
+                                                currentActivity.startActivity(
                                                     Intent(
                                                         Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                                                        Uri.fromParts("package", activity.packageName, null),
+                                                        Uri.fromParts("package", currentActivity.packageName, null),
                                                     ),
                                                 )
                                             }
