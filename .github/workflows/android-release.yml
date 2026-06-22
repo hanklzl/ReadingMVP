@@ -317,9 +317,11 @@ jobs:
           ref: gh-pages
           path: gh-pages
 
-      - name: Init gh-pages if missing
+      - name: Prepare gh-pages branch
         run: |
-          if [ ! -d gh-pages/.git ]; then
+          if git -C gh-pages rev-parse --verify origin/gh-pages >/dev/null 2>&1; then
+            git -C gh-pages checkout -B gh-pages origin/gh-pages
+          else
             rm -rf gh-pages
             git clone --branch main "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" gh-pages
             cd gh-pages
@@ -364,5 +366,5 @@ jobs:
             echo "::notice::release/version.json already up to date"
           else
             git commit -m "chore(release): publish ${GITHUB_REF_NAME}"
-            git push origin gh-pages
+            git push origin HEAD:gh-pages
           fi
