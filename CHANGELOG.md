@@ -2,6 +2,26 @@
 
 <!-- next-release -->
 
+## [v0.1.3] - tag v0.1.3
+Tagger: Hank <lzl0120@gmail.com>
+
+v0.1.3
+2026-06-23
+
+### 变更详情
+
+#### 文档
+- docs(changelog): release v0.1.2 [skip ci] (bac20c7)
+
+#### 其它
+- reader: optimize reading page interaction (cbd689f)
+
+### 构建产物
+
+- Android AAB: `LittleMandarinClassics-v0.1.3.aab` · 62MB · sha256 `404802a8a753`
+- Android APK: `LittleMandarinClassics-v0.1.3.apk` · 78MB · sha256 `d7d62840d03d`
+- mapping: `mapping-v0.1.3.zip` · sha256 `0b84e01c4013` (R8 反混淆用)
+
 ## [v0.1.2] - 2026-06-23
 
 ### 变更详情
