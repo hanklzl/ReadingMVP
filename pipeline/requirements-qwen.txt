@@ -55,11 +55,13 @@
 # ---------------------------------------------------------------------------
 # TWO-PASS AUDIO WORKFLOW (gen in TTS venv, align in ASR venv):
 # ---------------------------------------------------------------------------
-#   # Pass 1 — synthesize wavs + audio.json (placeholder char timings), TTS venv:
+#   # Pass 1 — synthesize paragraph-context wavs, slice sentence wavs, and write
+#   # audio.json (placeholder char timings), TTS venv:
 #   LMC_TTS_PROVIDER=qwen LMC_TTS_DEVICE=cpu LMC_TTS_VOICE=Serena \
 #     .venv312-tts/bin/python -m transformer --gen-only
 #
-#   # Pass 2 — backfill real per-character timings in place, ASR venv:
+#   # Pass 2 — backfill real per-character timings and refresh durationMs from
+#   # each wav header in place, ASR venv:
 #   LMC_TTS_DEVICE=cpu \
 #     .venv312-asr/bin/python -m transformer --align-only
 #

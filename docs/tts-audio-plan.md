@@ -30,15 +30,15 @@
 
 ## 高亮路线
 
-- **现在**：逐句音频 → **句级高亮**（本轮 codex 实现）。
+- **现在**：真实 Qwen 生成默认按**整段合成 → forced align → 切成逐句 wav**，App 仍按逐句资源播放并做逐字高亮。
 - **下一步**：用 word-boundary/对齐时间戳做**逐字"卡拉OK"高亮**（Azure word boundary 或对齐 API；自托管可出 phoneme/word 对齐）。与现有逐字拼音 ruby 天然契合。
 
 ## 下一步计划（TTS 专项）
 
-1. ✅ 链路打通（句切分 + 可插拔 provider + mock + 逐句播放高亮）——后台 codex 进行中。
-2. 接 **Azure 适配器**，配 key，**批量生成 10 篇真实童声音频**，验收音质/发音。
-3. **音色 A/B**：Azure 童声 vs 自托管 CosyVoice 克隆音色，选定系列统一音色。
-4. **逐字高亮**：接入 word 时间戳，与拼音 ruby 联动。
+1. ✅ 链路打通（句切分 + 可插拔 provider + mock + 逐句播放高亮）。
+2. ✅ Qwen 长期一致性路径：默认按段合成、写入 `ttsProfile`、按 forced alignment 切句，并校验 `audio.json.durationMs` 与 wav header 一致。
+3. 接 **Azure 适配器**，配 key，批量生成真实童声音频，验收音质/发音。
+4. **音色 A/B**：Azure 童声 vs 自托管 CosyVoice/Qwen 克隆音色，选定系列统一音色。
 5. 随内容扩展批量生成；评估自托管以控成本/统一音色。
 
 ## 与总体路线图的关系

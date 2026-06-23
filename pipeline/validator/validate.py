@@ -3,13 +3,14 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import wave
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
 
 from jsonschema import Draft202012Validator
 
-from transformer.audio import build_sentence_plan, read_audio_manifest
+from transformer.audio import WAV_DURATION_TOLERANCE_MS, build_sentence_plan, read_audio_manifest, wav_duration_ms
 from transformer.polyphone_overrides import (
     DE_FULL_TONE_WORDS as _DE_FULL_TONE_WORDS,
     DE_MUST_WORDS as _DE_MUST_WORDS,
@@ -382,6 +383,21 @@ def validate_audio_manifest(story: dict[str, Any], path: Path | None) -> list[st
                 f"{path.parent.name} paraIndex={expected['paraIndex']}, sentIndex={expected['sentIndex']} "
                 "durationMs must be an integer >= 0"
             )
+        elif audio_file.exists() and audio_file.is_file():
+            try:
+                actual_duration_ms = wav_duration_ms(audio_file)
+            except wave.Error as exc:
+                errors.append(
+                    f"{path.parent.name} paraIndex={expected['paraIndex']}, sentIndex={expected['sentIndex']} "
+                    f"audio file {audio_path!r} is not a readable wav: {exc}"
+                )
+            else:
+                if abs(duration_ms - actual_duration_ms) > WAV_DURATION_TOLERANCE_MS:
+                    errors.append(
+                        f"{path.parent.name} paraIndex={expected['paraIndex']}, sentIndex={expected['sentIndex']} "
+                        f"durationMs {duration_ms} does not match wav duration {actual_duration_ms} "
+                        f"for {audio_path!r}"
+                    )
 
         errors.extend(
             validate_char_timings(

@@ -4,8 +4,8 @@ import hashlib
 import json
 import math
 import os
+import shutil
 import wave
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
 from urllib.parse import urljoin
@@ -14,6 +14,7 @@ import requests
 
 SENTENCE_END_PUNCTUATION = "。！？；…"
 SENTENCE_TRAILING_PUNCTUATION = "”’」』》〉）)"
+WAV_DURATION_TOLERANCE_MS = 120
 
 
 def split_paragraph_to_sentences(text: str) -> list[str]:
@@ -90,6 +91,36 @@ def build_sentence_plan(paragraphs: list[dict[str, Any]]) -> list[dict[str, Any]
                 }
             )
     return plan
+
+
+def sentence_ranges_for_paragraph(
+    paragraph: dict[str, Any],
+    para_index: int,
+) -> list[dict[str, Any]]:
+    """Return sentence plan entries with character ranges inside one paragraph."""
+
+    text = str(paragraph.get("text", ""))
+    ranges: list[dict[str, Any]] = []
+    cursor = 0
+    for sent_index, sentence in enumerate(split_paragraph_to_sentences(text)):
+        start = text.find(sentence, cursor)
+        if start < 0:
+            raise ValueError(
+                f"Could not locate sentence {sent_index + 1} in paragraph {para_index + 1}: {sentence!r}"
+            )
+        end = start + len(sentence)
+        ranges.append(
+            {
+                "paraIndex": para_index,
+                "sentIndex": sent_index,
+                "text": sentence,
+                "audioPath": f"audio/p{para_index + 1}_s{sent_index + 1}.wav",
+                "charStart": start,
+                "charEnd": end,
+            }
+        )
+        cursor = end
+    return ranges
 
 
 class AudioSentence:
@@ -509,6 +540,15 @@ class Qwen3CharAligner:
             return even_char_timings(text, duration_ms)
 
 
+def wav_duration_ms(path: Path) -> int:
+    with wave.open(str(path), "rb") as wav_file:
+        frames = wav_file.getnframes()
+        rate = wav_file.getframerate()
+        if rate <= 0:
+            return 0
+        return round(frames / rate * 1000)
+
+
 def build_char_aligner(
     *,
     provider: str,
@@ -532,6 +572,74 @@ def build_char_aligner(
             device=os.getenv("LMC_TTS_DEVICE", "cpu"),
         )
     return NoOpCharAligner()
+
+
+def resolve_audio_generation_mode(
+    *,
+    provider: str,
+    use_mock: bool,
+    generation_mode: str | None,
+) -> str:
+    configured = (
+        generation_mode
+        or os.getenv("LMC_TTS_GENERATION_MODE")
+        or os.getenv("LMC_TTS_GRANULARITY")
+        or ("paragraph" if provider == "qwen" and not use_mock else "sentence")
+    ).strip().lower()
+    if configured not in {"sentence", "paragraph"}:
+        raise ValueError(
+            "LMC_TTS_GENERATION_MODE must be 'sentence' or 'paragraph', "
+            f"got {configured!r}"
+        )
+    return configured
+
+
+def build_tts_profile(
+    *,
+    provider: str,
+    generation_mode: str,
+    use_mock: bool,
+) -> dict[str, Any]:
+    if use_mock or provider == "mock":
+        return {
+            "provider": "mock",
+            "generationMode": generation_mode,
+            "format": "wav",
+        }
+
+    profile: dict[str, Any] = {
+        "provider": provider,
+        "generationMode": generation_mode,
+        "format": os.getenv("LMC_TTS_FORMAT", "wav"),
+    }
+
+    if provider == "qwen":
+        ref_audio = os.getenv("LMC_TTS_REF_AUDIO") or None
+        profile.update(
+            {
+                "model": os.getenv("LMC_TTS_MODEL", "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice"),
+                "voice": os.getenv("LMC_TTS_VOICE") or "Serena",
+                "language": os.getenv("LMC_TTS_LANGUAGE", "Chinese"),
+            }
+        )
+        if ref_audio:
+            profile["refAudioSha256"] = _sha256_file(Path(ref_audio))
+            if os.getenv("LMC_TTS_REF_TEXT"):
+                profile["refTextSha256"] = hashlib.sha256(
+                    os.getenv("LMC_TTS_REF_TEXT", "").encode("utf-8")
+                ).hexdigest()
+        return profile
+
+    if provider == "openai":
+        profile.update(
+            {
+                "model": os.getenv("LMC_TTS_MODEL", "tts-1"),
+                "voice": os.getenv("LMC_TTS_VOICE", "alloy"),
+            }
+        )
+        return profile
+
+    return profile
 
 
 def build_audio_provider(
@@ -588,6 +696,7 @@ def generate_audio_manifest(
     allow_missing_provider: bool = False,
     clear_existing: bool = True,
     align: bool = True,
+    generation_mode: str | None = None,
 ) -> list[dict[str, Any]]:
     """Synthesize per-sentence audio and write ``audio.json``.
 
@@ -605,13 +714,23 @@ def generate_audio_manifest(
     if not isinstance(paragraphs, list):
         raise ValueError("story.paragraphs must be a list")
 
+    staging_dir: Path | None = None
+    output_story_dir = story_dir
     audio_dir = story_dir / "audio"
-    if clear_existing and audio_dir.exists():
-        for old in sorted(audio_dir.glob("*.wav")):
-            old.unlink()
-    audio_dir.mkdir(parents=True, exist_ok=True)
+    if clear_existing:
+        staging_dir = story_dir / ".audio-staging"
+        if staging_dir.exists():
+            shutil.rmtree(staging_dir)
+        output_story_dir = staging_dir
+
+    (output_story_dir / "audio").mkdir(parents=True, exist_ok=True)
 
     configured_provider = (provider or os.getenv("LMC_TTS_PROVIDER") or "mock").strip().lower()
+    resolved_generation_mode = resolve_audio_generation_mode(
+        provider=configured_provider,
+        use_mock=use_mock,
+        generation_mode=generation_mode,
+    )
     provider_impl = build_audio_provider(
         provider=provider,
         use_mock=use_mock,
@@ -623,6 +742,55 @@ def generate_audio_manifest(
         # gen-only: emit placeholder timings now, backfill real ones in the align pass.
         char_aligner = NoOpCharAligner()
 
+    try:
+        if resolved_generation_mode == "paragraph":
+            entries = _generate_paragraph_audio_entries(
+                paragraphs=paragraphs,
+                story_dir=output_story_dir,
+                provider_impl=provider_impl,
+                char_aligner=char_aligner,
+                allow_missing_provider=allow_missing_provider,
+            )
+        else:
+            entries = _generate_sentence_audio_entries(
+                paragraphs=paragraphs,
+                story_dir=output_story_dir,
+                provider_impl=provider_impl,
+                char_aligner=char_aligner,
+                allow_missing_provider=allow_missing_provider,
+            )
+
+        manifest = [entry.as_dict() for entry in entries]
+        payload = {
+            "ttsProfile": build_tts_profile(
+                provider=configured_provider,
+                generation_mode=resolved_generation_mode,
+                use_mock=use_mock,
+            ),
+            "sentences": manifest,
+        }
+        if staging_dir is not None:
+            if audio_dir.exists():
+                shutil.rmtree(audio_dir)
+            shutil.move(str(staging_dir / "audio"), str(audio_dir))
+        (story_dir / "audio.json").write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        return manifest
+    finally:
+        if staging_dir is not None and staging_dir.exists():
+            shutil.rmtree(staging_dir)
+
+
+def _generate_sentence_audio_entries(
+    *,
+    paragraphs: list[dict[str, Any]],
+    story_dir: Path,
+    provider_impl: AudioProvider,
+    char_aligner: CharAligner,
+    allow_missing_provider: bool,
+) -> list[AudioSentence]:
     entries: list[AudioSentence] = []
     for expected in build_sentence_plan(paragraphs):
         audio_path = story_dir / expected["audioPath"]
@@ -636,6 +804,7 @@ def generate_audio_manifest(
             duration_ms = provider_impl.synthesize(text, audio_path)
             if not audio_path.exists() or audio_path.stat().st_size <= 44:
                 raise RuntimeError("Generated audio file is empty")
+            duration_ms = wav_duration_ms(audio_path)
             chars = char_aligner.align(text, audio_path, duration_ms)
         except Exception as exc:
             unavailable = True
@@ -658,14 +827,209 @@ def generate_audio_manifest(
                 chars=chars,
             )
         )
+    return entries
 
-    manifest = [entry.as_dict() for entry in entries]
-    payload = {"sentences": manifest}
-    (story_dir / "audio.json").write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
+
+def _generate_paragraph_audio_entries(
+    *,
+    paragraphs: list[dict[str, Any]],
+    story_dir: Path,
+    provider_impl: AudioProvider,
+    char_aligner: CharAligner,
+    allow_missing_provider: bool,
+) -> list[AudioSentence]:
+    entries: list[AudioSentence] = []
+    temp_dir = story_dir / "audio" / ".paragraph"
+    temp_dir.mkdir(parents=True, exist_ok=True)
+
+    for para_index, paragraph in enumerate(paragraphs):
+        sentence_ranges = sentence_ranges_for_paragraph(paragraph, para_index)
+        if not sentence_ranges:
+            continue
+
+        paragraph_text = str(paragraph.get("text", ""))
+        paragraph_audio_path = temp_dir / f"p{para_index + 1}.wav"
+
+        try:
+            provider_impl.synthesize(paragraph_text, paragraph_audio_path)
+            if not paragraph_audio_path.exists() or paragraph_audio_path.stat().st_size <= 44:
+                raise RuntimeError("Generated paragraph audio file is empty")
+            paragraph_duration_ms = wav_duration_ms(paragraph_audio_path)
+            paragraph_chars = char_aligner.align(
+                paragraph_text,
+                paragraph_audio_path,
+                paragraph_duration_ms,
+            )
+            entries.extend(
+                _slice_paragraph_audio_entries(
+                    story_dir=story_dir,
+                    paragraph_audio_path=paragraph_audio_path,
+                    paragraph_duration_ms=paragraph_duration_ms,
+                    sentence_ranges=sentence_ranges,
+                    paragraph_chars=paragraph_chars,
+                )
+            )
+        except Exception as exc:
+            if paragraph_audio_path.exists():
+                paragraph_audio_path.unlink()
+            if not allow_missing_provider:
+                raise RuntimeError(
+                    f"Failed to generate paragraph audio for paragraph {para_index + 1}: {exc}"
+                ) from exc
+            for expected in sentence_ranges:
+                entries.append(
+                    AudioSentence(
+                        paraIndex=expected["paraIndex"],
+                        sentIndex=expected["sentIndex"],
+                        text=expected["text"],
+                        audioPath=expected["audioPath"],
+                        durationMs=0,
+                        unavailable=True,
+                        chars=[],
+                    )
+                )
+        finally:
+            if paragraph_audio_path.exists():
+                paragraph_audio_path.unlink()
+
+    try:
+        temp_dir.rmdir()
+    except OSError:
+        pass
+    return entries
+
+
+def _slice_paragraph_audio_entries(
+    *,
+    story_dir: Path,
+    paragraph_audio_path: Path,
+    paragraph_duration_ms: int,
+    sentence_ranges: list[dict[str, Any]],
+    paragraph_chars: list[dict[str, Any]],
+) -> list[AudioSentence]:
+    entries: list[AudioSentence] = []
+    boundaries = _sentence_clip_boundaries(
+        sentence_ranges=sentence_ranges,
+        paragraph_chars=paragraph_chars,
+        paragraph_duration_ms=paragraph_duration_ms,
     )
-    return manifest
+
+    for expected, (clip_start_ms, clip_end_ms) in zip(sentence_ranges, boundaries):
+        output_path = story_dir / expected["audioPath"]
+        duration_ms = _write_wav_slice(
+            source_path=paragraph_audio_path,
+            output_path=output_path,
+            start_ms=clip_start_ms,
+            end_ms=clip_end_ms,
+        )
+        chars = _relative_sentence_timings(
+            paragraph_chars=paragraph_chars,
+            char_start=int(expected["charStart"]),
+            char_end=int(expected["charEnd"]),
+            clip_start_ms=clip_start_ms,
+            duration_ms=duration_ms,
+        )
+        entries.append(
+            AudioSentence(
+                paraIndex=expected["paraIndex"],
+                sentIndex=expected["sentIndex"],
+                text=expected["text"],
+                audioPath=expected["audioPath"],
+                durationMs=duration_ms,
+                chars=chars,
+            )
+        )
+
+    return entries
+
+
+def _sentence_clip_boundaries(
+    *,
+    sentence_ranges: list[dict[str, Any]],
+    paragraph_chars: list[dict[str, Any]],
+    paragraph_duration_ms: int,
+) -> list[tuple[int, int]]:
+    if not sentence_ranges:
+        return []
+
+    starts: list[int] = []
+    ends: list[int] = []
+    for expected in sentence_ranges:
+        char_start = int(expected["charStart"])
+        char_end = int(expected["charEnd"])
+        sentence_chars = paragraph_chars[char_start:char_end]
+        if sentence_chars:
+            starts.append(_coerce_ms(sentence_chars[0].get("startMs"), paragraph_duration_ms))
+            ends.append(_coerce_ms(sentence_chars[-1].get("endMs"), paragraph_duration_ms))
+        else:
+            starts.append(0)
+            ends.append(paragraph_duration_ms)
+
+    cut_points = [0]
+    for index in range(len(sentence_ranges) - 1):
+        previous_end = ends[index]
+        next_start = starts[index + 1]
+        cut_points.append(round((previous_end + next_start) / 2))
+    cut_points.append(paragraph_duration_ms)
+
+    boundaries: list[tuple[int, int]] = []
+    for index in range(len(sentence_ranges)):
+        start = max(0, min(cut_points[index], paragraph_duration_ms))
+        end = max(start, min(cut_points[index + 1], paragraph_duration_ms))
+        boundaries.append((start, end))
+    return boundaries
+
+
+def _relative_sentence_timings(
+    *,
+    paragraph_chars: list[dict[str, Any]],
+    char_start: int,
+    char_end: int,
+    clip_start_ms: int,
+    duration_ms: int,
+) -> list[dict[str, Any]]:
+    relative: list[dict[str, Any]] = []
+    for item in paragraph_chars[char_start:char_end]:
+        start_ms = _coerce_ms(item.get("startMs"), clip_start_ms + duration_ms) - clip_start_ms
+        end_ms = _coerce_ms(item.get("endMs"), clip_start_ms + duration_ms) - clip_start_ms
+        start_ms = max(0, min(start_ms, duration_ms))
+        end_ms = max(start_ms, min(end_ms, duration_ms))
+        relative.append({"c": str(item.get("c", "")), "startMs": start_ms, "endMs": end_ms})
+    if relative:
+        relative[-1]["endMs"] = duration_ms
+    return relative
+
+
+def _write_wav_slice(
+    *,
+    source_path: Path,
+    output_path: Path,
+    start_ms: int,
+    end_ms: int,
+) -> int:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with wave.open(str(source_path), "rb") as source:
+        params = source.getparams()
+        sample_rate = source.getframerate()
+        total_frames = source.getnframes()
+        start_frame = max(0, min(round(sample_rate * start_ms / 1000), total_frames))
+        end_frame = max(start_frame, min(round(sample_rate * end_ms / 1000), total_frames))
+        source.setpos(start_frame)
+        frames = source.readframes(end_frame - start_frame)
+
+    with wave.open(str(output_path), "wb") as output:
+        output.setparams(params)
+        output.writeframes(frames)
+
+    return wav_duration_ms(output_path)
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def align_audio_manifest(
@@ -690,7 +1054,8 @@ def align_audio_manifest(
     if not manifest_path.exists():
         raise FileNotFoundError(f"Missing audio manifest to align: {manifest_path}")
 
-    sentences = read_audio_manifest(manifest_path)
+    payload = _read_audio_manifest_payload(manifest_path)
+    sentences = payload["sentences"]
 
     if aligner is None:
         aligner = Qwen3CharAligner(
@@ -712,9 +1077,11 @@ def align_audio_manifest(
         audio_path = story_dir / audio_rel
         if not audio_path.exists():
             continue
+        duration_ms = wav_duration_ms(audio_path)
+        entry["durationMs"] = duration_ms
         entry["chars"] = aligner.align(text, audio_path, duration_ms)
 
-    payload = {"sentences": sentences}
+    payload["sentences"] = sentences
     manifest_path.write_text(
         json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
@@ -750,9 +1117,13 @@ def _mock_frequency(text: str) -> int:
 
 
 def read_audio_manifest(path: Path) -> list[dict[str, Any]]:
+    return _read_audio_manifest_payload(path)["sentences"]
+
+
+def _read_audio_manifest_payload(path: Path) -> dict[str, Any]:
     data = json.loads(path.read_text(encoding="utf-8"))
     if isinstance(data, list):
-        return data
+        return {"sentences": data}
     if isinstance(data, dict) and isinstance(data.get("sentences"), list):
-        return data["sentences"]
+        return dict(data)
     raise ValueError("audio.json format must be a list or an object with 'sentences'")

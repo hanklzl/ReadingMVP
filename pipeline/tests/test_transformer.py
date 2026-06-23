@@ -10,6 +10,8 @@ from transformer.audio import (
     char_timings_from_alignment,
     even_char_timings,
     generate_audio_manifest,
+    align_audio_manifest,
+    read_audio_manifest,
     split_paragraph_to_sentences,
 )
 from transformer.generate import build_story, pinyin_for_text
@@ -148,6 +150,16 @@ class TransformerTest(unittest.TestCase):
 
 
 class CharTimingTest(unittest.TestCase):
+    @staticmethod
+    def write_wav(path: Path, duration_ms: int, sample_rate: int = 1000) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        frame_count = int(sample_rate * duration_ms / 1000)
+        with wave.open(str(path), "wb") as wav_file:
+            wav_file.setnchannels(1)
+            wav_file.setsampwidth(2)
+            wav_file.setframerate(sample_rate)
+            wav_file.writeframes(b"\x00\x00" * frame_count)
+
     def test_even_char_timings_align_one_slot_per_character(self):
         timings = even_char_timings("好，A", 900)
 
@@ -204,11 +216,87 @@ class CharTimingTest(unittest.TestCase):
             for previous, current in zip(chars, chars[1:]):
                 self.assertLessEqual(previous["endMs"], current["startMs"])
 
+    def test_generate_audio_manifest_paragraph_mode_synthesizes_once_and_slices_sentences(self):
+        story = {
+            "id": "sample",
+            "paragraphs": [
+                {"text": "甲乙。丙丁。"},
+            ],
+        }
+
+        class StubProvider:
+            def __init__(self):
+                self.calls = []
+
+            def synthesize(self, text, output_path):
+                self.calls.append(text)
+                CharTimingTest.write_wav(output_path, duration_ms=2000)
+                return 2000
+
+        provider = StubProvider()
+
+        with tempfile.TemporaryDirectory() as raw_dir:
+            story_dir = Path(raw_dir)
+            with mock.patch("transformer.audio.build_audio_provider", return_value=provider):
+                manifest = generate_audio_manifest(
+                    story,
+                    story_dir,
+                    use_mock=False,
+                    provider="qwen",
+                    align=False,
+                    generation_mode="paragraph",
+                )
+
+            self.assertEqual(["甲乙。丙丁。"], provider.calls)
+            self.assertEqual(2, len(manifest))
+            self.assertEqual(["甲乙。", "丙丁。"], [entry["text"] for entry in manifest])
+            self.assertEqual([1000, 1000], [entry["durationMs"] for entry in manifest])
+            self.assertTrue((story_dir / "audio" / "p1_s1.wav").exists())
+            self.assertTrue((story_dir / "audio" / "p1_s2.wav").exists())
+            with wave.open(str(story_dir / "audio" / "p1_s1.wav"), "rb") as wav_file:
+                self.assertEqual(1000, round(wav_file.getnframes() / wav_file.getframerate() * 1000))
+
+            payload = json.loads((story_dir / "audio.json").read_text(encoding="utf-8"))
+            self.assertEqual("qwen", payload["ttsProfile"]["provider"])
+            self.assertEqual("paragraph", payload["ttsProfile"]["generationMode"])
+            self.assertEqual("Serena", payload["ttsProfile"]["voice"])
+
+    def test_generate_audio_manifest_keeps_existing_audio_when_generation_is_interrupted(self):
+        story = {
+            "id": "sample",
+            "paragraphs": [
+                {"text": "甲乙。"},
+            ],
+        }
+
+        class InterruptingProvider:
+            def synthesize(self, text, output_path):
+                raise KeyboardInterrupt()
+
+        with tempfile.TemporaryDirectory() as raw_dir:
+            story_dir = Path(raw_dir)
+            old_audio = story_dir / "audio" / "p1_s1.wav"
+            self.write_wav(old_audio, duration_ms=1000)
+
+            with mock.patch("transformer.audio.build_audio_provider", return_value=InterruptingProvider()):
+                with self.assertRaises(KeyboardInterrupt):
+                    generate_audio_manifest(
+                        story,
+                        story_dir,
+                        use_mock=False,
+                        provider="qwen",
+                        align=False,
+                        generation_mode="paragraph",
+                    )
+
+            self.assertTrue(old_audio.exists())
+            with wave.open(str(old_audio), "rb") as wav_file:
+                self.assertEqual(1000, round(wav_file.getnframes() / wav_file.getframerate() * 1000))
+            self.assertFalse((story_dir / ".audio-staging").exists())
+
     def test_gen_then_align_split_backfills_real_timings(self):
         # Simulates the two-venv flow: generate (mock TTS, placeholder timings)
         # then align (injected aligner standing in for qwen-asr) rewrites chars[].
-        from transformer.audio import align_audio_manifest, read_audio_manifest
-
         story = build_story(STORY_DRAFTS[0])
         with tempfile.TemporaryDirectory() as raw_dir:
             story_dir = Path(raw_dir)
@@ -245,6 +333,55 @@ class CharTimingTest(unittest.TestCase):
                 # stub's signature timing: chars[i] -> startMs=i, endMs=i+1 (clamped)
                 self.assertEqual(0, chars[0]["startMs"])
             self.assertEqual(2, chars[1]["endMs"])
+
+    def test_align_audio_manifest_refreshes_duration_from_wav_header(self):
+        with tempfile.TemporaryDirectory() as raw_dir:
+            story_dir = Path(raw_dir)
+            audio_path = story_dir / "audio" / "p1_s1.wav"
+            self.write_wav(audio_path, duration_ms=1000)
+            (story_dir / "audio.json").write_text(
+                json.dumps(
+                    {
+                        "ttsProfile": {
+                            "provider": "qwen",
+                            "generationMode": "paragraph",
+                            "voice": "Serena",
+                        },
+                        "sentences": [
+                            {
+                                "paraIndex": 0,
+                                "sentIndex": 0,
+                                "text": "甲乙。",
+                                "audioPath": "audio/p1_s1.wav",
+                                "durationMs": 500,
+                                "chars": even_char_timings("甲乙。", 500),
+                            }
+                        ]
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            class StubAligner:
+                def __init__(self):
+                    self.duration_ms = None
+
+                def align(self, text, audio_path, duration_ms):
+                    self.duration_ms = duration_ms
+                    return even_char_timings(text, duration_ms)
+
+            aligner = StubAligner()
+            align_audio_manifest(story_dir, aligner=aligner)
+
+            [entry] = read_audio_manifest(story_dir / "audio.json")
+            self.assertEqual(1000, aligner.duration_ms)
+            self.assertEqual(1000, entry["durationMs"])
+            self.assertEqual(1000, entry["chars"][-1]["endMs"])
+            payload = json.loads((story_dir / "audio.json").read_text(encoding="utf-8"))
+            self.assertEqual("paragraph", payload["ttsProfile"]["generationMode"])
 
 
 class TransformerCliTest(unittest.TestCase):

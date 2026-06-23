@@ -337,6 +337,7 @@ def generate_story(
     mock_audio: bool = False,
     allow_missing_provider: bool = False,
     audio_align: bool = True,
+    audio_generation_mode: str | None = None,
     sync_app_resources: bool = False,
     app_stories_dir: Path | None = None,
 ) -> Path:
@@ -359,6 +360,7 @@ def generate_story(
             use_mock=mock_audio,
             allow_missing_provider=allow_missing_provider,
             align=audio_align,
+            generation_mode=audio_generation_mode,
         )
 
     if sync_app_resources and app_stories_dir is not None:
@@ -390,6 +392,7 @@ def generate_all(
     mock_audio: bool = False,
     allow_missing_provider: bool = False,
     audio_align: bool = True,
+    audio_generation_mode: str | None = None,
     sync_app_resources: bool = False,
     app_stories_dir: Path | None = None,
 ) -> list[Path]:
@@ -403,6 +406,7 @@ def generate_all(
             mock_audio=mock_audio,
             allow_missing_provider=allow_missing_provider,
             audio_align=audio_align,
+            audio_generation_mode=audio_generation_mode,
             sync_app_resources=sync_app_resources,
             app_stories_dir=app_stories_dir,
         )
@@ -418,6 +422,7 @@ def generate_audio_for_stories(
     mock_audio: bool = False,
     allow_missing_provider: bool = False,
     audio_align: bool = True,
+    audio_generation_mode: str | None = None,
 ) -> list[Path]:
     """Generate audio for stories from their EXISTING story.json (not rebuilt).
 
@@ -444,6 +449,7 @@ def generate_audio_for_stories(
             use_mock=mock_audio,
             allow_missing_provider=allow_missing_provider,
             align=audio_align,
+            generation_mode=audio_generation_mode,
         )
         written.append(story_dir / "audio.json")
     return written
@@ -597,6 +603,15 @@ def main(argv: list[str] | None = None) -> int:
         help="Override LMC_TTS_PROVIDER for audio generation.",
     )
     parser.add_argument(
+        "--audio-generation-mode",
+        choices=("sentence", "paragraph"),
+        default=None,
+        help=(
+            "Override LMC_TTS_GENERATION_MODE. For qwen, the default is paragraph "
+            "so one voice sample covers a whole paragraph before sentence clips are sliced."
+        ),
+    )
+    parser.add_argument(
         "--skip-missing-audio-provider",
         action="store_true",
         help="Mark audio entries unavailable instead of failing when provider config is missing.",
@@ -632,6 +647,7 @@ def main(argv: list[str] | None = None) -> int:
             mock_audio=args.mock,
             allow_missing_provider=args.skip_missing_audio_provider,
             audio_align=False,
+            audio_generation_mode=args.audio_generation_mode,
         )
         for path in paths:
             print(path)
@@ -657,6 +673,7 @@ def main(argv: list[str] | None = None) -> int:
         audio_provider=args.audio_provider,
         mock_audio=args.mock,
         allow_missing_provider=args.skip_missing_audio_provider,
+        audio_generation_mode=args.audio_generation_mode,
     )
 
     if args.audio:

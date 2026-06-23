@@ -91,13 +91,13 @@ class ValidatorTest(unittest.TestCase):
                 "sentIndex": expected["sentIndex"],
                 "text": expected["text"],
                 "audioPath": expected["audioPath"],
-                "durationMs": 500,
+                "durationMs": 1000,
             }
 
             if key in unavailable:
                 entry["unavailable"] = True
             else:
-                entry["chars"] = even_char_timings(expected["text"], 500)
+                entry["chars"] = even_char_timings(expected["text"], 1000)
                 self.write_wav(audio_path)
 
             entries.append(entry)
@@ -276,6 +276,24 @@ class ValidatorTest(unittest.TestCase):
 
         self.assertFalse(result.passed)
         self.assertIn("must not precede previous endMs", "\n".join(result.errors))
+
+    def test_audio_manifest_fails_when_duration_does_not_match_wav_header(self):
+        story = build_story()
+        story_path = self.write_story(story)
+
+        manifest_path = story_path.parent / "audio.json"
+        payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+        payload["sentences"][0]["durationMs"] = 500
+        payload["sentences"][0]["chars"] = even_char_timings(payload["sentences"][0]["text"], 500)
+        manifest_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+        result = validate_story_file(story_path, SCHEMA_PATH)
+
+        self.assertFalse(result.passed)
+        self.assertIn(
+            "durationMs 500 does not match wav duration 1000",
+            "\n".join(result.errors),
+        )
 
 
 class PolyphoneLintTest(unittest.TestCase):

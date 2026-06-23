@@ -1,11 +1,19 @@
 {
+  "ttsProfile": {
+    "provider": "qwen",
+    "generationMode": "paragraph",
+    "format": "wav",
+    "model": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+    "voice": "Serena",
+    "language": "Chinese"
+  },
   "sentences": [
     {
       "paraIndex": 0,
       "sentIndex": 0,
       "text": "诸葛亮和鲁肃坐船来到江东，想和孙权一方商量合作。",
       "audioPath": "audio/p1_s1.wav",
-      "durationMs": 4880,
+      "durationMs": 4828,
       "chars": [
         {
           "c": "诸",
@@ -20,112 +28,112 @@
         {
           "c": "亮",
           "startMs": 320,
-          "endMs": 480
+          "endMs": 560
         },
         {
           "c": "和",
-          "startMs": 480,
-          "endMs": 640
+          "startMs": 560,
+          "endMs": 720
         },
         {
           "c": "鲁",
-          "startMs": 640,
-          "endMs": 800
+          "startMs": 720,
+          "endMs": 880
         },
         {
           "c": "肃",
-          "startMs": 800,
-          "endMs": 1040
-        },
-        {
-          "c": "坐",
-          "startMs": 1040,
+          "startMs": 880,
           "endMs": 1200
         },
         {
-          "c": "船",
+          "c": "坐",
           "startMs": 1200,
-          "endMs": 1440
+          "endMs": 1360
+        },
+        {
+          "c": "船",
+          "startMs": 1360,
+          "endMs": 1600
         },
         {
           "c": "来",
-          "startMs": 1440,
-          "endMs": 1520
-        },
-        {
-          "c": "到",
-          "startMs": 1520,
+          "startMs": 1600,
           "endMs": 1680
         },
         {
-          "c": "江",
+          "c": "到",
           "startMs": 1680,
-          "endMs": 1920
+          "endMs": 1840
+        },
+        {
+          "c": "江",
+          "startMs": 1840,
+          "endMs": 2080
         },
         {
           "c": "东",
-          "startMs": 1920,
-          "endMs": 2160
+          "startMs": 2080,
+          "endMs": 2320
         },
         {
           "c": "，",
-          "startMs": 2160,
-          "endMs": 2560
-        },
-        {
-          "c": "想",
-          "startMs": 2560,
+          "startMs": 2320,
           "endMs": 2800
         },
         {
-          "c": "和",
+          "c": "想",
           "startMs": 2800,
-          "endMs": 2880
+          "endMs": 3040
         },
         {
-          "c": "孙",
-          "startMs": 2880,
+          "c": "和",
+          "startMs": 3040,
           "endMs": 3120
         },
         {
-          "c": "权",
+          "c": "孙",
           "startMs": 3120,
-          "endMs": 3520
+          "endMs": 3360
+        },
+        {
+          "c": "权",
+          "startMs": 3360,
+          "endMs": 3600
         },
         {
           "c": "一",
-          "startMs": 3520,
+          "startMs": 3600,
           "endMs": 3600
         },
         {
           "c": "方",
           "startMs": 3600,
-          "endMs": 3920
+          "endMs": 3840
         },
         {
           "c": "商",
-          "startMs": 4000,
-          "endMs": 4240
+          "startMs": 3840,
+          "endMs": 4000
         },
         {
           "c": "量",
-          "startMs": 4240,
-          "endMs": 4320
+          "startMs": 4000,
+          "endMs": 4160
         },
         {
           "c": "合",
-          "startMs": 4320,
-          "endMs": 4560
+          "startMs": 4160,
+          "endMs": 4320
         },
         {
           "c": "作",
-          "startMs": 4560,
-          "endMs": 4800
+          "startMs": 4320,
+          "endMs": 4640
         },
         {
           "c": "。",
-          "startMs": 4800,
-          "endMs": 4880
+          "startMs": 4640,
+          "endMs": 4828
         }
       ]
     },
@@ -134,86 +142,86 @@
       "sentIndex": 1,
       "text": "厅里坐着许多学者，大家都关心百姓安定，也有不同想法。",
       "audioPath": "audio/p1_s2.wav",
-      "durationMs": 5360,
+      "durationMs": 5231,
       "chars": [
         {
           "c": "厅",
-          "startMs": 80,
-          "endMs": 320
+          "startMs": 560,
+          "endMs": 800
         },
         {
           "c": "里",
-          "startMs": 320,
-          "endMs": 400
+          "startMs": 800,
+          "endMs": 880
         },
         {
           "c": "坐",
-          "startMs": 400,
-          "endMs": 640
+          "startMs": 880,
+          "endMs": 1040
         },
         {
           "c": "着",
-          "startMs": 640,
-          "endMs": 720
+          "startMs": 1040,
+          "endMs": 1120
         },
         {
           "c": "许",
-          "startMs": 720,
-          "endMs": 960
+          "startMs": 1120,
+          "endMs": 1360
         },
         {
           "c": "多",
-          "startMs": 960,
-          "endMs": 1200
-        },
-        {
-          "c": "学",
-          "startMs": 1200,
+          "startMs": 1360,
           "endMs": 1520
         },
         {
-          "c": "者",
+          "c": "学",
           "startMs": 1520,
-          "endMs": 1920
+          "endMs": 1680
+        },
+        {
+          "c": "者",
+          "startMs": 1680,
+          "endMs": 2000
         },
         {
           "c": "，",
-          "startMs": 1920,
-          "endMs": 2240
+          "startMs": 2000,
+          "endMs": 2320
         },
         {
           "c": "大",
-          "startMs": 2240,
-          "endMs": 2400
+          "startMs": 2320,
+          "endMs": 2480
         },
         {
           "c": "家",
-          "startMs": 2400,
-          "endMs": 2560
-        },
-        {
-          "c": "都",
-          "startMs": 2560,
+          "startMs": 2480,
           "endMs": 2640
         },
         {
-          "c": "关",
+          "c": "都",
           "startMs": 2640,
-          "endMs": 2880
+          "endMs": 2800
+        },
+        {
+          "c": "关",
+          "startMs": 2800,
+          "endMs": 3040
         },
         {
           "c": "心",
-          "startMs": 2880,
-          "endMs": 3120
+          "startMs": 3040,
+          "endMs": 3200
         },
         {
           "c": "百",
-          "startMs": 3120,
-          "endMs": 3280
+          "startMs": 3200,
+          "endMs": 3360
         },
         {
           "c": "姓",
-          "startMs": 3280,
+          "startMs": 3360,
           "endMs": 3520
         },
         {
@@ -224,31 +232,31 @@
         {
           "c": "定",
           "startMs": 3760,
-          "endMs": 4080
+          "endMs": 4000
         },
         {
           "c": "，",
-          "startMs": 4080,
-          "endMs": 4160
+          "startMs": 4000,
+          "endMs": 4320
         },
         {
           "c": "也",
-          "startMs": 4160,
-          "endMs": 4240
-        },
-        {
-          "c": "有",
-          "startMs": 4240,
+          "startMs": 4320,
           "endMs": 4400
         },
         {
-          "c": "不",
+          "c": "有",
           "startMs": 4400,
           "endMs": 4560
         },
         {
-          "c": "同",
+          "c": "不",
           "startMs": 4560,
+          "endMs": 4640
+        },
+        {
+          "c": "同",
+          "startMs": 4640,
           "endMs": 4800
         },
         {
@@ -259,12 +267,12 @@
         {
           "c": "法",
           "startMs": 5040,
-          "endMs": 5280
+          "endMs": 5200
         },
         {
           "c": "。",
-          "startMs": 5280,
-          "endMs": 5360
+          "startMs": 5200,
+          "endMs": 5231
         }
       ]
     },
@@ -273,97 +281,97 @@
       "sentIndex": 2,
       "text": "有人担心力量不够，有人担心路太难走。",
       "audioPath": "audio/p1_s3.wav",
-      "durationMs": 3840,
+      "durationMs": 3621,
       "chars": [
         {
           "c": "有",
-          "startMs": 80,
-          "endMs": 240
+          "startMs": 720,
+          "endMs": 800
         },
         {
           "c": "人",
-          "startMs": 240,
-          "endMs": 480
-        },
-        {
-          "c": "担",
-          "startMs": 480,
-          "endMs": 720
-        },
-        {
-          "c": "心",
-          "startMs": 720,
+          "startMs": 800,
           "endMs": 960
         },
         {
-          "c": "力",
-          "startMs": 960,
-          "endMs": 1040
-        },
-        {
-          "c": "量",
-          "startMs": 1040,
-          "endMs": 1280
-        },
-        {
-          "c": "不",
-          "startMs": 1280,
-          "endMs": 1360
-        },
-        {
-          "c": "够",
-          "startMs": 1360,
-          "endMs": 1760
-        },
-        {
-          "c": "，",
-          "startMs": 1760,
-          "endMs": 2000
-        },
-        {
-          "c": "有",
-          "startMs": 2000,
-          "endMs": 2160
-        },
-        {
-          "c": "人",
-          "startMs": 2160,
-          "endMs": 2320
-        },
-        {
           "c": "担",
-          "startMs": 2320,
-          "endMs": 2480
+          "startMs": 960,
+          "endMs": 1120
         },
         {
           "c": "心",
-          "startMs": 2480,
-          "endMs": 2960
+          "startMs": 1120,
+          "endMs": 1280
+        },
+        {
+          "c": "力",
+          "startMs": 1280,
+          "endMs": 1440
+        },
+        {
+          "c": "量",
+          "startMs": 1440,
+          "endMs": 1600
+        },
+        {
+          "c": "不",
+          "startMs": 1600,
+          "endMs": 1680
+        },
+        {
+          "c": "够",
+          "startMs": 1680,
+          "endMs": 2000
+        },
+        {
+          "c": "，",
+          "startMs": 2000,
+          "endMs": 2240
+        },
+        {
+          "c": "有",
+          "startMs": 2240,
+          "endMs": 2400
+        },
+        {
+          "c": "人",
+          "startMs": 2400,
+          "endMs": 2560
+        },
+        {
+          "c": "担",
+          "startMs": 2560,
+          "endMs": 2640
+        },
+        {
+          "c": "心",
+          "startMs": 2640,
+          "endMs": 2880
         },
         {
           "c": "路",
-          "startMs": 2960,
-          "endMs": 3200
+          "startMs": 2880,
+          "endMs": 3040
         },
         {
           "c": "太",
-          "startMs": 3200,
-          "endMs": 3360
+          "startMs": 3040,
+          "endMs": 3200
         },
         {
           "c": "难",
-          "startMs": 3360,
-          "endMs": 3600
+          "startMs": 3200,
+          "endMs": 3440
         },
         {
           "c": "走",
-          "startMs": 3600,
-          "endMs": 3840
+          "startMs": 3440,
+          "endMs": 3600
         },
         {
           "c": "。",
-          "startMs": 3840,
-          "endMs": 3840
+          "startMs": 3600,
+          "endMs": 3621
         }
       ]
     },
@@ -372,7 +380,7 @@
       "sentIndex": 0,
       "text": "诸葛亮没有急着反驳。",
       "audioPath": "audio/p2_s1.wav",
-      "durationMs": 1840,
+      "durationMs": 2256,
       "chars": [
         {
           "c": "诸",
@@ -387,42 +395,42 @@
         {
           "c": "亮",
           "startMs": 320,
-          "endMs": 640
+          "endMs": 560
         },
         {
           "c": "没",
+          "startMs": 560,
+          "endMs": 640
+        },
+        {
+          "c": "有",
           "startMs": 640,
           "endMs": 800
         },
         {
-          "c": "有",
+          "c": "急",
           "startMs": 800,
           "endMs": 960
         },
         {
-          "c": "急",
-          "startMs": 960,
-          "endMs": 1120
-        },
-        {
           "c": "着",
-          "startMs": 1120,
-          "endMs": 1280
+          "startMs": 960,
+          "endMs": 1040
         },
         {
           "c": "反",
-          "startMs": 1280,
-          "endMs": 1520
+          "startMs": 1040,
+          "endMs": 1280
         },
         {
           "c": "驳",
-          "startMs": 1520,
-          "endMs": 1840
+          "startMs": 1280,
+          "endMs": 1680
         },
         {
           "c": "。",
-          "startMs": 1840,
-          "endMs": 1840
+          "startMs": 1680,
+          "endMs": 2256
         }
       ]
     },
@@ -431,117 +439,117 @@
       "sentIndex": 1,
       "text": "他先认真听完每个人的问题，再用简单的话回答。",
       "audioPath": "audio/p2_s2.wav",
-      "durationMs": 4480,
+      "durationMs": 4965,
       "chars": [
         {
           "c": "他",
-          "startMs": 80,
-          "endMs": 160
+          "startMs": 0,
+          "endMs": 0
         },
         {
           "c": "先",
-          "startMs": 160,
-          "endMs": 400
+          "startMs": 0,
+          "endMs": 160
         },
         {
           "c": "认",
-          "startMs": 400,
-          "endMs": 560
+          "startMs": 160,
+          "endMs": 320
         },
         {
           "c": "真",
-          "startMs": 560,
-          "endMs": 720
+          "startMs": 320,
+          "endMs": 480
         },
         {
           "c": "听",
-          "startMs": 720,
-          "endMs": 960
+          "startMs": 480,
+          "endMs": 720
         },
         {
           "c": "完",
-          "startMs": 960,
-          "endMs": 1120
+          "startMs": 720,
+          "endMs": 880
         },
         {
           "c": "每",
-          "startMs": 1120,
-          "endMs": 1360
+          "startMs": 880,
+          "endMs": 1040
         },
         {
           "c": "个",
-          "startMs": 1360,
-          "endMs": 1440
+          "startMs": 1040,
+          "endMs": 1120
         },
         {
           "c": "人",
-          "startMs": 1440,
-          "endMs": 1520
+          "startMs": 1120,
+          "endMs": 1280
         },
         {
           "c": "的",
-          "startMs": 1520,
-          "endMs": 1600
+          "startMs": 1280,
+          "endMs": 1360
         },
         {
           "c": "问",
-          "startMs": 1600,
-          "endMs": 1840
+          "startMs": 1360,
+          "endMs": 1600
         },
         {
           "c": "题",
-          "startMs": 1840,
-          "endMs": 2240
+          "startMs": 1600,
+          "endMs": 1920
         },
         {
           "c": "，",
-          "startMs": 2240,
-          "endMs": 2560
+          "startMs": 1920,
+          "endMs": 2320
         },
         {
           "c": "再",
-          "startMs": 2560,
-          "endMs": 2800
+          "startMs": 2320,
+          "endMs": 2480
         },
         {
           "c": "用",
-          "startMs": 2800,
-          "endMs": 3040
+          "startMs": 2480,
+          "endMs": 2720
         },
         {
           "c": "简",
-          "startMs": 3040,
-          "endMs": 3360
+          "startMs": 2720,
+          "endMs": 2880
         },
         {
           "c": "单",
-          "startMs": 3360,
-          "endMs": 3520
+          "startMs": 2880,
+          "endMs": 3040
         },
         {
           "c": "的",
-          "startMs": 3520,
-          "endMs": 3600
+          "startMs": 3040,
+          "endMs": 3120
         },
         {
           "c": "话",
-          "startMs": 3600,
-          "endMs": 3840
+          "startMs": 3120,
+          "endMs": 3360
         },
         {
           "c": "回",
-          "startMs": 3840,
-          "endMs": 4080
+          "startMs": 3440,
+          "endMs": 3600
         },
         {
           "c": "答",
-          "startMs": 4080,
-          "endMs": 4400
+          "startMs": 3600,
+          "endMs": 3920
         },
         {
           "c": "。",
-          "startMs": 4400,
-          "endMs": 4480
+          "startMs": 3920,
+          "endMs": 4965
         }
       ]
     },
@@ -550,142 +558,142 @@
       "sentIndex": 2,
       "text": "他说，遇到大事，只看害怕的一面，就会忘记还能互相帮助；",
       "audioPath": "audio/p2_s3.wav",
-      "durationMs": 7120,
+      "durationMs": 6092,
       "chars": [
         {
           "c": "他",
-          "startMs": 80,
-          "endMs": 320
+          "startMs": 0,
+          "endMs": 160
         },
         {
           "c": "说",
-          "startMs": 320,
-          "endMs": 800
+          "startMs": 160,
+          "endMs": 720
         },
         {
           "c": "，",
-          "startMs": 800,
-          "endMs": 1280
+          "startMs": 720,
+          "endMs": 1120
         },
         {
           "c": "遇",
-          "startMs": 1280,
-          "endMs": 1440
+          "startMs": 1120,
+          "endMs": 1200
         },
         {
           "c": "到",
-          "startMs": 1440,
-          "endMs": 1600
+          "startMs": 1200,
+          "endMs": 1360
         },
         {
           "c": "大",
-          "startMs": 1600,
-          "endMs": 1920
+          "startMs": 1360,
+          "endMs": 1600
         },
         {
           "c": "事",
-          "startMs": 1920,
-          "endMs": 2320
+          "startMs": 1600,
+          "endMs": 2240
         },
         {
           "c": "，",
-          "startMs": 2320,
-          "endMs": 2640
+          "startMs": 2240,
+          "endMs": 2320
         },
         {
           "c": "只",
-          "startMs": 2640,
-          "endMs": 2800
+          "startMs": 2320,
+          "endMs": 2400
         },
         {
           "c": "看",
-          "startMs": 2800,
-          "endMs": 3040
+          "startMs": 2400,
+          "endMs": 2640
         },
         {
           "c": "害",
-          "startMs": 3040,
-          "endMs": 3200
+          "startMs": 2640,
+          "endMs": 2880
         },
         {
           "c": "怕",
-          "startMs": 3200,
-          "endMs": 3440
+          "startMs": 2880,
+          "endMs": 3120
         },
         {
           "c": "的",
-          "startMs": 3440,
-          "endMs": 3520
+          "startMs": 3120,
+          "endMs": 3200
         },
         {
           "c": "一",
-          "startMs": 3520,
-          "endMs": 3680
+          "startMs": 3200,
+          "endMs": 3360
         },
         {
           "c": "面",
+          "startMs": 3360,
+          "endMs": 3680
+        },
+        {
+          "c": "，",
           "startMs": 3680,
           "endMs": 4080
         },
         {
-          "c": "，",
-          "startMs": 4080,
-          "endMs": 4560
-        },
-        {
           "c": "就",
-          "startMs": 4560,
-          "endMs": 4800
+          "startMs": 4080,
+          "endMs": 4240
         },
         {
           "c": "会",
-          "startMs": 4800,
-          "endMs": 4960
+          "startMs": 4240,
+          "endMs": 4400
         },
         {
           "c": "忘",
-          "startMs": 4960,
-          "endMs": 5280
+          "startMs": 4400,
+          "endMs": 4720
         },
         {
           "c": "记",
-          "startMs": 5280,
-          "endMs": 5680
+          "startMs": 4720,
+          "endMs": 4960
         },
         {
           "c": "还",
-          "startMs": 5760,
-          "endMs": 6000
+          "startMs": 4960,
+          "endMs": 5120
         },
         {
           "c": "能",
-          "startMs": 6000,
-          "endMs": 6160
+          "startMs": 5120,
+          "endMs": 5280
         },
         {
           "c": "互",
-          "startMs": 6160,
-          "endMs": 6320
+          "startMs": 5280,
+          "endMs": 5440
         },
         {
           "c": "相",
-          "startMs": 6320,
-          "endMs": 6560
+          "startMs": 5440,
+          "endMs": 5600
         },
         {
           "c": "帮",
-          "startMs": 6560,
-          "endMs": 6800
+          "startMs": 5600,
+          "endMs": 5840
         },
         {
           "c": "助",
-          "startMs": 6800,
-          "endMs": 7040
+          "startMs": 5840,
+          "endMs": 6080
         },
         {
           "c": "；",
-          "startMs": 7040,
-          "endMs": 7120
+          "startMs": 6080,
+          "endMs": 6092
         }
       ]
     },
@@ -694,102 +702,102 @@
       "sentIndex": 3,
       "text": "只看自己的难处，也会看不见朋友的力量。",
       "audioPath": "audio/p2_s4.wav",
-      "durationMs": 3360,
+      "durationMs": 4287,
       "chars": [
         {
           "c": "只",
-          "startMs": 80,
-          "endMs": 160
-        },
-        {
-          "c": "看",
-          "startMs": 160,
-          "endMs": 400
-        },
-        {
-          "c": "自",
-          "startMs": 400,
-          "endMs": 560
-        },
-        {
-          "c": "己",
-          "startMs": 560,
+          "startMs": 640,
           "endMs": 720
         },
         {
-          "c": "的",
+          "c": "看",
           "startMs": 720,
-          "endMs": 800
+          "endMs": 960
         },
         {
-          "c": "难",
-          "startMs": 800,
-          "endMs": 1040
+          "c": "自",
+          "startMs": 960,
+          "endMs": 1200
         },
         {
-          "c": "处",
-          "startMs": 1040,
+          "c": "己",
+          "startMs": 1200,
+          "endMs": 1280
+        },
+        {
+          "c": "的",
+          "startMs": 1280,
           "endMs": 1440
         },
         {
-          "c": "，",
+          "c": "难",
           "startMs": 1440,
-          "endMs": 1520
-        },
-        {
-          "c": "也",
-          "startMs": 1520,
           "endMs": 1680
         },
         {
-          "c": "会",
+          "c": "处",
           "startMs": 1680,
-          "endMs": 1760
+          "endMs": 2000
         },
         {
-          "c": "看",
-          "startMs": 1760,
-          "endMs": 2080
-        },
-        {
-          "c": "不",
-          "startMs": 2080,
-          "endMs": 2160
-        },
-        {
-          "c": "见",
-          "startMs": 2160,
+          "c": "，",
+          "startMs": 2000,
           "endMs": 2320
         },
         {
-          "c": "朋",
+          "c": "也",
           "startMs": 2320,
-          "endMs": 2560
+          "endMs": 2400
+        },
+        {
+          "c": "会",
+          "startMs": 2400,
+          "endMs": 2640
+        },
+        {
+          "c": "看",
+          "startMs": 2640,
+          "endMs": 2880
+        },
+        {
+          "c": "不",
+          "startMs": 2880,
+          "endMs": 2960
+        },
+        {
+          "c": "见",
+          "startMs": 2960,
+          "endMs": 3200
+        },
+        {
+          "c": "朋",
+          "startMs": 3200,
+          "endMs": 3520
         },
         {
           "c": "友",
-          "startMs": 2560,
-          "endMs": 2720
+          "startMs": 3520,
+          "endMs": 3680
         },
         {
           "c": "的",
-          "startMs": 2720,
-          "endMs": 2800
+          "startMs": 3680,
+          "endMs": 3760
         },
         {
           "c": "力",
-          "startMs": 2800,
-          "endMs": 3040
+          "startMs": 3760,
+          "endMs": 4000
         },
         {
           "c": "量",
-          "startMs": 3040,
-          "endMs": 3280
+          "startMs": 4000,
+          "endMs": 4240
         },
         {
           "c": "。",
-          "startMs": 3280,
-          "endMs": 3360
+          "startMs": 4240,
+          "endMs": 4287
         }
       ]
     },
@@ -798,7 +806,7 @@
       "sentIndex": 0,
       "text": "一位学者问，合作真的有用吗？",
       "audioPath": "audio/p3_s1.wav",
-      "durationMs": 2960,
+      "durationMs": 3453,
       "chars": [
         {
           "c": "一",
@@ -828,47 +836,47 @@
         {
           "c": "，",
           "startMs": 960,
-          "endMs": 1280
-        },
-        {
-          "c": "合",
-          "startMs": 1280,
           "endMs": 1600
         },
         {
-          "c": "作",
+          "c": "合",
           "startMs": 1600,
-          "endMs": 1920
+          "endMs": 2000
+        },
+        {
+          "c": "作",
+          "startMs": 2000,
+          "endMs": 2320
         },
         {
           "c": "真",
-          "startMs": 1920,
-          "endMs": 2160
+          "startMs": 2400,
+          "endMs": 2560
         },
         {
           "c": "的",
-          "startMs": 2160,
-          "endMs": 2240
-        },
-        {
-          "c": "有",
-          "startMs": 2240,
-          "endMs": 2400
-        },
-        {
-          "c": "用",
-          "startMs": 2400,
+          "startMs": 2560,
           "endMs": 2640
         },
         {
-          "c": "吗",
+          "c": "有",
           "startMs": 2640,
-          "endMs": 2960
+          "endMs": 2880
+        },
+        {
+          "c": "用",
+          "startMs": 2880,
+          "endMs": 3040
+        },
+        {
+          "c": "吗",
+          "startMs": 3040,
+          "endMs": 3280
         },
         {
           "c": "？",
-          "startMs": 2960,
-          "endMs": 2960
+          "startMs": 3280,
+          "endMs": 3453
         }
       ]
     },
@@ -877,167 +885,167 @@
       "sentIndex": 1,
       "text": "诸葛亮说，江水很宽，一条船过江会摇晃，许多船按顺序前进就稳得多。",
       "audioPath": "audio/p3_s2.wav",
-      "durationMs": 6800,
+      "durationMs": 7894,
       "chars": [
         {
           "c": "诸",
-          "startMs": 80,
-          "endMs": 160
+          "startMs": 640,
+          "endMs": 800
         },
         {
           "c": "葛",
-          "startMs": 160,
-          "endMs": 320
+          "startMs": 800,
+          "endMs": 960
         },
         {
           "c": "亮",
-          "startMs": 320,
-          "endMs": 480
+          "startMs": 960,
+          "endMs": 1120
         },
         {
           "c": "说",
-          "startMs": 480,
-          "endMs": 800
-        },
-        {
-          "c": "，",
-          "startMs": 800,
-          "endMs": 800
-        },
-        {
-          "c": "江",
-          "startMs": 800,
-          "endMs": 1040
-        },
-        {
-          "c": "水",
-          "startMs": 1040,
-          "endMs": 1280
-        },
-        {
-          "c": "很",
-          "startMs": 1280,
+          "startMs": 1120,
           "endMs": 1440
         },
         {
-          "c": "宽",
-          "startMs": 1440,
-          "endMs": 1840
-        },
-        {
           "c": "，",
-          "startMs": 1840,
-          "endMs": 2320
-        },
-        {
-          "c": "一",
-          "startMs": 2320,
-          "endMs": 2400
-        },
-        {
-          "c": "条",
-          "startMs": 2400,
-          "endMs": 2560
-        },
-        {
-          "c": "船",
-          "startMs": 2560,
-          "endMs": 2880
-        },
-        {
-          "c": "过",
-          "startMs": 2880,
-          "endMs": 2960
+          "startMs": 1440,
+          "endMs": 1440
         },
         {
           "c": "江",
+          "startMs": 1440,
+          "endMs": 1680
+        },
+        {
+          "c": "水",
+          "startMs": 1680,
+          "endMs": 1840
+        },
+        {
+          "c": "很",
+          "startMs": 1840,
+          "endMs": 2080
+        },
+        {
+          "c": "宽",
+          "startMs": 2080,
+          "endMs": 2480
+        },
+        {
+          "c": "，",
+          "startMs": 2480,
+          "endMs": 2960
+        },
+        {
+          "c": "一",
           "startMs": 2960,
-          "endMs": 3200
+          "endMs": 3040
         },
         {
-          "c": "会",
-          "startMs": 3200,
-          "endMs": 3360
+          "c": "条",
+          "startMs": 3040,
+          "endMs": 3280
         },
         {
-          "c": "摇",
-          "startMs": 3360,
+          "c": "船",
+          "startMs": 3280,
+          "endMs": 3520
+        },
+        {
+          "c": "过",
+          "startMs": 3520,
           "endMs": 3600
         },
         {
-          "c": "晃",
+          "c": "江",
           "startMs": 3600,
           "endMs": 3920
         },
         {
-          "c": "，",
+          "c": "会",
           "startMs": 3920,
-          "endMs": 4400
+          "endMs": 4000
+        },
+        {
+          "c": "摇",
+          "startMs": 4000,
+          "endMs": 4240
+        },
+        {
+          "c": "晃",
+          "startMs": 4240,
+          "endMs": 4560
+        },
+        {
+          "c": "，",
+          "startMs": 4560,
+          "endMs": 5120
         },
         {
           "c": "许",
-          "startMs": 4400,
-          "endMs": 4640
+          "startMs": 5120,
+          "endMs": 5280
         },
         {
           "c": "多",
-          "startMs": 4640,
-          "endMs": 4800
-        },
-        {
-          "c": "船",
-          "startMs": 4800,
-          "endMs": 5040
-        },
-        {
-          "c": "按",
-          "startMs": 5040,
-          "endMs": 5200
-        },
-        {
-          "c": "顺",
-          "startMs": 5200,
+          "startMs": 5280,
           "endMs": 5440
         },
         {
-          "c": "序",
+          "c": "船",
           "startMs": 5440,
-          "endMs": 5520
+          "endMs": 5920
         },
         {
-          "c": "前",
-          "startMs": 5520,
-          "endMs": 5760
-        },
-        {
-          "c": "进",
-          "startMs": 5760,
-          "endMs": 6080
-        },
-        {
-          "c": "就",
+          "c": "按",
           "startMs": 6080,
           "endMs": 6240
         },
         {
-          "c": "稳",
+          "c": "顺",
           "startMs": 6240,
-          "endMs": 6400
+          "endMs": 6560
         },
         {
-          "c": "得",
-          "startMs": 6400,
-          "endMs": 6480
-        },
-        {
-          "c": "多",
-          "startMs": 6480,
+          "c": "序",
+          "startMs": 6560,
           "endMs": 6720
         },
         {
-          "c": "。",
+          "c": "前",
           "startMs": 6720,
-          "endMs": 6800
+          "endMs": 6960
+        },
+        {
+          "c": "进",
+          "startMs": 6960,
+          "endMs": 7200
+        },
+        {
+          "c": "就",
+          "startMs": 7280,
+          "endMs": 7360
+        },
+        {
+          "c": "稳",
+          "startMs": 7360,
+          "endMs": 7520
+        },
+        {
+          "c": "得",
+          "startMs": 7520,
+          "endMs": 7680
+        },
+        {
+          "c": "多",
+          "startMs": 7680,
+          "endMs": 7894
+        },
+        {
+          "c": "。",
+          "startMs": 7894,
+          "endMs": 7894
         }
       ]
     },
@@ -1046,137 +1054,137 @@
       "sentIndex": 2,
       "text": "人也是一样，分工清楚、彼此守信，就能把难题分成小步。",
       "audioPath": "audio/p3_s3.wav",
-      "durationMs": 6240,
+      "durationMs": 6413,
       "chars": [
         {
           "c": "人",
-          "startMs": 80,
-          "endMs": 240
+          "startMs": 960,
+          "endMs": 1120
         },
         {
           "c": "也",
-          "startMs": 240,
-          "endMs": 320
+          "startMs": 1120,
+          "endMs": 1280
         },
         {
           "c": "是",
-          "startMs": 320,
-          "endMs": 480
+          "startMs": 1280,
+          "endMs": 1360
         },
         {
           "c": "一",
-          "startMs": 480,
-          "endMs": 640
+          "startMs": 1440,
+          "endMs": 1600
         },
         {
           "c": "样",
-          "startMs": 640,
-          "endMs": 960
+          "startMs": 1600,
+          "endMs": 1840
         },
         {
           "c": "，",
-          "startMs": 960,
-          "endMs": 1440
-        },
-        {
-          "c": "分",
-          "startMs": 1440,
-          "endMs": 1680
-        },
-        {
-          "c": "工",
-          "startMs": 1680,
-          "endMs": 1920
-        },
-        {
-          "c": "清",
-          "startMs": 1920,
+          "startMs": 1840,
           "endMs": 2160
         },
         {
-          "c": "楚",
+          "c": "分",
           "startMs": 2160,
-          "endMs": 2480
+          "endMs": 2320
         },
         {
-          "c": "、",
-          "startMs": 2480,
-          "endMs": 2480
+          "c": "工",
+          "startMs": 2320,
+          "endMs": 2560
         },
         {
-          "c": "彼",
-          "startMs": 2480,
-          "endMs": 2640
-        },
-        {
-          "c": "此",
-          "startMs": 2640,
+          "c": "清",
+          "startMs": 2560,
           "endMs": 2800
         },
         {
-          "c": "守",
+          "c": "楚",
           "startMs": 2800,
-          "endMs": 2960
+          "endMs": 3200
         },
         {
-          "c": "信",
-          "startMs": 2960,
-          "endMs": 3280
+          "c": "、",
+          "startMs": 3200,
+          "endMs": 3360
         },
         {
-          "c": "，",
-          "startMs": 3280,
+          "c": "彼",
+          "startMs": 3360,
           "endMs": 3520
         },
         {
-          "c": "就",
+          "c": "此",
           "startMs": 3520,
           "endMs": 3680
         },
         {
-          "c": "能",
+          "c": "守",
           "startMs": 3680,
-          "endMs": 3840
+          "endMs": 3920
         },
         {
-          "c": "把",
-          "startMs": 3840,
-          "endMs": 4000
-        },
-        {
-          "c": "难",
-          "startMs": 4000,
+          "c": "信",
+          "startMs": 3920,
           "endMs": 4240
         },
         {
-          "c": "题",
+          "c": "，",
           "startMs": 4240,
+          "endMs": 4560
+        },
+        {
+          "c": "就",
+          "startMs": 4560,
           "endMs": 4720
         },
         {
-          "c": "分",
+          "c": "能",
+          "startMs": 4720,
+          "endMs": 4880
+        },
+        {
+          "c": "把",
+          "startMs": 4880,
+          "endMs": 4960
+        },
+        {
+          "c": "难",
+          "startMs": 4960,
+          "endMs": 5200
+        },
+        {
+          "c": "题",
           "startMs": 5200,
-          "endMs": 5440
+          "endMs": 5520
+        },
+        {
+          "c": "分",
+          "startMs": 5520,
+          "endMs": 5760
         },
         {
           "c": "成",
-          "startMs": 5440,
-          "endMs": 5680
+          "startMs": 5760,
+          "endMs": 5840
         },
         {
           "c": "小",
-          "startMs": 5680,
-          "endMs": 6000
+          "startMs": 5840,
+          "endMs": 6080
         },
         {
           "c": "步",
-          "startMs": 6000,
-          "endMs": 6160
+          "startMs": 6080,
+          "endMs": 6400
         },
         {
           "c": "。",
-          "startMs": 6160,
-          "endMs": 6240
+          "startMs": 6400,
+          "endMs": 6413
         }
       ]
     },
@@ -1185,7 +1193,7 @@
       "sentIndex": 0,
       "text": "另一个人问，怎样让百姓安心？",
       "audioPath": "audio/p4_s1.wav",
-      "durationMs": 2480,
+      "durationMs": 3286,
       "chars": [
         {
           "c": "另",
@@ -1195,67 +1203,67 @@
         {
           "c": "一",
           "startMs": 320,
-          "endMs": 320
+          "endMs": 400
         },
         {
           "c": "个",
-          "startMs": 320,
-          "endMs": 480
+          "startMs": 400,
+          "endMs": 560
         },
         {
           "c": "人",
-          "startMs": 480,
-          "endMs": 640
+          "startMs": 560,
+          "endMs": 720
         },
         {
           "c": "问",
-          "startMs": 640,
-          "endMs": 1040
-        },
-        {
-          "c": "，",
-          "startMs": 1040,
-          "endMs": 1040
-        },
-        {
-          "c": "怎",
-          "startMs": 1040,
+          "startMs": 720,
           "endMs": 1280
         },
         {
-          "c": "样",
+          "c": "，",
           "startMs": 1280,
-          "endMs": 1440
+          "endMs": 1360
         },
         {
-          "c": "让",
-          "startMs": 1440,
-          "endMs": 1600
+          "c": "怎",
+          "startMs": 1360,
+          "endMs": 1680
         },
         {
-          "c": "百",
-          "startMs": 1600,
+          "c": "样",
+          "startMs": 1680,
           "endMs": 1760
         },
         {
-          "c": "姓",
+          "c": "让",
           "startMs": 1760,
           "endMs": 2000
         },
         {
-          "c": "安",
+          "c": "百",
           "startMs": 2000,
-          "endMs": 2160
+          "endMs": 2240
+        },
+        {
+          "c": "姓",
+          "startMs": 2240,
+          "endMs": 2480
+        },
+        {
+          "c": "安",
+          "startMs": 2480,
+          "endMs": 2720
         },
         {
           "c": "心",
-          "startMs": 2160,
-          "endMs": 2480
+          "startMs": 2720,
+          "endMs": 3040
         },
         {
           "c": "？",
-          "startMs": 2480,
-          "endMs": 2480
+          "startMs": 3040,
+          "endMs": 3286
         }
       ]
     },
@@ -1264,147 +1272,147 @@
       "sentIndex": 1,
       "text": "诸葛亮回答，先把话说明白，再把事情安排好，不让大家空等。",
       "audioPath": "audio/p4_s2.wav",
-      "durationMs": 6400,
+      "durationMs": 6573,
       "chars": [
         {
           "c": "诸",
-          "startMs": 80,
-          "endMs": 240
+          "startMs": 640,
+          "endMs": 800
         },
         {
           "c": "葛",
-          "startMs": 240,
-          "endMs": 320
+          "startMs": 800,
+          "endMs": 960
         },
         {
           "c": "亮",
-          "startMs": 320,
-          "endMs": 560
-        },
-        {
-          "c": "回",
-          "startMs": 560,
-          "endMs": 720
-        },
-        {
-          "c": "答",
-          "startMs": 720,
+          "startMs": 960,
           "endMs": 1120
         },
         {
-          "c": "，",
+          "c": "回",
           "startMs": 1120,
-          "endMs": 1680
+          "endMs": 1360
+        },
+        {
+          "c": "答",
+          "startMs": 1360,
+          "endMs": 1760
+        },
+        {
+          "c": "，",
+          "startMs": 1760,
+          "endMs": 2160
         },
         {
           "c": "先",
-          "startMs": 1680,
-          "endMs": 1920
+          "startMs": 2160,
+          "endMs": 2400
         },
         {
           "c": "把",
-          "startMs": 1920,
-          "endMs": 2080
+          "startMs": 2400,
+          "endMs": 2560
         },
         {
           "c": "话",
-          "startMs": 2080,
-          "endMs": 2240
-        },
-        {
-          "c": "说",
-          "startMs": 2240,
-          "endMs": 2480
-        },
-        {
-          "c": "明",
-          "startMs": 2480,
+          "startMs": 2560,
           "endMs": 2800
         },
         {
-          "c": "白",
+          "c": "说",
           "startMs": 2800,
-          "endMs": 3120
+          "endMs": 3040
         },
         {
-          "c": "，",
-          "startMs": 3120,
+          "c": "明",
+          "startMs": 3040,
           "endMs": 3360
         },
         {
-          "c": "再",
+          "c": "白",
           "startMs": 3360,
-          "endMs": 3520
-        },
-        {
-          "c": "把",
-          "startMs": 3520,
           "endMs": 3680
         },
         {
-          "c": "事",
+          "c": "，",
           "startMs": 3680,
           "endMs": 3840
         },
         {
-          "c": "情",
+          "c": "再",
           "startMs": 3840,
           "endMs": 4000
         },
         {
-          "c": "安",
+          "c": "把",
           "startMs": 4000,
-          "endMs": 4160
+          "endMs": 4080
+        },
+        {
+          "c": "事",
+          "startMs": 4080,
+          "endMs": 4320
+        },
+        {
+          "c": "情",
+          "startMs": 4320,
+          "endMs": 4480
+        },
+        {
+          "c": "安",
+          "startMs": 4480,
+          "endMs": 4640
         },
         {
           "c": "排",
-          "startMs": 4160,
-          "endMs": 4400
+          "startMs": 4640,
+          "endMs": 4800
         },
         {
           "c": "好",
-          "startMs": 4400,
-          "endMs": 4880
+          "startMs": 4800,
+          "endMs": 5360
         },
         {
           "c": "，",
-          "startMs": 4880,
-          "endMs": 5120
-        },
-        {
-          "c": "不",
-          "startMs": 5120,
-          "endMs": 5280
-        },
-        {
-          "c": "让",
-          "startMs": 5280,
+          "startMs": 5360,
           "endMs": 5440
         },
         {
-          "c": "大",
+          "c": "不",
           "startMs": 5440,
           "endMs": 5600
         },
         {
-          "c": "家",
+          "c": "让",
           "startMs": 5600,
           "endMs": 5760
         },
         {
-          "c": "空",
+          "c": "大",
           "startMs": 5760,
-          "endMs": 6160
+          "endMs": 5840
         },
         {
-          "c": "等",
-          "startMs": 6160,
+          "c": "家",
+          "startMs": 5840,
+          "endMs": 6000
+        },
+        {
+          "c": "空",
+          "startMs": 6000,
           "endMs": 6320
         },
         {
-          "c": "。",
+          "c": "等",
           "startMs": 6320,
-          "endMs": 6400
+          "endMs": 6480
+        },
+        {
+          "c": "。",
+          "startMs": 6480,
+          "endMs": 6573
         }
       ]
     },
@@ -1413,177 +1421,177 @@
       "sentIndex": 2,
       "text": "他的语气一直平和，既不取笑别人，也不夸耀自己，只把道理讲得清清楚楚。",
       "audioPath": "audio/p4_s3.wav",
-      "durationMs": 8800,
+      "durationMs": 7981,
       "chars": [
         {
           "c": "他",
-          "startMs": 80,
-          "endMs": 320
+          "startMs": 720,
+          "endMs": 880
         },
         {
           "c": "的",
-          "startMs": 320,
-          "endMs": 320
-        },
-        {
-          "c": "语",
-          "startMs": 320,
-          "endMs": 560
-        },
-        {
-          "c": "气",
-          "startMs": 560,
+          "startMs": 880,
           "endMs": 960
         },
         {
-          "c": "一",
+          "c": "语",
           "startMs": 960,
-          "endMs": 1040
+          "endMs": 1120
+        },
+        {
+          "c": "气",
+          "startMs": 1120,
+          "endMs": 1360
+        },
+        {
+          "c": "一",
+          "startMs": 1360,
+          "endMs": 1520
         },
         {
           "c": "直",
-          "startMs": 1040,
-          "endMs": 1200
+          "startMs": 1520,
+          "endMs": 1760
         },
         {
           "c": "平",
-          "startMs": 1200,
-          "endMs": 1600
-        },
-        {
-          "c": "和",
-          "startMs": 1600,
+          "startMs": 1760,
           "endMs": 2000
         },
         {
-          "c": "，",
+          "c": "和",
           "startMs": 2000,
-          "endMs": 2560
+          "endMs": 2400
         },
         {
-          "c": "既",
-          "startMs": 2560,
-          "endMs": 2720
-        },
-        {
-          "c": "不",
-          "startMs": 2720,
+          "c": "，",
+          "startMs": 2400,
           "endMs": 2880
         },
         {
-          "c": "取",
+          "c": "既",
           "startMs": 2880,
           "endMs": 3040
         },
         {
-          "c": "笑",
+          "c": "不",
           "startMs": 3040,
-          "endMs": 3280
+          "endMs": 3200
         },
         {
-          "c": "别",
-          "startMs": 3280,
+          "c": "取",
+          "startMs": 3200,
+          "endMs": 3360
+        },
+        {
+          "c": "笑",
+          "startMs": 3360,
           "endMs": 3520
         },
         {
-          "c": "人",
+          "c": "别",
           "startMs": 3520,
-          "endMs": 3840
+          "endMs": 3760
+        },
+        {
+          "c": "人",
+          "startMs": 3760,
+          "endMs": 4000
         },
         {
           "c": "，",
-          "startMs": 3840,
-          "endMs": 4080
+          "startMs": 4000,
+          "endMs": 4240
         },
         {
           "c": "也",
-          "startMs": 4080,
-          "endMs": 4160
-        },
-        {
-          "c": "不",
-          "startMs": 4160,
+          "startMs": 4240,
           "endMs": 4320
         },
         {
-          "c": "夸",
+          "c": "不",
           "startMs": 4320,
-          "endMs": 4560
+          "endMs": 4400
         },
         {
-          "c": "耀",
-          "startMs": 4560,
+          "c": "夸",
+          "startMs": 4400,
           "endMs": 4720
         },
         {
-          "c": "自",
+          "c": "耀",
           "startMs": 4720,
           "endMs": 4960
         },
         {
-          "c": "己",
+          "c": "自",
           "startMs": 4960,
-          "endMs": 5280
+          "endMs": 5120
+        },
+        {
+          "c": "己",
+          "startMs": 5120,
+          "endMs": 5360
         },
         {
           "c": "，",
-          "startMs": 5280,
-          "endMs": 6000
+          "startMs": 5360,
+          "endMs": 5840
         },
         {
           "c": "只",
-          "startMs": 6000,
-          "endMs": 6160
+          "startMs": 5840,
+          "endMs": 6000
         },
         {
           "c": "把",
-          "startMs": 6160,
-          "endMs": 6320
+          "startMs": 6000,
+          "endMs": 6080
         },
         {
           "c": "道",
-          "startMs": 6320,
-          "endMs": 6640
+          "startMs": 6080,
+          "endMs": 6400
         },
         {
           "c": "理",
-          "startMs": 6640,
-          "endMs": 6960
+          "startMs": 6400,
+          "endMs": 6560
         },
         {
           "c": "讲",
+          "startMs": 6560,
+          "endMs": 6800
+        },
+        {
+          "c": "得",
+          "startMs": 6800,
+          "endMs": 6880
+        },
+        {
+          "c": "清",
+          "startMs": 6880,
+          "endMs": 7200
+        },
+        {
+          "c": "清",
           "startMs": 7200,
           "endMs": 7440
         },
         {
-          "c": "得",
+          "c": "楚",
           "startMs": 7440,
-          "endMs": 7520
-        },
-        {
-          "c": "清",
-          "startMs": 7520,
-          "endMs": 7840
-        },
-        {
-          "c": "清",
-          "startMs": 7840,
-          "endMs": 8160
+          "endMs": 7680
         },
         {
           "c": "楚",
-          "startMs": 8160,
-          "endMs": 8480
-        },
-        {
-          "c": "楚",
-          "startMs": 8480,
-          "endMs": 8800
+          "startMs": 7680,
+          "endMs": 7920
         },
         {
           "c": "。",
-          "startMs": 8800,
-          "endMs": 8800
+          "startMs": 7920,
+          "endMs": 7981
         }
       ]
     },
@@ -1592,7 +1600,7 @@
       "sentIndex": 0,
       "text": "听到后来，许多人点头，孙权也更愿意认真考虑合作。",
       "audioPath": "audio/p5_s1.wav",
-      "durationMs": 4560,
+      "durationMs": 4846,
       "chars": [
         {
           "c": "听",
@@ -1602,117 +1610,117 @@
         {
           "c": "到",
           "startMs": 240,
-          "endMs": 320
+          "endMs": 400
         },
         {
           "c": "后",
-          "startMs": 320,
+          "startMs": 400,
           "endMs": 560
         },
         {
           "c": "来",
           "startMs": 560,
-          "endMs": 800
+          "endMs": 960
         },
         {
           "c": "，",
-          "startMs": 800,
-          "endMs": 880
-        },
-        {
-          "c": "许",
-          "startMs": 880,
+          "startMs": 960,
           "endMs": 1040
         },
         {
-          "c": "多",
+          "c": "许",
           "startMs": 1040,
-          "endMs": 1200
-        },
-        {
-          "c": "人",
-          "startMs": 1200,
           "endMs": 1280
         },
         {
-          "c": "点",
+          "c": "多",
           "startMs": 1280,
-          "endMs": 1520
+          "endMs": 1440
+        },
+        {
+          "c": "人",
+          "startMs": 1440,
+          "endMs": 1600
+        },
+        {
+          "c": "点",
+          "startMs": 1600,
+          "endMs": 1760
         },
         {
           "c": "头",
-          "startMs": 1520,
-          "endMs": 2080
+          "startMs": 1760,
+          "endMs": 2240
         },
         {
           "c": "，",
-          "startMs": 2080,
-          "endMs": 2320
+          "startMs": 2240,
+          "endMs": 2240
         },
         {
           "c": "孙",
-          "startMs": 2320,
-          "endMs": 2560
+          "startMs": 2240,
+          "endMs": 2480
         },
         {
           "c": "权",
-          "startMs": 2560,
-          "endMs": 2880
+          "startMs": 2480,
+          "endMs": 2800
         },
         {
           "c": "也",
-          "startMs": 2880,
-          "endMs": 2960
+          "startMs": 2800,
+          "endMs": 2880
         },
         {
           "c": "更",
-          "startMs": 2960,
-          "endMs": 3120
+          "startMs": 2880,
+          "endMs": 3040
         },
         {
           "c": "愿",
-          "startMs": 3120,
-          "endMs": 3360
+          "startMs": 3040,
+          "endMs": 3200
         },
         {
           "c": "意",
-          "startMs": 3360,
-          "endMs": 3360
+          "startMs": 3200,
+          "endMs": 3280
         },
         {
           "c": "认",
-          "startMs": 3360,
-          "endMs": 3600
+          "startMs": 3280,
+          "endMs": 3520
         },
         {
           "c": "真",
+          "startMs": 3520,
+          "endMs": 3600
+        },
+        {
+          "c": "考",
           "startMs": 3600,
           "endMs": 3760
         },
         {
-          "c": "考",
+          "c": "虑",
           "startMs": 3760,
           "endMs": 3920
         },
         {
-          "c": "虑",
-          "startMs": 3920,
-          "endMs": 4000
-        },
-        {
           "c": "合",
-          "startMs": 4000,
-          "endMs": 4240
+          "startMs": 3920,
+          "endMs": 4160
         },
         {
           "c": "作",
-          "startMs": 4240,
-          "endMs": 4480
+          "startMs": 4160,
+          "endMs": 4400
         },
         {
           "c": "。",
-          "startMs": 4480,
-          "endMs": 4560
+          "startMs": 4400,
+          "endMs": 4846
         }
       ]
     },
@@ -1721,202 +1729,202 @@
       "sentIndex": 1,
       "text": "这个故事告诉我们，会说话不是为了赢过别人，而是用礼貌和事实帮助大家看见好主意。",
       "audioPath": "audio/p5_s2.wav",
-      "durationMs": 7600,
+      "durationMs": 7874,
       "chars": [
         {
           "c": "这",
-          "startMs": 80,
-          "endMs": 160
-        },
-        {
-          "c": "个",
-          "startMs": 160,
-          "endMs": 320
-        },
-        {
-          "c": "故",
           "startMs": 320,
           "endMs": 480
         },
         {
-          "c": "事",
+          "c": "个",
           "startMs": 480,
           "endMs": 640
         },
         {
-          "c": "告",
+          "c": "故",
           "startMs": 640,
-          "endMs": 800
+          "endMs": 880
         },
         {
-          "c": "诉",
-          "startMs": 800,
+          "c": "事",
+          "startMs": 880,
           "endMs": 960
         },
         {
-          "c": "我",
+          "c": "告",
           "startMs": 960,
-          "endMs": 1120
+          "endMs": 1200
+        },
+        {
+          "c": "诉",
+          "startMs": 1200,
+          "endMs": 1360
+        },
+        {
+          "c": "我",
+          "startMs": 1360,
+          "endMs": 1440
         },
         {
           "c": "们",
-          "startMs": 1120,
-          "endMs": 1440
+          "startMs": 1440,
+          "endMs": 1760
         },
         {
           "c": "，",
-          "startMs": 1440,
-          "endMs": 1440
+          "startMs": 1760,
+          "endMs": 2000
         },
         {
           "c": "会",
-          "startMs": 1440,
-          "endMs": 1680
+          "startMs": 2000,
+          "endMs": 2240
         },
         {
           "c": "说",
-          "startMs": 1680,
-          "endMs": 1920
-        },
-        {
-          "c": "话",
-          "startMs": 1920,
-          "endMs": 2160
-        },
-        {
-          "c": "不",
-          "startMs": 2160,
-          "endMs": 2320
-        },
-        {
-          "c": "是",
-          "startMs": 2320,
+          "startMs": 2240,
           "endMs": 2400
         },
         {
-          "c": "为",
+          "c": "话",
           "startMs": 2400,
-          "endMs": 2560
+          "endMs": 2800
         },
         {
-          "c": "了",
-          "startMs": 2560,
-          "endMs": 2640
-        },
-        {
-          "c": "赢",
-          "startMs": 2640,
-          "endMs": 2880
-        },
-        {
-          "c": "过",
-          "startMs": 2880,
+          "c": "不",
+          "startMs": 2800,
           "endMs": 3040
         },
         {
-          "c": "别",
+          "c": "是",
           "startMs": 3040,
           "endMs": 3200
         },
         {
-          "c": "人",
+          "c": "为",
           "startMs": 3200,
-          "endMs": 3520
+          "endMs": 3360
         },
         {
-          "c": "，",
-          "startMs": 3520,
-          "endMs": 3920
+          "c": "了",
+          "startMs": 3360,
+          "endMs": 3360
         },
         {
-          "c": "而",
-          "startMs": 3920,
+          "c": "赢",
+          "startMs": 3360,
+          "endMs": 3680
+        },
+        {
+          "c": "过",
+          "startMs": 3680,
+          "endMs": 3760
+        },
+        {
+          "c": "别",
+          "startMs": 3760,
           "endMs": 4000
         },
         {
-          "c": "是",
+          "c": "人",
           "startMs": 4000,
-          "endMs": 4160
-        },
-        {
-          "c": "用",
-          "startMs": 4160,
           "endMs": 4320
         },
         {
-          "c": "礼",
+          "c": "，",
           "startMs": 4320,
-          "endMs": 4480
+          "endMs": 4640
+        },
+        {
+          "c": "而",
+          "startMs": 4640,
+          "endMs": 4800
+        },
+        {
+          "c": "是",
+          "startMs": 4800,
+          "endMs": 4960
+        },
+        {
+          "c": "用",
+          "startMs": 4960,
+          "endMs": 5120
+        },
+        {
+          "c": "礼",
+          "startMs": 5120,
+          "endMs": 5280
         },
         {
           "c": "貌",
-          "startMs": 4480,
-          "endMs": 4720
+          "startMs": 5280,
+          "endMs": 5520
         },
         {
           "c": "和",
-          "startMs": 4720,
-          "endMs": 4880
+          "startMs": 5520,
+          "endMs": 5600
         },
         {
           "c": "事",
-          "startMs": 4880,
-          "endMs": 5040
-        },
-        {
-          "c": "实",
-          "startMs": 5040,
-          "endMs": 5440
-        },
-        {
-          "c": "帮",
           "startMs": 5600,
           "endMs": 5840
         },
         {
-          "c": "助",
+          "c": "实",
           "startMs": 5840,
-          "endMs": 5920
+          "endMs": 6240
+        },
+        {
+          "c": "帮",
+          "startMs": 6320,
+          "endMs": 6480
+        },
+        {
+          "c": "助",
+          "startMs": 6480,
+          "endMs": 6640
         },
         {
           "c": "大",
-          "startMs": 5920,
-          "endMs": 6080
+          "startMs": 6640,
+          "endMs": 6800
         },
         {
           "c": "家",
-          "startMs": 6080,
-          "endMs": 6320
+          "startMs": 6800,
+          "endMs": 6880
         },
         {
           "c": "看",
-          "startMs": 6320,
-          "endMs": 6560
+          "startMs": 6880,
+          "endMs": 7120
         },
         {
           "c": "见",
-          "startMs": 6560,
-          "endMs": 6720
+          "startMs": 7120,
+          "endMs": 7200
         },
         {
           "c": "好",
-          "startMs": 6720,
-          "endMs": 7040
+          "startMs": 7200,
+          "endMs": 7360
         },
         {
           "c": "主",
-          "startMs": 7040,
-          "endMs": 7280
+          "startMs": 7440,
+          "endMs": 7680
         },
         {
           "c": "意",
-          "startMs": 7280,
-          "endMs": 7520
+          "startMs": 7680,
+          "endMs": 7840
         },
         {
           "c": "。",
-          "startMs": 7520,
-          "endMs": 7600
+          "startMs": 7840,
+          "endMs": 7874
         }
       ]
     }
