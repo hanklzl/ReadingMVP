@@ -14,6 +14,33 @@ private class IosAudioService : AudioService {
     override suspend fun play(resourcePath: String, speedMultiplier: Float) {
         if (resourcePath.isBlank()) return
 
+        playResolvedResource(
+            resourcePath = resourcePath,
+            speedMultiplier = speedMultiplier,
+            startMillis = 0L,
+        )
+    }
+
+    override suspend fun playRange(
+        resourcePath: String,
+        startMillis: Long,
+        endMillis: Long,
+        speedMultiplier: Float,
+    ) {
+        if (resourcePath.isBlank() || endMillis <= startMillis) return
+
+        playResolvedResource(
+            resourcePath = resourcePath,
+            speedMultiplier = speedMultiplier,
+            startMillis = startMillis,
+        )
+    }
+
+    private suspend fun playResolvedResource(
+        resourcePath: String,
+        speedMultiplier: Float,
+        startMillis: Long,
+    ) {
         stop()
 
         val resolvedPath = resolvePath(resourcePath)
@@ -21,6 +48,7 @@ private class IosAudioService : AudioService {
         val audioPlayer = AVAudioPlayer(contentsOfURL = url, error = null)
         audioPlayer.enableRate = true
         audioPlayer.rate = speedMultiplier.coerceIn(MinPlaybackSpeed, MaxPlaybackSpeed)
+        audioPlayer.currentTime = startMillis.coerceAtLeast(0L).toDouble() / 1000.0
         audioPlayer.prepareToPlay()
         audioPlayer.play()
         player = audioPlayer

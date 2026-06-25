@@ -2,6 +2,9 @@ package com.littlemandarin.classics.shared.service
 
 import android.content.Context
 import android.media.MediaPlayer
+import android.os.Handler
+import android.os.Looper
+import com.littlemandarin.classics.shared.story.StoryAudioSegment
 import java.io.File
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -31,22 +34,58 @@ private class AndroidAudioService(
         ?: File(System.getProperty("java.io.tmpdir") ?: ".")
     private val lock = Any()
     private var mediaPlayer: MediaPlayer? = null
+    private var activeRangeStartMillis: Long = 0L
 
     override suspend fun play(resourcePath: String, speedMultiplier: Float) {
         if (resourcePath.isBlank()) return
 
         val audioFile = resolveAudioFile(resourcePath)
+        playFile(
+            audioFile = audioFile,
+            speedMultiplier = speedMultiplier,
+            startMillis = 0L,
+            endMillis = null,
+        )
+    }
+
+    override suspend fun playRange(
+        resourcePath: String,
+        startMillis: Long,
+        endMillis: Long,
+        speedMultiplier: Float,
+    ) {
+        if (resourcePath.isBlank() || endMillis <= startMillis) return
+
+        val audioFile = resolveAudioFile(resourcePath)
+        playFile(
+            audioFile = audioFile,
+            speedMultiplier = speedMultiplier,
+            startMillis = startMillis,
+            endMillis = endMillis,
+        )
+    }
+
+    private suspend fun playFile(
+        audioFile: File,
+        speedMultiplier: Float,
+        startMillis: Long,
+        endMillis: Long?,
+    ) {
         val safeSpeed = speedMultiplier.coerceIn(MinPlaybackSpeed, MaxPlaybackSpeed)
         suspendCancellableCoroutine { continuation ->
             val player = MediaPlayer()
+            val handler = Handler(Looper.getMainLooper())
+            var endWatcher: Runnable? = null
             var settled = false
 
             fun settle(error: Throwable? = null) {
+                endWatcher?.let { handler.removeCallbacks(it) }
                 synchronized(lock) {
                     if (settled) return
                     settled = true
                     if (mediaPlayer === player) {
                         mediaPlayer = null
+                        activeRangeStartMillis = 0L
                     }
                 }
                 runCatching {
@@ -75,17 +114,46 @@ private class AndroidAudioService(
                 }
                 player.setDataSource(audioFile.absolutePath)
                 player.prepare()
+                val fileDurationMillis = player.duration.toLong().coerceAtLeast(0L)
+                val safeStartMillis = startMillis.coerceAtLeast(0L).coerceAtMost(fileDurationMillis)
+                val safeEndMillis = endMillis
+                    ?.takeIf { it > safeStartMillis }
+                    ?.coerceAtMost(fileDurationMillis)
                 player.playbackParams = player.playbackParams.setSpeed(safeSpeed)
+                if (safeStartMillis > 0L) {
+                    player.seekTo(safeStartMillis.toInt())
+                }
                 synchronized(lock) {
                     releasePlayerLocked()
                     mediaPlayer = player
+                    activeRangeStartMillis = safeStartMillis
                 }
                 player.start()
+                if (safeEndMillis != null) {
+                    endWatcher = object : Runnable {
+                        override fun run() {
+                            val reachedEnd = runCatching {
+                                player.currentPosition.toLong() >= safeEndMillis
+                            }.getOrDefault(true)
+                            if (reachedEnd) {
+                                settle()
+                            } else {
+                                handler.postDelayed(this, RangeWatchIntervalMillis)
+                            }
+                        }
+                    }
+                    handler.post(endWatcher)
+                }
             } catch (error: Throwable) {
                 settle(error)
             }
         }
     }
+
+    override suspend fun hasAudio(segment: StoryAudioSegment?): Boolean =
+        segment != null && runCatching {
+            resolveAudioFile(segment.resourcePath)
+        }.isSuccess
 
     override suspend fun hasSentenceAudio(
         storyId: String,
@@ -120,7 +188,12 @@ private class AndroidAudioService(
 
     override fun currentPositionMillis(): Long? = synchronized(lock) {
         runCatching {
-            mediaPlayer?.takeIf { it.isPlaying }?.currentPosition?.toLong()
+            mediaPlayer
+                ?.takeIf { it.isPlaying }
+                ?.currentPosition
+                ?.toLong()
+                ?.minus(activeRangeStartMillis)
+                ?.coerceAtLeast(0L)
         }.getOrNull()
     }
 
@@ -157,6 +230,7 @@ private class AndroidAudioService(
             player.release()
         }
         mediaPlayer = null
+        activeRangeStartMillis = 0L
     }
 
     private fun String.safeCacheFileName(): String =
@@ -172,5 +246,6 @@ private class AndroidAudioService(
         const val AudioCacheDirectoryName: String = "little-mandarin-audio"
         const val MinPlaybackSpeed: Float = 0.5f
         const val MaxPlaybackSpeed: Float = 1.5f
+        const val RangeWatchIntervalMillis: Long = 20L
     }
 }

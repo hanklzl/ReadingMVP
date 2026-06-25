@@ -1,7 +1,38 @@
 package com.littlemandarin.classics.shared.service
 
+import com.littlemandarin.classics.shared.story.StoryAudioSegment
+
 interface AudioService {
     suspend fun play(resourcePath: String, speedMultiplier: Float = 1.0f)
+
+    suspend fun playRange(
+        resourcePath: String,
+        startMillis: Long,
+        endMillis: Long,
+        speedMultiplier: Float = 1.0f,
+    ) {
+        play(resourcePath = resourcePath, speedMultiplier = speedMultiplier)
+    }
+
+    suspend fun playSegment(
+        segment: StoryAudioSegment,
+        speedMultiplier: Float = 1.0f,
+    ) {
+        val startMillis = segment.startMillis
+        val endMillis = segment.endMillis
+        if (startMillis != null && endMillis != null && endMillis > startMillis) {
+            playRange(
+                resourcePath = segment.resourcePath,
+                startMillis = startMillis,
+                endMillis = endMillis,
+                speedMultiplier = speedMultiplier,
+            )
+        } else {
+            play(resourcePath = segment.resourcePath, speedMultiplier = speedMultiplier)
+        }
+    }
+
+    suspend fun hasAudio(segment: StoryAudioSegment?): Boolean = segment != null
 
     suspend fun hasSentenceAudio(
         storyId: String,

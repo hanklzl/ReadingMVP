@@ -133,6 +133,8 @@ class AudioSentence:
         durationMs: int,
         unavailable: bool = False,
         chars: list[dict[str, Any]] | None = None,
+        startMs: int | None = None,
+        endMs: int | None = None,
     ) -> None:
         self.paraIndex = paraIndex
         self.sentIndex = sentIndex
@@ -141,6 +143,8 @@ class AudioSentence:
         self.durationMs = durationMs
         self.unavailable = unavailable
         self.chars = chars or []
+        self.startMs = startMs
+        self.endMs = endMs
 
     def as_dict(self) -> dict[str, Any]:
         payload = {
@@ -150,6 +154,10 @@ class AudioSentence:
             "audioPath": self.audioPath,
             "durationMs": self.durationMs,
         }
+        if self.startMs is not None:
+            payload["startMs"] = self.startMs
+        if self.endMs is not None:
+            payload["endMs"] = self.endMs
         if self.chars:
             payload["chars"] = self.chars
         if self.unavailable:
@@ -584,11 +592,11 @@ def resolve_audio_generation_mode(
         generation_mode
         or os.getenv("LMC_TTS_GENERATION_MODE")
         or os.getenv("LMC_TTS_GRANULARITY")
-        or ("paragraph" if provider == "qwen" and not use_mock else "sentence")
+        or ("story" if provider == "qwen" and not use_mock else "sentence")
     ).strip().lower()
-    if configured not in {"sentence", "paragraph"}:
+    if configured not in {"sentence", "paragraph", "story"}:
         raise ValueError(
-            "LMC_TTS_GENERATION_MODE must be 'sentence' or 'paragraph', "
+            "LMC_TTS_GENERATION_MODE must be 'sentence', 'paragraph', or 'story', "
             f"got {configured!r}"
         )
     return configured
@@ -743,7 +751,15 @@ def generate_audio_manifest(
         char_aligner = NoOpCharAligner()
 
     try:
-        if resolved_generation_mode == "paragraph":
+        if resolved_generation_mode == "story":
+            entries = _generate_story_audio_entries(
+                paragraphs=paragraphs,
+                story_dir=output_story_dir,
+                provider_impl=provider_impl,
+                char_aligner=char_aligner,
+                allow_missing_provider=allow_missing_provider,
+            )
+        elif resolved_generation_mode == "paragraph":
             entries = _generate_paragraph_audio_entries(
                 paragraphs=paragraphs,
                 story_dir=output_story_dir,
@@ -828,6 +844,208 @@ def _generate_sentence_audio_entries(
             )
         )
     return entries
+
+
+def _sentence_ranges_for_story(
+    paragraphs: list[dict[str, Any]],
+) -> tuple[str, list[dict[str, Any]]]:
+    """Return one story text plus sentence ranges inside that joined text."""
+
+    story_parts: list[str] = []
+    ranges: list[dict[str, Any]] = []
+    story_offset = 0
+
+    for para_index, paragraph in enumerate(paragraphs):
+        if not isinstance(paragraph, dict):
+            continue
+        if story_parts:
+            story_parts.append("\n")
+            story_offset += 1
+
+        text = str(paragraph.get("text", ""))
+        paragraph_offset = story_offset
+        story_parts.append(text)
+
+        cursor = 0
+        for sent_index, sentence in enumerate(split_paragraph_to_sentences(text)):
+            start = text.find(sentence, cursor)
+            if start < 0:
+                raise ValueError(
+                    f"Could not locate sentence {sent_index + 1} in paragraph {para_index + 1}: {sentence!r}"
+                )
+            end = start + len(sentence)
+            ranges.append(
+                {
+                    "paraIndex": para_index,
+                    "sentIndex": sent_index,
+                    "text": sentence,
+                    "audioPath": "audio/story.wav",
+                    "charStart": paragraph_offset + start,
+                    "charEnd": paragraph_offset + end,
+                }
+            )
+            cursor = end
+
+        story_offset += len(text)
+
+    return "".join(story_parts), ranges
+
+
+def _generate_story_audio_entries(
+    *,
+    paragraphs: list[dict[str, Any]],
+    story_dir: Path,
+    provider_impl: AudioProvider,
+    char_aligner: CharAligner,
+    allow_missing_provider: bool,
+) -> list[AudioSentence]:
+    story_text, sentence_ranges = _sentence_ranges_for_story(paragraphs)
+    if not sentence_ranges:
+        return []
+
+    story_audio_path = story_dir / "audio" / "story.wav"
+
+    try:
+        provider_impl.synthesize(story_text, story_audio_path)
+        if not story_audio_path.exists() or story_audio_path.stat().st_size <= 44:
+            raise RuntimeError("Generated story audio file is empty")
+        story_duration_ms = wav_duration_ms(story_audio_path)
+        story_chars = char_aligner.align(story_text, story_audio_path, story_duration_ms)
+        return _story_audio_entries_from_ranges(
+            sentence_ranges=sentence_ranges,
+            story_chars=story_chars,
+            story_duration_ms=story_duration_ms,
+        )
+    except Exception as exc:
+        if story_audio_path.exists():
+            story_audio_path.unlink()
+        if not allow_missing_provider:
+            raise RuntimeError(f"Failed to generate story audio: {exc}") from exc
+        return [
+            AudioSentence(
+                paraIndex=expected["paraIndex"],
+                sentIndex=expected["sentIndex"],
+                text=expected["text"],
+                audioPath=expected["audioPath"],
+                durationMs=0,
+                unavailable=True,
+                chars=[],
+            )
+            for expected in sentence_ranges
+        ]
+
+
+def _story_audio_entries_from_ranges(
+    *,
+    sentence_ranges: list[dict[str, Any]],
+    story_chars: list[dict[str, Any]],
+    story_duration_ms: int,
+) -> list[AudioSentence]:
+    entries: list[AudioSentence] = []
+    for expected in sentence_ranges:
+        char_start = int(expected["charStart"])
+        char_end = int(expected["charEnd"])
+        sentence_chars = story_chars[char_start:char_end]
+        if sentence_chars:
+            start_ms = _coerce_ms(sentence_chars[0].get("startMs"), story_duration_ms)
+            end_ms = _coerce_ms(sentence_chars[-1].get("endMs"), story_duration_ms)
+        else:
+            start_ms = 0
+            end_ms = story_duration_ms
+        end_ms = max(start_ms, end_ms)
+        duration_ms = end_ms - start_ms
+        chars = _relative_sentence_timings(
+            paragraph_chars=story_chars,
+            char_start=char_start,
+            char_end=char_end,
+            clip_start_ms=start_ms,
+            duration_ms=duration_ms,
+        )
+        entries.append(
+            AudioSentence(
+                paraIndex=expected["paraIndex"],
+                sentIndex=expected["sentIndex"],
+                text=expected["text"],
+                audioPath=expected["audioPath"],
+                durationMs=duration_ms,
+                chars=chars,
+                startMs=start_ms,
+                endMs=end_ms,
+            )
+        )
+    return entries
+
+
+def _sentence_ranges_from_story_manifest(
+    sentences: list[dict[str, Any]],
+) -> tuple[str, list[dict[str, Any]]]:
+    story_parts: list[str] = []
+    ranges: list[dict[str, Any]] = []
+    story_offset = 0
+    previous_para_index: int | None = None
+
+    for entry in sentences:
+        if not isinstance(entry, dict) or entry.get("unavailable"):
+            continue
+        para_index = entry.get("paraIndex")
+        sent_index = entry.get("sentIndex")
+        text = entry.get("text")
+        audio_path = entry.get("audioPath")
+        if not isinstance(para_index, int) or not isinstance(sent_index, int):
+            continue
+        if not isinstance(text, str) or not isinstance(audio_path, str):
+            continue
+
+        if previous_para_index is not None and para_index != previous_para_index:
+            story_parts.append("\n")
+            story_offset += 1
+
+        char_start = story_offset
+        story_parts.append(text)
+        story_offset += len(text)
+        ranges.append(
+            {
+                "paraIndex": para_index,
+                "sentIndex": sent_index,
+                "text": text,
+                "audioPath": audio_path,
+                "charStart": char_start,
+                "charEnd": story_offset,
+            }
+        )
+        previous_para_index = para_index
+
+    return "".join(story_parts), ranges
+
+
+def _align_story_audio_manifest(
+    *,
+    story_dir: Path,
+    payload: dict[str, Any],
+    aligner: CharAligner,
+) -> list[dict[str, Any]]:
+    sentences = payload["sentences"]
+    story_text, sentence_ranges = _sentence_ranges_from_story_manifest(sentences)
+    if not story_text or not sentence_ranges:
+        return sentences
+
+    audio_rel = sentence_ranges[0]["audioPath"]
+    audio_path = story_dir / audio_rel
+    if not audio_path.exists():
+        return sentences
+
+    story_duration_ms = wav_duration_ms(audio_path)
+    story_chars = aligner.align(story_text, audio_path, story_duration_ms)
+    realigned = [
+        entry.as_dict()
+        for entry in _story_audio_entries_from_ranges(
+            sentence_ranges=sentence_ranges,
+            story_chars=story_chars,
+            story_duration_ms=story_duration_ms,
+        )
+    ]
+    payload["sentences"] = realigned
+    return realigned
 
 
 def _generate_paragraph_audio_entries(
@@ -1064,22 +1282,30 @@ def align_audio_manifest(
             device=os.getenv("LMC_TTS_DEVICE", "cpu"),
         )
 
-    for entry in sentences:
-        if not isinstance(entry, dict) or entry.get("unavailable"):
-            continue
-        audio_rel = entry.get("audioPath")
-        text = entry.get("text")
-        duration_ms = entry.get("durationMs")
-        if not isinstance(audio_rel, str) or not isinstance(text, str):
-            continue
-        if not isinstance(duration_ms, int) or duration_ms < 0:
-            continue
-        audio_path = story_dir / audio_rel
-        if not audio_path.exists():
-            continue
-        duration_ms = wav_duration_ms(audio_path)
-        entry["durationMs"] = duration_ms
-        entry["chars"] = aligner.align(text, audio_path, duration_ms)
+    profile = payload.get("ttsProfile")
+    if isinstance(profile, dict) and profile.get("generationMode") == "story":
+        sentences = _align_story_audio_manifest(
+            story_dir=story_dir,
+            payload=payload,
+            aligner=aligner,
+        )
+    else:
+        for entry in sentences:
+            if not isinstance(entry, dict) or entry.get("unavailable"):
+                continue
+            audio_rel = entry.get("audioPath")
+            text = entry.get("text")
+            duration_ms = entry.get("durationMs")
+            if not isinstance(audio_rel, str) or not isinstance(text, str):
+                continue
+            if not isinstance(duration_ms, int) or duration_ms < 0:
+                continue
+            audio_path = story_dir / audio_rel
+            if not audio_path.exists():
+                continue
+            duration_ms = wav_duration_ms(audio_path)
+            entry["durationMs"] = duration_ms
+            entry["chars"] = aligner.align(text, audio_path, duration_ms)
 
     payload["sentences"] = sentences
     manifest_path.write_text(

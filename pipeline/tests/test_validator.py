@@ -104,13 +104,15 @@ class ValidatorTest(unittest.TestCase):
 
         (story_dir / "audio.json").write_text(json.dumps({"sentences": entries}, ensure_ascii=False) + "\n", encoding="utf-8")
 
-    def write_wav(self, path: Path) -> None:
+    def write_wav(self, path: Path, duration_ms: int = 1000) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
+        sample_rate = 22050
+        frame_count = round(sample_rate * duration_ms / 1000)
         with wave.open(str(path), "wb") as wav:
             wav.setnchannels(1)
             wav.setsampwidth(2)
-            wav.setframerate(22050)
-            wav.writeframes(b"\x00\x00" * 22050)
+            wav.setframerate(sample_rate)
+            wav.writeframes(b"\x00\x00" * frame_count)
 
     def write_story(self, story):
         temp_dir = tempfile.TemporaryDirectory()
@@ -294,6 +296,46 @@ class ValidatorTest(unittest.TestCase):
             "durationMs 500 does not match wav duration 1000",
             "\n".join(result.errors),
         )
+
+    def test_audio_manifest_accepts_story_wav_sentence_ranges(self):
+        story = build_story()
+        story_path = self.write_story(story)
+        story_dir = story_path.parent
+        self.write_wav(story_dir / "audio" / "story.wav", duration_ms=4000)
+
+        entries = []
+        for index, expected in enumerate(build_sentence_plan(story.get("paragraphs", []))):
+            entries.append(
+                {
+                    "paraIndex": expected["paraIndex"],
+                    "sentIndex": expected["sentIndex"],
+                    "text": expected["text"],
+                    "audioPath": "audio/story.wav",
+                    "startMs": index * 1000,
+                    "endMs": (index + 1) * 1000,
+                    "durationMs": 1000,
+                    "chars": even_char_timings(expected["text"], 1000),
+                }
+            )
+        (story_dir / "audio.json").write_text(
+            json.dumps(
+                {
+                    "ttsProfile": {
+                        "provider": "qwen",
+                        "generationMode": "story",
+                    },
+                    "sentences": entries,
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+        result = validate_story_file(story_path, SCHEMA_PATH)
+
+        self.assertTrue(result.passed, result.errors)
 
 
 class PolyphoneLintTest(unittest.TestCase):

@@ -75,6 +75,43 @@ class StoryAudioManifestTest {
     }
 
     @Test
+    fun decodesStoryWideAudioSentenceRange() {
+        val manifest = StoryAudioJson.decodeManifest(
+            """
+            {
+              "ttsProfile": {
+                "provider": "qwen",
+                "generationMode": "story"
+              },
+              "sentences": [
+                {
+                  "paraIndex": 1,
+                  "sentIndex": 2,
+                  "text": "这一句从整篇音频中播放。",
+                  "audioPath": "audio/story.wav",
+                  "startMs": 3200,
+                  "endMs": 5100,
+                  "durationMs": 1900,
+                  "chars": [
+                    { "c": "这", "startMs": 0, "endMs": 300 },
+                    { "c": "一", "startMs": 300, "endMs": 600 }
+                  ]
+                }
+              ]
+            }
+            """.trimIndent(),
+            storyId = "sample",
+        )
+
+        val segment = manifest.segmentFor(paragraphIndex = 1, sentenceIndex = 2)
+
+        assertEquals("stories/sample/audio/story.wav", segment?.resourcePath)
+        assertEquals(3200L, segment?.startMillis)
+        assertEquals(5100L, segment?.endMillis)
+        assertEquals(1900L, segment?.durationMillis)
+    }
+
+    @Test
     fun loadAudioManifestReturnsEmptyWhenSidecarIsMissing() = runTest {
         val reader = MapStoryResourceReader(
             resources = mapOf(

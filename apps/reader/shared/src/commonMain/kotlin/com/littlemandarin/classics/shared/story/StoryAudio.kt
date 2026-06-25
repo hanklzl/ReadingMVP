@@ -33,6 +33,8 @@ data class StoryAudioSegment(
     val sentenceIndex: Int,
     val text: String,
     val resourcePath: String,
+    val startMillis: Long? = null,
+    val endMillis: Long? = null,
     val durationMillis: Long? = null,
     val unavailable: Boolean = false,
     /**
@@ -95,6 +97,8 @@ object StoryAudioJson {
                         sentIndex = segment.sentenceIndex,
                         text = segment.text,
                         audioPath = segment.resourcePath,
+                        startMs = segment.startMillis,
+                        endMs = segment.endMillis,
                         durationMs = segment.durationMillis,
                         unavailable = segment.unavailable,
                         chars = segment.chars.map { timing ->
@@ -123,6 +127,8 @@ private data class StoryAudioSentencePayload(
     val sentIndex: Int,
     val text: String,
     val audioPath: String? = null,
+    val startMs: Long? = null,
+    val endMs: Long? = null,
     val durationMs: Long? = null,
     val unavailable: Boolean = false,
     val chars: List<StoryAudioCharPayload> = emptyList(),
@@ -135,6 +141,8 @@ private data class StoryAudioSentencePayload(
             sentenceIndex = sentIndex,
             text = text,
             resourcePath = path.toAppResourcePath(storyId),
+            startMillis = startMs,
+            endMillis = endMs,
             durationMillis = durationMs,
             unavailable = false,
             chars = chars.map { timing ->

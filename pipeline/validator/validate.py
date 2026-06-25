@@ -10,7 +10,7 @@ from typing import Any, Iterable
 
 from jsonschema import Draft202012Validator
 
-from transformer.audio import WAV_DURATION_TOLERANCE_MS, build_sentence_plan, read_audio_manifest, wav_duration_ms
+from transformer.audio import WAV_DURATION_TOLERANCE_MS, build_sentence_plan, wav_duration_ms
 from transformer.polyphone_overrides import (
     DE_FULL_TONE_WORDS as _DE_FULL_TONE_WORDS,
     DE_MUST_WORDS as _DE_MUST_WORDS,
@@ -282,11 +282,21 @@ def validate_audio_manifest(story: dict[str, Any], path: Path | None) -> list[st
         return [f"{path.parent.name} missing audio.json"]
 
     try:
-        actual_entries = read_audio_manifest(manifest_path)
+        manifest_payload = load_json(manifest_path)
+        if isinstance(manifest_payload, list):
+            tts_profile: dict[str, Any] = {}
+            actual_entries = manifest_payload
+        elif isinstance(manifest_payload, dict) and isinstance(manifest_payload.get("sentences"), list):
+            profile = manifest_payload.get("ttsProfile")
+            tts_profile = profile if isinstance(profile, dict) else {}
+            actual_entries = manifest_payload["sentences"]
+        else:
+            raise ValueError("audio.json format must be a list or an object with 'sentences'")
     except Exception as exc:
         return [f"audio.json in {path.parent.name} is invalid: {exc}"]
 
     expected_plan = build_sentence_plan(story.get("paragraphs", []) if isinstance(story.get("paragraphs"), list) else [])
+    story_wide_audio = tts_profile.get("generationMode") == "story"
 
     if len(actual_entries) != len(expected_plan):
         return [
@@ -365,10 +375,11 @@ def validate_audio_manifest(story: dict[str, Any], path: Path | None) -> list[st
             )
             continue
 
-        if rel_path.as_posix() != expected["audioPath"]:
+        expected_audio_path = "audio/story.wav" if story_wide_audio else expected["audioPath"]
+        if rel_path.as_posix() != expected_audio_path:
             errors.append(
                 f"{path.parent.name} paraIndex={expected['paraIndex']}, sentIndex={expected['sentIndex']} "
-                f"audioPath mismatch: expected {expected['audioPath']!r}, got {audio_path!r}"
+                f"audioPath mismatch: expected {expected_audio_path!r}, got {audio_path!r}"
             )
 
         audio_file = path.parent / rel_path
@@ -392,7 +403,19 @@ def validate_audio_manifest(story: dict[str, Any], path: Path | None) -> list[st
                     f"audio file {audio_path!r} is not a readable wav: {exc}"
                 )
             else:
-                if abs(duration_ms - actual_duration_ms) > WAV_DURATION_TOLERANCE_MS:
+                if story_wide_audio:
+                    errors.extend(
+                        validate_story_audio_range(
+                            story_name=path.parent.name,
+                            para_index=expected["paraIndex"],
+                            sent_index=expected["sentIndex"],
+                            duration_ms=duration_ms,
+                            wav_duration_ms=actual_duration_ms,
+                            start_ms=entry.get("startMs"),
+                            end_ms=entry.get("endMs"),
+                        )
+                    )
+                elif abs(duration_ms - actual_duration_ms) > WAV_DURATION_TOLERANCE_MS:
                     errors.append(
                         f"{path.parent.name} paraIndex={expected['paraIndex']}, sentIndex={expected['sentIndex']} "
                         f"durationMs {duration_ms} does not match wav duration {actual_duration_ms} "
@@ -418,6 +441,42 @@ def validate_audio_manifest(story: dict[str, Any], path: Path | None) -> list[st
                 f"{path.parent.name} has extra audio entry paraIndex={key[0]}, sentIndex={key[1]}, "
                 f"text {entry.get('text', '')!r}"
             )
+
+    return errors
+
+
+def validate_story_audio_range(
+    *,
+    story_name: str,
+    para_index: int,
+    sent_index: int,
+    duration_ms: int,
+    wav_duration_ms: int,
+    start_ms: Any,
+    end_ms: Any,
+) -> list[str]:
+    prefix = f"{story_name} paraIndex={para_index}, sentIndex={sent_index}"
+    errors: list[str] = []
+
+    if not isinstance(start_ms, int) or start_ms < 0:
+        errors.append(f"{prefix} startMs must be an integer >= 0")
+    if not isinstance(end_ms, int) or end_ms < 0:
+        errors.append(f"{prefix} endMs must be an integer >= 0")
+    if errors:
+        return errors
+
+    if end_ms <= start_ms:
+        errors.append(f"{prefix} endMs must be greater than startMs")
+    if end_ms - wav_duration_ms > WAV_DURATION_TOLERANCE_MS:
+        errors.append(
+            f"{prefix} endMs {end_ms} exceeds wav duration {wav_duration_ms}"
+        )
+
+    range_duration_ms = max(0, end_ms - start_ms)
+    if abs(duration_ms - range_duration_ms) > WAV_DURATION_TOLERANCE_MS:
+        errors.append(
+            f"{prefix} durationMs {duration_ms} does not match range duration {range_duration_ms}"
+        )
 
     return errors
 

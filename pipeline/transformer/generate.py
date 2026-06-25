@@ -604,11 +604,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--audio-generation-mode",
-        choices=("sentence", "paragraph"),
+        choices=("sentence", "paragraph", "story"),
         default=None,
         help=(
-            "Override LMC_TTS_GENERATION_MODE. For qwen, the default is paragraph "
-            "so one voice sample covers a whole paragraph before sentence clips are sliced."
+            "Override LMC_TTS_GENERATION_MODE. For qwen, the default is story "
+            "so one voice sample covers the whole story and sentences use time ranges."
         ),
     )
     parser.add_argument(

@@ -163,7 +163,7 @@ Use the existing shared sentence segmenter behavior as the MVP contract:
 - Sentence-ending marks: `。`, `！`, `？`, `；`, `…`.
 - Consecutive ending marks and trailing right quote/bracket marks attach to the sentence.
 - Whitespace-only segments are ignored.
-- Audio resources follow `stories/<storyId>/audio/p{paragraph}_s{sentence}.wav` and manifest entries from `audio.json`.
+- Audio resources prefer one story-level file, `stories/<storyId>/audio/story.wav`, with each `audio.json` sentence entry carrying `startMs`, `endMs`, `durationMs`, and `chars[]` relative to the sentence range. Legacy sentence files (`audio/p{paragraph}_s{sentence}.wav`) remain readable for older manifests.
 
 Rhythm:
 

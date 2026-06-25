@@ -2712,11 +2712,11 @@ private fun ReadingScreen(
                 val targetParagraph = story.paragraphs.getOrNull(activeTarget.paragraphIndex) ?: break
                 val targetSegments = SentenceSegmenter.segment(targetParagraph.text)
                 val sentence = targetSegments.getOrNull(activeTarget.sentenceIndex) ?: break
-                val hasGeneratedAudio = audioService.hasSentenceAudio(
-                    storyId = story.id,
+                val audioSegment = audioManifest.segmentFor(
                     paragraphIndex = activeTarget.paragraphIndex,
                     sentenceIndex = activeTarget.sentenceIndex,
                 )
+                val hasGeneratedAudio = audioService.hasAudio(audioSegment)
                 val audioSource = if (hasGeneratedAudio) {
                     ReadingAudioSource.Recorded
                 } else {
@@ -2772,10 +2772,8 @@ private fun ReadingScreen(
 
                 if (hasGeneratedAudio) {
                     try {
-                        audioService.playSentence(
-                            storyId = story.id,
-                            paragraphIndex = activeTarget.paragraphIndex,
-                            sentenceIndex = activeTarget.sentenceIndex,
+                        audioService.playSegment(
+                            segment = requireNotNull(audioSegment),
                             speedMultiplier = speed.multiplier.toFloat(),
                         )
                     } catch (cancellation: CancellationException) {
