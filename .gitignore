@@ -47,3 +47,6 @@ local-signing.properties
 
 # local QA scratch (screenshots, agent reports)
 docs/qa/
+
+# local agent worktrees
+.worktrees/
