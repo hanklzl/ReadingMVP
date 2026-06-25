@@ -1,7 +1,7 @@
 {
   "ttsProfile": {
     "provider": "qwen",
-    "generationMode": "paragraph",
+    "generationMode": "story",
     "format": "wav",
     "model": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
     "voice": "Serena",
@@ -12,17 +12,19 @@
       "paraIndex": 0,
       "sentIndex": 0,
       "text": "赤壁之后，曹操带着疲惫的队伍来到华容道。",
-      "audioPath": "audio/p1_s1.wav",
-      "durationMs": 4889,
+      "audioPath": "audio/story.wav",
+      "durationMs": 5360,
+      "startMs": 80,
+      "endMs": 5440,
       "chars": [
         {
           "c": "赤",
-          "startMs": 80,
-          "endMs": 320
+          "startMs": 0,
+          "endMs": 240
         },
         {
           "c": "壁",
-          "startMs": 320,
+          "startMs": 240,
           "endMs": 480
         },
         {
@@ -38,82 +40,82 @@
         {
           "c": "，",
           "startMs": 1200,
-          "endMs": 1280
-        },
-        {
-          "c": "曹",
-          "startMs": 1280,
           "endMs": 1520
         },
         {
-          "c": "操",
+          "c": "曹",
           "startMs": 1520,
-          "endMs": 1840
+          "endMs": 1760
         },
         {
-          "c": "带",
-          "startMs": 1840,
+          "c": "操",
+          "startMs": 1760,
           "endMs": 2000
         },
         {
-          "c": "着",
+          "c": "带",
           "startMs": 2000,
           "endMs": 2160
         },
         {
-          "c": "疲",
+          "c": "着",
           "startMs": 2160,
-          "endMs": 2480
+          "endMs": 2320
+        },
+        {
+          "c": "疲",
+          "startMs": 2320,
+          "endMs": 2560
         },
         {
           "c": "惫",
-          "startMs": 2480,
-          "endMs": 2640
-        },
-        {
-          "c": "的",
-          "startMs": 2640,
+          "startMs": 2560,
           "endMs": 2720
         },
         {
-          "c": "队",
+          "c": "的",
           "startMs": 2720,
-          "endMs": 2960
+          "endMs": 2880
+        },
+        {
+          "c": "队",
+          "startMs": 2880,
+          "endMs": 3120
         },
         {
           "c": "伍",
-          "startMs": 2960,
-          "endMs": 3200
+          "startMs": 3120,
+          "endMs": 3360
         },
         {
           "c": "来",
-          "startMs": 3200,
-          "endMs": 3440
-        },
-        {
-          "c": "到",
-          "startMs": 3440,
+          "startMs": 3360,
           "endMs": 3520
         },
         {
-          "c": "华",
+          "c": "到",
           "startMs": 3520,
-          "endMs": 3760
+          "endMs": 3680
+        },
+        {
+          "c": "华",
+          "startMs": 3680,
+          "endMs": 3840
         },
         {
           "c": "容",
-          "startMs": 3760,
-          "endMs": 4000
+          "startMs": 3840,
+          "endMs": 4080
         },
         {
           "c": "道",
-          "startMs": 4000,
-          "endMs": 4320
+          "startMs": 4080,
+          "endMs": 4480
         },
         {
           "c": "。",
-          "startMs": 4320,
-          "endMs": 4889
+          "startMs": 4480,
+          "endMs": 5360
         }
       ]
     },
@@ -121,68 +123,70 @@
       "paraIndex": 0,
       "sentIndex": 1,
       "text": "小路泥泞，大家走得很慢。",
-      "audioPath": "audio/p1_s2.wav",
-      "durationMs": 2933,
+      "audioPath": "audio/story.wav",
+      "durationMs": 3840,
+      "startMs": 5440,
+      "endMs": 9280,
       "chars": [
         {
           "c": "小",
           "startMs": 0,
-          "endMs": 240
+          "endMs": 320
         },
         {
           "c": "路",
-          "startMs": 240,
-          "endMs": 400
+          "startMs": 320,
+          "endMs": 560
         },
         {
           "c": "泥",
-          "startMs": 400,
-          "endMs": 720
+          "startMs": 560,
+          "endMs": 800
         },
         {
           "c": "泞",
-          "startMs": 720,
-          "endMs": 1040
+          "startMs": 800,
+          "endMs": 1200
         },
         {
           "c": "，",
-          "startMs": 1040,
-          "endMs": 1440
-        },
-        {
-          "c": "大",
-          "startMs": 1440,
+          "startMs": 1200,
           "endMs": 1600
         },
         {
-          "c": "家",
+          "c": "大",
           "startMs": 1600,
           "endMs": 1760
         },
         {
-          "c": "走",
+          "c": "家",
           "startMs": 1760,
           "endMs": 1920
         },
         {
-          "c": "得",
+          "c": "走",
           "startMs": 1920,
-          "endMs": 2000
+          "endMs": 2080
+        },
+        {
+          "c": "得",
+          "startMs": 2080,
+          "endMs": 2240
         },
         {
           "c": "很",
-          "startMs": 2000,
-          "endMs": 2320
+          "startMs": 2240,
+          "endMs": 2480
         },
         {
           "c": "慢",
-          "startMs": 2320,
-          "endMs": 2640
+          "startMs": 2480,
+          "endMs": 2800
         },
         {
           "c": "。",
-          "startMs": 2640,
-          "endMs": 2933
+          "startMs": 2800,
+          "endMs": 3840
         }
       ]
     },
@@ -190,98 +194,100 @@
       "paraIndex": 0,
       "sentIndex": 2,
       "text": "关羽早已在路口等候，心里也很不平静。",
-      "audioPath": "audio/p1_s3.wav",
-      "durationMs": 4400,
+      "audioPath": "audio/story.wav",
+      "durationMs": 4720,
+      "startMs": 9280,
+      "endMs": 14000,
       "chars": [
         {
           "c": "关",
-          "startMs": 480,
-          "endMs": 800
+          "startMs": 0,
+          "endMs": 240
         },
         {
           "c": "羽",
-          "startMs": 800,
-          "endMs": 880
+          "startMs": 240,
+          "endMs": 400
         },
         {
           "c": "早",
-          "startMs": 880,
-          "endMs": 1120
+          "startMs": 400,
+          "endMs": 640
         },
         {
           "c": "已",
-          "startMs": 1120,
-          "endMs": 1200
+          "startMs": 640,
+          "endMs": 800
         },
         {
           "c": "在",
-          "startMs": 1200,
-          "endMs": 1360
+          "startMs": 800,
+          "endMs": 960
         },
         {
           "c": "路",
-          "startMs": 1360,
-          "endMs": 1520
+          "startMs": 960,
+          "endMs": 1120
         },
         {
           "c": "口",
-          "startMs": 1520,
-          "endMs": 1760
+          "startMs": 1120,
+          "endMs": 1280
         },
         {
           "c": "等",
-          "startMs": 1760,
-          "endMs": 1920
+          "startMs": 1280,
+          "endMs": 1520
         },
         {
           "c": "候",
-          "startMs": 1920,
-          "endMs": 2400
+          "startMs": 1520,
+          "endMs": 1920
         },
         {
           "c": "，",
-          "startMs": 2400,
-          "endMs": 2640
+          "startMs": 1920,
+          "endMs": 2240
         },
         {
           "c": "心",
-          "startMs": 2640,
-          "endMs": 2960
+          "startMs": 2240,
+          "endMs": 2480
         },
         {
           "c": "里",
-          "startMs": 2960,
-          "endMs": 3040
+          "startMs": 2480,
+          "endMs": 2640
         },
         {
           "c": "也",
-          "startMs": 3040,
-          "endMs": 3200
+          "startMs": 2640,
+          "endMs": 2720
         },
         {
           "c": "很",
-          "startMs": 3200,
-          "endMs": 3520
+          "startMs": 2720,
+          "endMs": 2960
         },
         {
           "c": "不",
-          "startMs": 3520,
-          "endMs": 3600
+          "startMs": 2960,
+          "endMs": 3120
         },
         {
           "c": "平",
-          "startMs": 3600,
-          "endMs": 4000
+          "startMs": 3120,
+          "endMs": 3360
         },
         {
           "c": "静",
-          "startMs": 4000,
-          "endMs": 4240
+          "startMs": 3360,
+          "endMs": 3680
         },
         {
           "c": "。",
-          "startMs": 4240,
-          "endMs": 4400
+          "startMs": 3680,
+          "endMs": 4720
         }
       ]
     },
@@ -289,118 +295,120 @@
       "paraIndex": 0,
       "sentIndex": 3,
       "text": "他知道这里的选择很重要，不能只凭一时的情绪。",
-      "audioPath": "audio/p1_s4.wav",
-      "durationMs": 5378,
+      "audioPath": "audio/story.wav",
+      "durationMs": 5280,
+      "startMs": 14000,
+      "endMs": 19280,
       "chars": [
         {
           "c": "他",
-          "startMs": 640,
-          "endMs": 720
+          "startMs": 0,
+          "endMs": 160
         },
         {
           "c": "知",
-          "startMs": 720,
-          "endMs": 960
+          "startMs": 160,
+          "endMs": 320
         },
         {
           "c": "道",
-          "startMs": 960,
-          "endMs": 1200
+          "startMs": 320,
+          "endMs": 640
         },
         {
           "c": "这",
-          "startMs": 1440,
-          "endMs": 1680
+          "startMs": 640,
+          "endMs": 880
         },
         {
           "c": "里",
-          "startMs": 1680,
-          "endMs": 1760
+          "startMs": 880,
+          "endMs": 1040
         },
         {
           "c": "的",
-          "startMs": 1760,
-          "endMs": 1920
+          "startMs": 1040,
+          "endMs": 1120
         },
         {
           "c": "选",
-          "startMs": 1920,
-          "endMs": 2160
+          "startMs": 1120,
+          "endMs": 1360
         },
         {
           "c": "择",
-          "startMs": 2160,
-          "endMs": 2320
+          "startMs": 1360,
+          "endMs": 1520
         },
         {
           "c": "很",
-          "startMs": 2320,
-          "endMs": 2560
+          "startMs": 1520,
+          "endMs": 1840
         },
         {
           "c": "重",
-          "startMs": 2560,
-          "endMs": 2880
+          "startMs": 1840,
+          "endMs": 2080
         },
         {
           "c": "要",
-          "startMs": 2880,
-          "endMs": 3200
+          "startMs": 2080,
+          "endMs": 2320
         },
         {
           "c": "，",
-          "startMs": 3200,
-          "endMs": 3600
+          "startMs": 2320,
+          "endMs": 2800
         },
         {
           "c": "不",
-          "startMs": 3600,
-          "endMs": 3680
+          "startMs": 2800,
+          "endMs": 2960
         },
         {
           "c": "能",
-          "startMs": 3680,
-          "endMs": 3920
+          "startMs": 2960,
+          "endMs": 3120
         },
         {
           "c": "只",
-          "startMs": 3920,
-          "endMs": 4080
+          "startMs": 3120,
+          "endMs": 3280
         },
         {
           "c": "凭",
-          "startMs": 4080,
-          "endMs": 4240
+          "startMs": 3280,
+          "endMs": 3600
         },
         {
           "c": "一",
-          "startMs": 4240,
-          "endMs": 4400
+          "startMs": 3600,
+          "endMs": 3760
         },
         {
           "c": "时",
-          "startMs": 4400,
-          "endMs": 4640
+          "startMs": 3760,
+          "endMs": 4000
         },
         {
           "c": "的",
-          "startMs": 4640,
-          "endMs": 4720
+          "startMs": 4000,
+          "endMs": 4080
         },
         {
           "c": "情",
-          "startMs": 4720,
-          "endMs": 5040
+          "startMs": 4080,
+          "endMs": 4400
         },
         {
           "c": "绪",
-          "startMs": 5040,
-          "endMs": 5360
+          "startMs": 4400,
+          "endMs": 4720
         },
         {
           "c": "。",
-          "startMs": 5360,
-          "endMs": 5378
+          "startMs": 4720,
+          "endMs": 5280
         }
       ]
     },
@@ -408,37 +416,39 @@
       "paraIndex": 1,
       "sentIndex": 0,
       "text": "关羽记得，过去自己遇到困难时，曹操曾经礼待过他。",
-      "audioPath": "audio/p2_s1.wav",
-      "durationMs": 6662,
+      "audioPath": "audio/story.wav",
+      "durationMs": 6800,
+      "startMs": 19280,
+      "endMs": 26080,
       "chars": [
         {
           "c": "关",
-          "startMs": 80,
-          "endMs": 320
+          "startMs": 0,
+          "endMs": 240
         },
         {
           "c": "羽",
-          "startMs": 320,
-          "endMs": 480
+          "startMs": 240,
+          "endMs": 320
         },
         {
           "c": "记",
-          "startMs": 480,
-          "endMs": 640
+          "startMs": 320,
+          "endMs": 560
         },
         {
           "c": "得",
-          "startMs": 640,
-          "endMs": 1120
+          "startMs": 560,
+          "endMs": 960
         },
         {
           "c": "，",
-          "startMs": 1120,
-          "endMs": 1360
+          "startMs": 960,
+          "endMs": 1280
         },
         {
           "c": "过",
-          "startMs": 1360,
+          "startMs": 1280,
           "endMs": 1440
         },
         {
@@ -479,57 +489,57 @@
         {
           "c": "时",
           "startMs": 2720,
-          "endMs": 3360
+          "endMs": 3280
         },
         {
           "c": "，",
-          "startMs": 3360,
-          "endMs": 3840
-        },
-        {
-          "c": "曹",
-          "startMs": 3840,
+          "startMs": 3280,
           "endMs": 4080
         },
         {
-          "c": "操",
+          "c": "曹",
           "startMs": 4080,
-          "endMs": 4240
+          "endMs": 4400
+        },
+        {
+          "c": "操",
+          "startMs": 4400,
+          "endMs": 4560
         },
         {
           "c": "曾",
-          "startMs": 4240,
-          "endMs": 4480
-        },
-        {
-          "c": "经",
-          "startMs": 4480,
-          "endMs": 4640
-        },
-        {
-          "c": "礼",
-          "startMs": 4640,
+          "startMs": 4560,
           "endMs": 4800
         },
         {
-          "c": "待",
+          "c": "经",
           "startMs": 4800,
           "endMs": 5040
         },
         {
-          "c": "过",
+          "c": "礼",
           "startMs": 5040,
           "endMs": 5200
         },
         {
-          "c": "他",
+          "c": "待",
           "startMs": 5200,
-          "endMs": 5600
+          "endMs": 5360
+        },
+        {
+          "c": "过",
+          "startMs": 5360,
+          "endMs": 5520
+        },
+        {
+          "c": "他",
+          "startMs": 5520,
+          "endMs": 6000
         },
         {
           "c": "。",
-          "startMs": 5600,
-          "endMs": 6662
+          "startMs": 6000,
+          "endMs": 6800
         }
       ]
     },
@@ -537,77 +547,79 @@
       "paraIndex": 1,
       "sentIndex": 1,
       "text": "现在两人站在不同一边，可旧日恩情仍在心中。",
-      "audioPath": "audio/p2_s2.wav",
-      "durationMs": 5829,
+      "audioPath": "audio/story.wav",
+      "durationMs": 6320,
+      "startMs": 26080,
+      "endMs": 32400,
       "chars": [
         {
           "c": "现",
           "startMs": 0,
-          "endMs": 80
+          "endMs": 320
         },
         {
           "c": "在",
-          "startMs": 80,
-          "endMs": 240
-        },
-        {
-          "c": "两",
-          "startMs": 240,
+          "startMs": 320,
           "endMs": 480
         },
         {
-          "c": "人",
+          "c": "两",
           "startMs": 480,
           "endMs": 640
         },
         {
-          "c": "站",
+          "c": "人",
           "startMs": 640,
-          "endMs": 800
+          "endMs": 960
+        },
+        {
+          "c": "站",
+          "startMs": 960,
+          "endMs": 1120
         },
         {
           "c": "在",
-          "startMs": 800,
-          "endMs": 880
+          "startMs": 1120,
+          "endMs": 1280
         },
         {
           "c": "不",
-          "startMs": 880,
-          "endMs": 1040
+          "startMs": 1280,
+          "endMs": 1440
         },
         {
           "c": "同",
-          "startMs": 1040,
-          "endMs": 1360
+          "startMs": 1440,
+          "endMs": 1680
         },
         {
           "c": "一",
-          "startMs": 1360,
-          "endMs": 1520
-        },
-        {
-          "c": "边",
-          "startMs": 1520,
+          "startMs": 1680,
           "endMs": 1840
         },
         {
-          "c": "，",
+          "c": "边",
           "startMs": 1840,
-          "endMs": 2720
+          "endMs": 2240
         },
         {
-          "c": "可",
-          "startMs": 2720,
+          "c": "，",
+          "startMs": 2240,
           "endMs": 2880
         },
         {
-          "c": "旧",
+          "c": "可",
           "startMs": 2880,
-          "endMs": 3200
+          "endMs": 2960
+        },
+        {
+          "c": "旧",
+          "startMs": 2960,
+          "endMs": 3280
         },
         {
           "c": "日",
-          "startMs": 3200,
+          "startMs": 3280,
           "endMs": 3360
         },
         {
@@ -618,32 +630,32 @@
         {
           "c": "情",
           "startMs": 3600,
-          "endMs": 4160
+          "endMs": 4000
         },
         {
           "c": "仍",
-          "startMs": 4240,
-          "endMs": 4560
+          "startMs": 4000,
+          "endMs": 4240
         },
         {
           "c": "在",
-          "startMs": 4560,
-          "endMs": 4800
+          "startMs": 4240,
+          "endMs": 4400
         },
         {
           "c": "心",
-          "startMs": 4800,
-          "endMs": 5120
+          "startMs": 4400,
+          "endMs": 4720
         },
         {
           "c": "中",
-          "startMs": 5120,
-          "endMs": 5440
+          "startMs": 4720,
+          "endMs": 5040
         },
         {
           "c": "。",
-          "startMs": 5440,
-          "endMs": 5829
+          "startMs": 5040,
+          "endMs": 6320
         }
       ]
     },
@@ -651,113 +663,115 @@
       "paraIndex": 1,
       "sentIndex": 2,
       "text": "关羽一向重信用，所以更明白恩情二字的分量。",
-      "audioPath": "audio/p2_s3.wav",
-      "durationMs": 5829,
+      "audioPath": "audio/story.wav",
+      "durationMs": 6000,
+      "startMs": 32400,
+      "endMs": 38400,
       "chars": [
         {
           "c": "关",
-          "startMs": 560,
-          "endMs": 800
+          "startMs": 0,
+          "endMs": 240
         },
         {
           "c": "羽",
-          "startMs": 800,
-          "endMs": 880
+          "startMs": 240,
+          "endMs": 320
         },
         {
           "c": "一",
-          "startMs": 880,
-          "endMs": 1120
+          "startMs": 320,
+          "endMs": 560
         },
         {
           "c": "向",
-          "startMs": 1120,
-          "endMs": 1520
+          "startMs": 560,
+          "endMs": 880
         },
         {
           "c": "重",
-          "startMs": 1520,
-          "endMs": 1760
+          "startMs": 880,
+          "endMs": 1040
         },
         {
           "c": "信",
-          "startMs": 1760,
-          "endMs": 2240
+          "startMs": 1040,
+          "endMs": 1440
         },
         {
           "c": "用",
-          "startMs": 2640,
-          "endMs": 2880
+          "startMs": 1760,
+          "endMs": 2000
         },
         {
           "c": "，",
-          "startMs": 2880,
-          "endMs": 2880
+          "startMs": 2000,
+          "endMs": 2240
         },
         {
           "c": "所",
-          "startMs": 2880,
-          "endMs": 3280
+          "startMs": 2240,
+          "endMs": 2480
         },
         {
           "c": "以",
-          "startMs": 3280,
-          "endMs": 3520
+          "startMs": 2480,
+          "endMs": 2560
         },
         {
           "c": "更",
-          "startMs": 3920,
-          "endMs": 4080
+          "startMs": 2560,
+          "endMs": 2720
         },
         {
           "c": "明",
-          "startMs": 4080,
-          "endMs": 4320
+          "startMs": 2720,
+          "endMs": 2960
         },
         {
           "c": "白",
+          "startMs": 2960,
+          "endMs": 3360
+        },
+        {
+          "c": "恩",
+          "startMs": 3440,
+          "endMs": 3680
+        },
+        {
+          "c": "情",
+          "startMs": 3680,
+          "endMs": 3920
+        },
+        {
+          "c": "二",
+          "startMs": 3920,
+          "endMs": 4160
+        },
+        {
+          "c": "字",
+          "startMs": 4160,
+          "endMs": 4320
+        },
+        {
+          "c": "的",
           "startMs": 4320,
           "endMs": 4400
         },
         {
-          "c": "恩",
+          "c": "分",
           "startMs": 4400,
           "endMs": 4640
         },
         {
-          "c": "情",
-          "startMs": 4640,
-          "endMs": 4880
-        },
-        {
-          "c": "二",
-          "startMs": 4880,
-          "endMs": 5120
-        },
-        {
-          "c": "字",
-          "startMs": 5120,
-          "endMs": 5280
-        },
-        {
-          "c": "的",
-          "startMs": 5280,
-          "endMs": 5360
-        },
-        {
-          "c": "分",
-          "startMs": 5360,
-          "endMs": 5600
-        },
-        {
           "c": "量",
-          "startMs": 5600,
-          "endMs": 5829
+          "startMs": 4640,
+          "endMs": 4960
         },
         {
           "c": "。",
-          "startMs": 5829,
-          "endMs": 5829
+          "startMs": 4960,
+          "endMs": 6000
         }
       ]
     },
@@ -765,93 +779,95 @@
       "paraIndex": 2,
       "sentIndex": 0,
       "text": "曹操上前说明来意，希望能借路离开。",
-      "audioPath": "audio/p3_s1.wav",
-      "durationMs": 3411,
+      "audioPath": "audio/story.wav",
+      "durationMs": 4800,
+      "startMs": 38400,
+      "endMs": 43200,
       "chars": [
         {
           "c": "曹",
-          "startMs": 80,
-          "endMs": 240
+          "startMs": 0,
+          "endMs": 320
         },
         {
           "c": "操",
-          "startMs": 240,
-          "endMs": 400
-        },
-        {
-          "c": "上",
-          "startMs": 400,
+          "startMs": 320,
           "endMs": 560
         },
         {
-          "c": "前",
+          "c": "上",
           "startMs": 560,
-          "endMs": 800
+          "endMs": 720
+        },
+        {
+          "c": "前",
+          "startMs": 720,
+          "endMs": 960
         },
         {
           "c": "说",
-          "startMs": 800,
-          "endMs": 1040
-        },
-        {
-          "c": "明",
-          "startMs": 1040,
+          "startMs": 960,
           "endMs": 1200
         },
         {
-          "c": "来",
+          "c": "明",
           "startMs": 1200,
           "endMs": 1360
         },
         {
-          "c": "意",
+          "c": "来",
           "startMs": 1360,
           "endMs": 1600
         },
         {
-          "c": "，",
+          "c": "意",
           "startMs": 1600,
-          "endMs": 2000
+          "endMs": 1840
         },
         {
-          "c": "希",
-          "startMs": 2000,
+          "c": "，",
+          "startMs": 1840,
           "endMs": 2160
         },
         {
-          "c": "望",
+          "c": "希",
           "startMs": 2160,
           "endMs": 2320
         },
         {
-          "c": "能",
+          "c": "望",
           "startMs": 2320,
-          "endMs": 2480
+          "endMs": 2560
         },
         {
-          "c": "借",
-          "startMs": 2480,
-          "endMs": 2640
-        },
-        {
-          "c": "路",
-          "startMs": 2640,
+          "c": "能",
+          "startMs": 2560,
           "endMs": 2720
         },
         {
-          "c": "离",
+          "c": "借",
           "startMs": 2720,
           "endMs": 2880
         },
         {
-          "c": "开",
+          "c": "路",
           "startMs": 2880,
+          "endMs": 3040
+        },
+        {
+          "c": "离",
+          "startMs": 3040,
           "endMs": 3200
         },
         {
-          "c": "。",
+          "c": "开",
           "startMs": 3200,
-          "endMs": 3411
+          "endMs": 3600
+        },
+        {
+          "c": "。",
+          "startMs": 3600,
+          "endMs": 4800
         }
       ]
     },
@@ -859,148 +875,150 @@
       "paraIndex": 2,
       "sentIndex": 1,
       "text": "关羽看着疲惫的人们，想到仁义二字，也想到做人要记得恩情。",
-      "audioPath": "audio/p3_s2.wav",
-      "durationMs": 5619,
+      "audioPath": "audio/story.wav",
+      "durationMs": 7440,
+      "startMs": 43200,
+      "endMs": 50640,
       "chars": [
         {
           "c": "关",
-          "startMs": 320,
-          "endMs": 560
+          "startMs": 0,
+          "endMs": 240
         },
         {
           "c": "羽",
-          "startMs": 560,
-          "endMs": 640
+          "startMs": 240,
+          "endMs": 320
         },
         {
           "c": "看",
-          "startMs": 640,
-          "endMs": 800
+          "startMs": 320,
+          "endMs": 480
         },
         {
           "c": "着",
-          "startMs": 800,
-          "endMs": 880
+          "startMs": 480,
+          "endMs": 640
         },
         {
           "c": "疲",
-          "startMs": 880,
-          "endMs": 1120
+          "startMs": 640,
+          "endMs": 880
         },
         {
           "c": "惫",
-          "startMs": 1120,
-          "endMs": 1280
+          "startMs": 880,
+          "endMs": 1040
         },
         {
           "c": "的",
-          "startMs": 1280,
-          "endMs": 1360
+          "startMs": 1040,
+          "endMs": 1120
         },
         {
           "c": "人",
-          "startMs": 1360,
-          "endMs": 1520
+          "startMs": 1120,
+          "endMs": 1360
         },
         {
           "c": "们",
-          "startMs": 1520,
-          "endMs": 1760
+          "startMs": 1360,
+          "endMs": 1680
         },
         {
           "c": "，",
-          "startMs": 1760,
-          "endMs": 1840
-        },
-        {
-          "c": "想",
-          "startMs": 1840,
+          "startMs": 1680,
           "endMs": 2000
         },
         {
-          "c": "到",
+          "c": "想",
           "startMs": 2000,
-          "endMs": 2160
+          "endMs": 2240
         },
         {
-          "c": "仁",
-          "startMs": 2160,
+          "c": "到",
+          "startMs": 2240,
           "endMs": 2400
         },
         {
-          "c": "义",
+          "c": "仁",
           "startMs": 2400,
-          "endMs": 2480
+          "endMs": 2640
         },
         {
-          "c": "二",
-          "startMs": 2480,
+          "c": "义",
+          "startMs": 2640,
           "endMs": 2720
         },
         {
-          "c": "字",
+          "c": "二",
           "startMs": 2720,
           "endMs": 3040
         },
         {
-          "c": "，",
+          "c": "字",
           "startMs": 3040,
-          "endMs": 3520
+          "endMs": 3360
         },
         {
-          "c": "也",
-          "startMs": 3520,
-          "endMs": 3600
-        },
-        {
-          "c": "想",
-          "startMs": 3600,
-          "endMs": 3840
-        },
-        {
-          "c": "到",
-          "startMs": 3840,
+          "c": "，",
+          "startMs": 3360,
           "endMs": 4080
         },
         {
-          "c": "做",
+          "c": "也",
           "startMs": 4080,
-          "endMs": 4320
+          "endMs": 4240
         },
         {
-          "c": "人",
-          "startMs": 4320,
+          "c": "想",
+          "startMs": 4240,
           "endMs": 4480
         },
         {
-          "c": "要",
+          "c": "到",
           "startMs": 4480,
-          "endMs": 4640
-        },
-        {
-          "c": "记",
-          "startMs": 4640,
-          "endMs": 4800
-        },
-        {
-          "c": "得",
-          "startMs": 4800,
           "endMs": 4880
         },
         {
-          "c": "恩",
-          "startMs": 4880,
-          "endMs": 5040
+          "c": "做",
+          "startMs": 4960,
+          "endMs": 5200
         },
         {
-          "c": "情",
-          "startMs": 5040,
+          "c": "人",
+          "startMs": 5200,
           "endMs": 5360
         },
         {
-          "c": "。",
+          "c": "要",
           "startMs": 5360,
-          "endMs": 5619
+          "endMs": 5520
+        },
+        {
+          "c": "记",
+          "startMs": 5520,
+          "endMs": 5680
+        },
+        {
+          "c": "得",
+          "startMs": 5680,
+          "endMs": 5760
+        },
+        {
+          "c": "恩",
+          "startMs": 5760,
+          "endMs": 6000
+        },
+        {
+          "c": "情",
+          "startMs": 6000,
+          "endMs": 6480
+        },
+        {
+          "c": "。",
+          "startMs": 6480,
+          "endMs": 7440
         }
       ]
     },
@@ -1008,88 +1026,90 @@
       "paraIndex": 2,
       "sentIndex": 2,
       "text": "路边风很冷，大家都在等他的决定。",
-      "audioPath": "audio/p3_s3.wav",
-      "durationMs": 3210,
+      "audioPath": "audio/story.wav",
+      "durationMs": 3840,
+      "startMs": 50640,
+      "endMs": 54480,
       "chars": [
         {
           "c": "路",
-          "startMs": 320,
-          "endMs": 480
+          "startMs": 0,
+          "endMs": 160
         },
         {
           "c": "边",
-          "startMs": 480,
-          "endMs": 720
+          "startMs": 160,
+          "endMs": 400
         },
         {
           "c": "风",
-          "startMs": 720,
-          "endMs": 880
+          "startMs": 400,
+          "endMs": 560
         },
         {
           "c": "很",
-          "startMs": 880,
-          "endMs": 1200
+          "startMs": 560,
+          "endMs": 880
         },
         {
           "c": "冷",
-          "startMs": 1200,
-          "endMs": 1440
+          "startMs": 880,
+          "endMs": 1120
         },
         {
           "c": "，",
-          "startMs": 1440,
-          "endMs": 1760
+          "startMs": 1120,
+          "endMs": 1440
         },
         {
           "c": "大",
-          "startMs": 1760,
-          "endMs": 1840
+          "startMs": 1440,
+          "endMs": 1600
         },
         {
           "c": "家",
-          "startMs": 1840,
-          "endMs": 2000
+          "startMs": 1600,
+          "endMs": 1760
         },
         {
           "c": "都",
-          "startMs": 2000,
-          "endMs": 2240
+          "startMs": 1760,
+          "endMs": 1920
         },
         {
           "c": "在",
-          "startMs": 2240,
-          "endMs": 2320
+          "startMs": 1920,
+          "endMs": 2080
         },
         {
           "c": "等",
-          "startMs": 2320,
-          "endMs": 2560
+          "startMs": 2080,
+          "endMs": 2320
         },
         {
           "c": "他",
-          "startMs": 2560,
-          "endMs": 2720
+          "startMs": 2320,
+          "endMs": 2480
         },
         {
           "c": "的",
-          "startMs": 2720,
-          "endMs": 2800
+          "startMs": 2480,
+          "endMs": 2560
         },
         {
           "c": "决",
+          "startMs": 2560,
+          "endMs": 2800
+        },
+        {
+          "c": "定",
           "startMs": 2800,
           "endMs": 3040
         },
         {
-          "c": "定",
-          "startMs": 3040,
-          "endMs": 3200
-        },
-        {
           "c": "。",
-          "startMs": 3200,
-          "endMs": 3210
+          "startMs": 3040,
+          "endMs": 3840
         }
       ]
     },
@@ -1097,37 +1117,39 @@
       "paraIndex": 3,
       "sentIndex": 0,
       "text": "最后，关羽决定放行。",
-      "audioPath": "audio/p4_s1.wav",
-      "durationMs": 2082,
+      "audioPath": "audio/story.wav",
+      "durationMs": 3920,
+      "startMs": 54480,
+      "endMs": 58400,
       "chars": [
         {
           "c": "最",
-          "startMs": 80,
-          "endMs": 240
+          "startMs": 0,
+          "endMs": 160
         },
         {
           "c": "后",
-          "startMs": 240,
-          "endMs": 720
+          "startMs": 160,
+          "endMs": 560
         },
         {
           "c": "，",
-          "startMs": 720,
-          "endMs": 1280
+          "startMs": 560,
+          "endMs": 1200
         },
         {
           "c": "关",
-          "startMs": 1280,
-          "endMs": 1520
+          "startMs": 1200,
+          "endMs": 1440
         },
         {
           "c": "羽",
-          "startMs": 1520,
-          "endMs": 1600
+          "startMs": 1440,
+          "endMs": 1520
         },
         {
           "c": "决",
-          "startMs": 1600,
+          "startMs": 1520,
           "endMs": 1760
         },
         {
@@ -1138,17 +1160,17 @@
         {
           "c": "放",
           "startMs": 1920,
-          "endMs": 2080
+          "endMs": 2160
         },
         {
           "c": "行",
-          "startMs": 2080,
-          "endMs": 2080
+          "startMs": 2160,
+          "endMs": 2640
         },
         {
           "c": "。",
-          "startMs": 2080,
-          "endMs": 2082
+          "startMs": 2640,
+          "endMs": 3920
         }
       ]
     },
@@ -1156,92 +1178,94 @@
       "paraIndex": 3,
       "sentIndex": 1,
       "text": "他知道这个选择需要承担责任，但他愿意守住心里的仁义，不让恩情被忘记。",
-      "audioPath": "audio/p4_s2.wav",
-      "durationMs": 7080,
+      "audioPath": "audio/story.wav",
+      "durationMs": 8240,
+      "startMs": 58400,
+      "endMs": 66640,
       "chars": [
         {
           "c": "他",
-          "startMs": 800,
-          "endMs": 960
+          "startMs": 0,
+          "endMs": 160
         },
         {
           "c": "知",
-          "startMs": 960,
-          "endMs": 1120
+          "startMs": 160,
+          "endMs": 320
         },
         {
           "c": "道",
-          "startMs": 1120,
-          "endMs": 1280
+          "startMs": 320,
+          "endMs": 640
         },
         {
           "c": "这",
-          "startMs": 1280,
-          "endMs": 1360
+          "startMs": 640,
+          "endMs": 880
         },
         {
           "c": "个",
-          "startMs": 1360,
-          "endMs": 1440
+          "startMs": 880,
+          "endMs": 960
         },
         {
           "c": "选",
-          "startMs": 1440,
-          "endMs": 1680
+          "startMs": 960,
+          "endMs": 1200
         },
         {
           "c": "择",
-          "startMs": 1680,
-          "endMs": 1840
+          "startMs": 1200,
+          "endMs": 1360
         },
         {
           "c": "需",
-          "startMs": 1840,
-          "endMs": 1920
+          "startMs": 1360,
+          "endMs": 1520
         },
         {
           "c": "要",
+          "startMs": 1520,
+          "endMs": 1680
+        },
+        {
+          "c": "承",
+          "startMs": 1680,
+          "endMs": 1920
+        },
+        {
+          "c": "担",
           "startMs": 1920,
           "endMs": 2080
         },
         {
-          "c": "承",
+          "c": "责",
           "startMs": 2080,
-          "endMs": 2240
-        },
-        {
-          "c": "担",
-          "startMs": 2240,
           "endMs": 2400
         },
         {
-          "c": "责",
+          "c": "任",
           "startMs": 2400,
           "endMs": 2640
         },
         {
-          "c": "任",
-          "startMs": 2640,
-          "endMs": 2960
-        },
-        {
           "c": "，",
-          "startMs": 2960,
-          "endMs": 3360
+          "startMs": 2640,
+          "endMs": 3280
         },
         {
           "c": "但",
-          "startMs": 3360,
+          "startMs": 3280,
           "endMs": 3440
         },
         {
           "c": "他",
           "startMs": 3440,
-          "endMs": 3600
+          "endMs": 3680
         },
         {
           "c": "愿",
-          "startMs": 3600,
+          "startMs": 3680,
           "endMs": 3840
         },
         {
@@ -1252,82 +1276,82 @@
         {
           "c": "守",
           "startMs": 3920,
-          "endMs": 4160
+          "endMs": 4240
         },
         {
           "c": "住",
-          "startMs": 4160,
+          "startMs": 4240,
           "endMs": 4320
         },
         {
           "c": "心",
           "startMs": 4320,
-          "endMs": 4480
+          "endMs": 4640
         },
         {
           "c": "里",
-          "startMs": 4480,
-          "endMs": 4560
-        },
-        {
-          "c": "的",
-          "startMs": 4560,
+          "startMs": 4640,
           "endMs": 4720
         },
         {
-          "c": "仁",
+          "c": "的",
           "startMs": 4720,
-          "endMs": 5040
+          "endMs": 4880
         },
         {
-          "c": "义",
-          "startMs": 5040,
+          "c": "仁",
+          "startMs": 4880,
           "endMs": 5200
         },
         {
-          "c": "，",
+          "c": "义",
           "startMs": 5200,
-          "endMs": 5600
+          "endMs": 5440
+        },
+        {
+          "c": "，",
+          "startMs": 5440,
+          "endMs": 5920
         },
         {
           "c": "不",
-          "startMs": 5600,
-          "endMs": 5680
+          "startMs": 5920,
+          "endMs": 6080
         },
         {
           "c": "让",
-          "startMs": 5680,
-          "endMs": 5760
-        },
-        {
-          "c": "恩",
-          "startMs": 5840,
-          "endMs": 6000
-        },
-        {
-          "c": "情",
-          "startMs": 6000,
+          "startMs": 6080,
           "endMs": 6240
         },
         {
-          "c": "被",
+          "c": "恩",
           "startMs": 6240,
-          "endMs": 6320
+          "endMs": 6400
+        },
+        {
+          "c": "情",
+          "startMs": 6480,
+          "endMs": 6720
+        },
+        {
+          "c": "被",
+          "startMs": 6720,
+          "endMs": 6800
         },
         {
           "c": "忘",
-          "startMs": 6320,
-          "endMs": 6560
+          "startMs": 6800,
+          "endMs": 7120
         },
         {
           "c": "记",
-          "startMs": 6560,
-          "endMs": 6880
+          "startMs": 7120,
+          "endMs": 7440
         },
         {
           "c": "。",
-          "startMs": 6880,
-          "endMs": 7080
+          "startMs": 7440,
+          "endMs": 8240
         }
       ]
     },
@@ -1335,128 +1359,130 @@
       "paraIndex": 3,
       "sentIndex": 2,
       "text": "放行之后，他也准备回去说明原因，接受该有的责问。",
-      "audioPath": "audio/p4_s3.wav",
-      "durationMs": 4998,
+      "audioPath": "audio/story.wav",
+      "durationMs": 6800,
+      "startMs": 66640,
+      "endMs": 73440,
       "chars": [
         {
           "c": "放",
-          "startMs": 560,
-          "endMs": 800
+          "startMs": 0,
+          "endMs": 240
         },
         {
           "c": "行",
-          "startMs": 800,
-          "endMs": 960
+          "startMs": 240,
+          "endMs": 480
         },
         {
           "c": "之",
-          "startMs": 960,
-          "endMs": 1040
+          "startMs": 480,
+          "endMs": 560
         },
         {
           "c": "后",
-          "startMs": 1040,
-          "endMs": 1440
+          "startMs": 560,
+          "endMs": 1120
         },
         {
           "c": "，",
-          "startMs": 1440,
-          "endMs": 1760
+          "startMs": 1120,
+          "endMs": 1280
         },
         {
           "c": "他",
+          "startMs": 1280,
+          "endMs": 1440
+        },
+        {
+          "c": "也",
+          "startMs": 1440,
+          "endMs": 1600
+        },
+        {
+          "c": "准",
+          "startMs": 1600,
+          "endMs": 1760
+        },
+        {
+          "c": "备",
           "startMs": 1760,
           "endMs": 1840
         },
         {
-          "c": "也",
+          "c": "回",
           "startMs": 1840,
-          "endMs": 2000
-        },
-        {
-          "c": "准",
-          "startMs": 2000,
           "endMs": 2160
         },
         {
-          "c": "备",
+          "c": "去",
           "startMs": 2160,
-          "endMs": 2320
-        },
-        {
-          "c": "回",
-          "startMs": 2320,
           "endMs": 2480
         },
         {
-          "c": "去",
+          "c": "说",
           "startMs": 2480,
           "endMs": 2640
         },
         {
-          "c": "说",
-          "startMs": 2640,
-          "endMs": 2800
-        },
-        {
           "c": "明",
-          "startMs": 2800,
-          "endMs": 2960
+          "startMs": 2640,
+          "endMs": 2880
         },
         {
           "c": "原",
-          "startMs": 2960,
-          "endMs": 3280
+          "startMs": 2880,
+          "endMs": 3120
         },
         {
           "c": "因",
-          "startMs": 3280,
-          "endMs": 3520
+          "startMs": 3200,
+          "endMs": 3440
         },
         {
           "c": "，",
-          "startMs": 3520,
-          "endMs": 3680
-        },
-        {
-          "c": "接",
-          "startMs": 3680,
+          "startMs": 3440,
           "endMs": 3920
         },
         {
-          "c": "受",
+          "c": "接",
           "startMs": 3920,
-          "endMs": 4080
+          "endMs": 4160
+        },
+        {
+          "c": "受",
+          "startMs": 4160,
+          "endMs": 4320
         },
         {
           "c": "该",
-          "startMs": 4080,
-          "endMs": 4240
+          "startMs": 4320,
+          "endMs": 4560
         },
         {
           "c": "有",
-          "startMs": 4240,
-          "endMs": 4400
-        },
-        {
-          "c": "的",
-          "startMs": 4400,
-          "endMs": 4480
-        },
-        {
-          "c": "责",
-          "startMs": 4480,
+          "startMs": 4560,
           "endMs": 4720
         },
         {
-          "c": "问",
+          "c": "的",
           "startMs": 4720,
-          "endMs": 4960
+          "endMs": 4880
+        },
+        {
+          "c": "责",
+          "startMs": 4880,
+          "endMs": 5120
+        },
+        {
+          "c": "问",
+          "startMs": 5120,
+          "endMs": 5360
         },
         {
           "c": "。",
-          "startMs": 4960,
-          "endMs": 4998
+          "startMs": 5360,
+          "endMs": 6800
         }
       ]
     },
@@ -1464,12 +1490,14 @@
       "paraIndex": 4,
       "sentIndex": 0,
       "text": "华容道上的故事告诉我们，真正的英雄不只看输赢，也看内心是否正直。",
-      "audioPath": "audio/p5_s1.wav",
-      "durationMs": 6057,
+      "audioPath": "audio/story.wav",
+      "durationMs": 8640,
+      "startMs": 73440,
+      "endMs": 82080,
       "chars": [
         {
           "c": "华",
-          "startMs": 80,
+          "startMs": 0,
           "endMs": 240
         },
         {
@@ -1480,152 +1508,152 @@
         {
           "c": "道",
           "startMs": 400,
-          "endMs": 560
+          "endMs": 640
         },
         {
           "c": "上",
-          "startMs": 560,
-          "endMs": 720
-        },
-        {
-          "c": "的",
-          "startMs": 720,
+          "startMs": 640,
           "endMs": 800
         },
         {
-          "c": "故",
+          "c": "的",
           "startMs": 800,
-          "endMs": 960
+          "endMs": 880
         },
         {
-          "c": "事",
-          "startMs": 960,
+          "c": "故",
+          "startMs": 880,
           "endMs": 1040
         },
         {
-          "c": "告",
+          "c": "事",
           "startMs": 1040,
-          "endMs": 1280
+          "endMs": 1200
+        },
+        {
+          "c": "告",
+          "startMs": 1200,
+          "endMs": 1440
         },
         {
           "c": "诉",
-          "startMs": 1280,
-          "endMs": 1360
+          "startMs": 1440,
+          "endMs": 1600
         },
         {
           "c": "我",
-          "startMs": 1440,
-          "endMs": 1520
+          "startMs": 1600,
+          "endMs": 1760
         },
         {
           "c": "们",
-          "startMs": 1520,
-          "endMs": 1840
+          "startMs": 1760,
+          "endMs": 2000
         },
         {
           "c": "，",
-          "startMs": 1840,
-          "endMs": 2320
-        },
-        {
-          "c": "真",
-          "startMs": 2320,
-          "endMs": 2560
-        },
-        {
-          "c": "正",
-          "startMs": 2560,
+          "startMs": 2000,
           "endMs": 2720
         },
         {
-          "c": "的",
+          "c": "真",
           "startMs": 2720,
-          "endMs": 2800
-        },
-        {
-          "c": "英",
-          "startMs": 2800,
-          "endMs": 3040
-        },
-        {
-          "c": "雄",
-          "startMs": 3040,
-          "endMs": 3280
-        },
-        {
-          "c": "不",
-          "startMs": 3280,
-          "endMs": 3360
-        },
-        {
-          "c": "只",
-          "startMs": 3360,
-          "endMs": 3520
-        },
-        {
-          "c": "看",
-          "startMs": 3520,
-          "endMs": 3680
-        },
-        {
-          "c": "输",
-          "startMs": 3680,
-          "endMs": 4000
-        },
-        {
-          "c": "赢",
-          "startMs": 4000,
-          "endMs": 4320
-        },
-        {
-          "c": "，",
-          "startMs": 4320,
-          "endMs": 4480
-        },
-        {
-          "c": "也",
-          "startMs": 4480,
-          "endMs": 4640
-        },
-        {
-          "c": "看",
-          "startMs": 4640,
-          "endMs": 4800
-        },
-        {
-          "c": "内",
-          "startMs": 4800,
-          "endMs": 4960
-        },
-        {
-          "c": "心",
-          "startMs": 4960,
-          "endMs": 5120
-        },
-        {
-          "c": "是",
-          "startMs": 5120,
-          "endMs": 5200
-        },
-        {
-          "c": "否",
-          "startMs": 5200,
-          "endMs": 5360
+          "endMs": 2960
         },
         {
           "c": "正",
+          "startMs": 2960,
+          "endMs": 3120
+        },
+        {
+          "c": "的",
+          "startMs": 3120,
+          "endMs": 3120
+        },
+        {
+          "c": "英",
+          "startMs": 3120,
+          "endMs": 3360
+        },
+        {
+          "c": "雄",
+          "startMs": 3360,
+          "endMs": 3920
+        },
+        {
+          "c": "不",
+          "startMs": 4080,
+          "endMs": 4240
+        },
+        {
+          "c": "只",
+          "startMs": 4240,
+          "endMs": 4400
+        },
+        {
+          "c": "看",
+          "startMs": 4400,
+          "endMs": 4640
+        },
+        {
+          "c": "输",
+          "startMs": 4640,
+          "endMs": 4960
+        },
+        {
+          "c": "赢",
+          "startMs": 4960,
+          "endMs": 5360
+        },
+        {
+          "c": "，",
           "startMs": 5360,
-          "endMs": 5600
+          "endMs": 5760
+        },
+        {
+          "c": "也",
+          "startMs": 5760,
+          "endMs": 5920
+        },
+        {
+          "c": "看",
+          "startMs": 5920,
+          "endMs": 6160
+        },
+        {
+          "c": "内",
+          "startMs": 6160,
+          "endMs": 6320
+        },
+        {
+          "c": "心",
+          "startMs": 6320,
+          "endMs": 6640
+        },
+        {
+          "c": "是",
+          "startMs": 6640,
+          "endMs": 6880
+        },
+        {
+          "c": "否",
+          "startMs": 6880,
+          "endMs": 7040
+        },
+        {
+          "c": "正",
+          "startMs": 7040,
+          "endMs": 7360
         },
         {
           "c": "直",
-          "startMs": 5600,
-          "endMs": 6000
+          "startMs": 7360,
+          "endMs": 7760
         },
         {
           "c": "。",
-          "startMs": 6000,
-          "endMs": 6057
+          "startMs": 7760,
+          "endMs": 8640
         }
       ]
     },
@@ -1633,93 +1661,95 @@
       "paraIndex": 4,
       "sentIndex": 1,
       "text": "记得别人给过的善意，也是一种勇敢。",
-      "audioPath": "audio/p5_s2.wav",
-      "durationMs": 3218,
+      "audioPath": "audio/story.wav",
+      "durationMs": 4400,
+      "startMs": 82080,
+      "endMs": 86480,
       "chars": [
         {
           "c": "记",
-          "startMs": 400,
-          "endMs": 480
+          "startMs": 0,
+          "endMs": 160
         },
         {
           "c": "得",
-          "startMs": 480,
-          "endMs": 640
+          "startMs": 160,
+          "endMs": 240
         },
         {
           "c": "别",
-          "startMs": 640,
-          "endMs": 800
+          "startMs": 240,
+          "endMs": 480
         },
         {
           "c": "人",
-          "startMs": 800,
-          "endMs": 880
+          "startMs": 480,
+          "endMs": 720
         },
         {
           "c": "给",
+          "startMs": 720,
+          "endMs": 880
+        },
+        {
+          "c": "过",
           "startMs": 880,
           "endMs": 1040
         },
         {
-          "c": "过",
-          "startMs": 1040,
-          "endMs": 1200
-        },
-        {
           "c": "的",
-          "startMs": 1200,
-          "endMs": 1280
+          "startMs": 1040,
+          "endMs": 1120
         },
         {
           "c": "善",
-          "startMs": 1280,
+          "startMs": 1120,
           "endMs": 1600
         },
         {
           "c": "意",
           "startMs": 1600,
-          "endMs": 1840
+          "endMs": 1760
         },
         {
           "c": "，",
-          "startMs": 1840,
-          "endMs": 1840
-        },
-        {
-          "c": "也",
-          "startMs": 1840,
-          "endMs": 1920
-        },
-        {
-          "c": "是",
-          "startMs": 1920,
-          "endMs": 2080
-        },
-        {
-          "c": "一",
-          "startMs": 2080,
+          "startMs": 1760,
           "endMs": 2160
         },
         {
-          "c": "种",
+          "c": "也",
           "startMs": 2160,
-          "endMs": 2320
+          "endMs": 2400
         },
         {
-          "c": "勇",
-          "startMs": 2320,
+          "c": "是",
+          "startMs": 2400,
           "endMs": 2560
         },
         {
-          "c": "敢",
+          "c": "一",
           "startMs": 2560,
-          "endMs": 2800
+          "endMs": 2640
+        },
+        {
+          "c": "种",
+          "startMs": 2640,
+          "endMs": 2880
+        },
+        {
+          "c": "勇",
+          "startMs": 2880,
+          "endMs": 3200
+        },
+        {
+          "c": "敢",
+          "startMs": 3200,
+          "endMs": 3440
         },
         {
           "c": "。",
-          "startMs": 2800,
-          "endMs": 3218
+          "startMs": 3440,
+          "endMs": 4400
         }
       ]
     },
@@ -1727,118 +1757,120 @@
       "paraIndex": 4,
       "sentIndex": 2,
       "text": "做选择时想一想良心，比只想赢更难，也更珍贵。",
-      "audioPath": "audio/p5_s3.wav",
-      "durationMs": 4165,
+      "audioPath": "audio/story.wav",
+      "durationMs": 5760,
+      "startMs": 86480,
+      "endMs": 92240,
       "chars": [
         {
           "c": "做",
-          "startMs": 240,
-          "endMs": 400
+          "startMs": 0,
+          "endMs": 160
         },
         {
           "c": "选",
+          "startMs": 160,
+          "endMs": 400
+        },
+        {
+          "c": "择",
           "startMs": 400,
           "endMs": 560
         },
         {
-          "c": "择",
-          "startMs": 560,
-          "endMs": 720
-        },
-        {
           "c": "时",
-          "startMs": 720,
-          "endMs": 960
+          "startMs": 560,
+          "endMs": 1040
         },
         {
           "c": "想",
-          "startMs": 960,
-          "endMs": 1200
+          "startMs": 1280,
+          "endMs": 1680
         },
         {
           "c": "一",
-          "startMs": 1200,
-          "endMs": 1200
+          "startMs": 1680,
+          "endMs": 1760
         },
         {
           "c": "想",
-          "startMs": 1200,
-          "endMs": 1360
+          "startMs": 1760,
+          "endMs": 2000
         },
         {
           "c": "良",
-          "startMs": 1360,
-          "endMs": 1600
+          "startMs": 2000,
+          "endMs": 2160
         },
         {
           "c": "心",
-          "startMs": 1600,
-          "endMs": 2080
-        },
-        {
-          "c": "，",
-          "startMs": 2080,
-          "endMs": 2320
-        },
-        {
-          "c": "比",
-          "startMs": 2320,
-          "endMs": 2400
-        },
-        {
-          "c": "只",
-          "startMs": 2400,
+          "startMs": 2160,
           "endMs": 2560
         },
         {
-          "c": "想",
+          "c": "，",
           "startMs": 2560,
-          "endMs": 2800
+          "endMs": 3040
         },
         {
-          "c": "赢",
-          "startMs": 2800,
-          "endMs": 2960
-        },
-        {
-          "c": "更",
-          "startMs": 2960,
+          "c": "比",
+          "startMs": 3040,
           "endMs": 3200
         },
         {
-          "c": "难",
+          "c": "只",
           "startMs": 3200,
           "endMs": 3440
         },
         {
-          "c": "，",
+          "c": "想",
           "startMs": 3440,
-          "endMs": 3440
-        },
-        {
-          "c": "也",
-          "startMs": 3440,
-          "endMs": 3520
-        },
-        {
-          "c": "更",
-          "startMs": 3520,
           "endMs": 3680
         },
         {
-          "c": "珍",
+          "c": "赢",
           "startMs": 3680,
-          "endMs": 3920
+          "endMs": 3840
         },
         {
-          "c": "贵",
-          "startMs": 3920,
+          "c": "更",
+          "startMs": 3840,
           "endMs": 4080
         },
         {
-          "c": "。",
+          "c": "难",
           "startMs": 4080,
-          "endMs": 4165
+          "endMs": 4480
+        },
+        {
+          "c": "，",
+          "startMs": 4480,
+          "endMs": 4800
+        },
+        {
+          "c": "也",
+          "startMs": 4800,
+          "endMs": 4960
+        },
+        {
+          "c": "更",
+          "startMs": 4960,
+          "endMs": 5200
+        },
+        {
+          "c": "珍",
+          "startMs": 5200,
+          "endMs": 5440
+        },
+        {
+          "c": "贵",
+          "startMs": 5440,
+          "endMs": 5760
+        },
+        {
+          "c": "。",
+          "startMs": 5760,
+          "endMs": 5760
         }
       ]
     }
