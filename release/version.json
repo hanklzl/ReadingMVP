@@ -2,38 +2,41 @@
   "schemaVersion": 1,
   "appId": "com.littlemandarin.classics",
   "platform": "android",
-  "version": "0.1.3",
-  "versionCode": 103,
-  "releasedAt": "2026-06-23T11:08:48Z",
-  "releaseNotesUrl": "https://github.com/hanklzl/ReadingMVP/releases/tag/v0.1.3",
+  "version": "0.1.4",
+  "versionCode": 104,
+  "releasedAt": "2026-06-26T05:47:50Z",
+  "releaseNotesUrl": "https://github.com/hanklzl/ReadingMVP/releases/tag/v0.1.4",
   "changeLog": [
-    "docs(changelog): release v0.1.2 [skip ci] (bac20c7)",
-    "reader: optimize reading page interaction (cbd689f)",
-    "Android AAB: `LittleMandarinClassics-v0.1.3.aab` · 62MB · sha256 `404802a8a753`",
-    "Android APK: `LittleMandarinClassics-v0.1.3.apk` · 78MB · sha256 `d7d62840d03d`",
-    "mapping: `mapping-v0.1.3.zip` · sha256 `0b84e01c4013` (R8 反混淆用)"
+    "docs(changelog): release v0.1.3 [skip ci] (26f1ad1)",
+    "chore: ignore local worktrees (620a2a7)",
+    "release: bump Android version to 0.1.4 (497095c)",
+    "content: regenerate story-wide TTS audio (d6a19d1)",
+    "audio: support story-wide generated audio (64e0ad6)",
+    "Android AAB: `LittleMandarinClassics-v0.1.4.aab` · 65MB · sha256 `3054b86d8958`",
+    "Android APK: `LittleMandarinClassics-v0.1.4.apk` · 82MB · sha256 `bae335a7a757`",
+    "mapping: `mapping-v0.1.4.zip` · sha256 `56ea91aa2ccf` (R8 反混淆用)"
   ],
   "artifacts": {
     "android-aab": {
-      "name": "LittleMandarinClassics-v0.1.3.aab",
+      "name": "LittleMandarinClassics-v0.1.4.aab",
       "download": [
-        "https://github.com/hanklzl/ReadingMVP/releases/download/v0.1.3/LittleMandarinClassics-v0.1.3.aab"
+        "https://github.com/hanklzl/ReadingMVP/releases/download/v0.1.4/LittleMandarinClassics-v0.1.4.aab"
       ],
-      "size": 64994971,
-      "sha256": "404802a8a753936d21bb73d720fcfbdc666f68741be95a225b39653974494c88"
+      "size": 67583277,
+      "sha256": "3054b86d8958c120f99ebff4efafd7e6bee54d80751beb4a3895369f746f3b2d"
     },
     "android-apk": {
-      "name": "LittleMandarinClassics-v0.1.3.apk",
+      "name": "LittleMandarinClassics-v0.1.4.apk",
       "download": [
-        "https://github.com/hanklzl/ReadingMVP/releases/download/v0.1.3/LittleMandarinClassics-v0.1.3.apk"
+        "https://github.com/hanklzl/ReadingMVP/releases/download/v0.1.4/LittleMandarinClassics-v0.1.4.apk"
       ],
-      "size": 81425348,
-      "sha256": "d7d62840d03dc1ad20ba6c22133d901d56716fbbee28388a24b7053fea7dbcc0"
+      "size": 85735904,
+      "sha256": "bae335a7a757989a8a0ab9d7e8911c3e5e6141f692f809d8de4da48ba939c771"
     }
   },
   "mapping": {
-    "name": "mapping-v0.1.3.zip",
-    "url": "https://github.com/hanklzl/ReadingMVP/releases/download/v0.1.3/mapping-v0.1.3.zip",
-    "sha256": "0b84e01c401366b44f4375154cc9e29308473b6c0e3e8def3dfaece14a5b024c"
+    "name": "mapping-v0.1.4.zip",
+    "url": "https://github.com/hanklzl/ReadingMVP/releases/download/v0.1.4/mapping-v0.1.4.zip",
+    "sha256": "56ea91aa2ccffa2fb45498a2ed1c83366e7dedd547299104a2fa4cea9fc2c128"
   }
 }
