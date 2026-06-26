@@ -2,6 +2,27 @@
 
 <!-- next-release -->
 
+## [v0.1.4] - 2026-06-26
+
+### 变更详情
+
+#### 文档
+- docs(changelog): release v0.1.3 [skip ci] (26f1ad1)
+
+#### 杂项
+- chore: ignore local worktrees (620a2a7)
+
+#### 其它
+- release: bump Android version to 0.1.4 (497095c)
+- content: regenerate story-wide TTS audio (d6a19d1)
+- audio: support story-wide generated audio (64e0ad6)
+
+### 构建产物
+
+- Android AAB: `LittleMandarinClassics-v0.1.4.aab` · 65MB · sha256 `3054b86d8958`
+- Android APK: `LittleMandarinClassics-v0.1.4.apk` · 82MB · sha256 `bae335a7a757`
+- mapping: `mapping-v0.1.4.zip` · sha256 `56ea91aa2ccf` (R8 反混淆用)
+
 ## [v0.1.3] - tag v0.1.3
 Tagger: Hank <lzl0120@gmail.com>
 
